@@ -378,12 +378,13 @@ const db = firebase.firestore();
     }
 
 // ==========================================================================
-// --- S7: 設定頁面渲染與雲端管理 ---
+// --- S7: 系統後台設定與管理維護 (整合搬家功能版) ---
 // ==========================================================================
-   function renderSet() {
+    function renderSet() {
         const container = document.getElementById('set-content-container');
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
+        // 1. 先畫出基礎設定區塊 (0-4號)
         container.innerHTML = `
             <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">0. 營業時間</p><div style="display:flex; gap:25px;"><input type="time" class="luxe-btn" style="flex:1;" value="${store.startH}" onchange="store.startH=this.value;saveS();">至<input type="time" class="luxe-btn" style="flex:1;" value="${store.endH}" onchange="store.endH=this.value;saveS();"></div></div>
             
@@ -403,23 +404,27 @@ const db = firebase.firestore();
                     </div>
                 </div>
             </div>`;
-            // --- 這是補上的資料搬家區塊 ---
-container.innerHTML += `
-    <div style="margin-top:40px; padding-top:20px; border-top:1px dashed #eee;">
-        <p style="font-weight:900; color:#888;">5. 資料搬家 (備份與還原)</p>
-        <div style="display:flex; gap:15px;">
-            <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()">
-                <i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份 (.json)
-            </button>
-            <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()">
-                <i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份並同步
-            </button>
-        </div>
-        <p style="font-size:0.8rem; color:#aaa; margin-top:10px; text-align:center;">※ 從舊系統導出 JSON 後，在此導入即可同步至 Firebase 雲端。</p>
-    </div>
-`;
+
+        // 2. 額外追加「資料搬家」區塊
+        container.innerHTML += `
+            <div style="margin-top:40px; padding-top:20px; border-top:1px dashed #eee;">
+                <p style="font-weight:900; color:#888;">5. 資料搬家 (備份與還原)</p>
+                <div style="display:flex; gap:15px;">
+                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()">
+                        <i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份
+                    </button>
+                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()">
+                        <i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份
+                    </button>
+                </div>
+                <p style="font-size:0.8rem; color:#aaa; margin-top:10px; text-align:center;">※ 從舊系統導出 JSON 後在此導入即可同步雲端。</p>
+            </div>
+        `;
     }
 
+    // --- 各項功能的靈魂 (獨立分開，不互相嵌套) ---
+
+    // [功能 A] 重新激活
     function reAuth() {
         Swal.fire({
             title: '確定要重新激活嗎？',
@@ -435,6 +440,44 @@ container.innerHTML += `
                 location.reload(); 
             }
         });
+    }
+
+    // [功能 B] 導入檔案 (關鍵搬家工具)
+    function triggerLoad() {
+        const i = document.createElement('input');
+        i.type = 'file';
+        i.accept = '.json'; 
+        i.onchange = e => {
+            const file = e.target.files[0];
+            const r = new FileReader();
+            r.onload = () => {
+                try {
+                    let d = JSON.parse(r.result);
+                    // 相容舊格式轉換
+                    if (d.appointments) d.appointments = d.appointments.map(a => ({ ...a, n: a.n || a.name, p: a.p || a.phone, c: a.c || a.count }));
+                    if (d.clients) d.clients = d.clients.map(c => ({ ...c, n: c.n || c.name, p: c.p || c.phone }));
+                    
+                    store = d;
+                    saveS(); // 核心：導入完立刻存檔並飛向 Firebase
+                    
+                    Swal.fire({ icon: 'success', title: '導入成功！', text: '舊資料已同步至雲端', timer: 2000 }).then(() => {
+                        location.reload(); 
+                    });
+                } catch (err) {
+                    Swal.fire('格式錯誤', '這不是正確的備份檔案喔！', 'error');
+                }
+            };
+            r.readAsText(file);
+        };
+        i.click(); 
+    }
+
+    // [功能 C] 導出備份
+    function exportToFile() {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(store)], {type: 'application/json'}));
+        a.download = `Salon_Backup_${new Date().toLocaleDateString()}.json`;
+        a.click();
     }
 
     // --- 工具函數 ---
