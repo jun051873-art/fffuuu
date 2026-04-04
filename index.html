@@ -149,41 +149,54 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ==========================================================================
-// --- S3: 資料核心與 GAS 雲端同步模組 ---
+// --- S3: 資料核心與 Firebase 雲端同步模組 ---
 // ==========================================================================
     let curD = new Date();
     let tempTags = [];
     let cliKw = "";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbybDgSJuk48LPv4lCIFqiAv3vL3XkK1DdObhw6agADIY4J2GqQiW0Zt3IP35hrIbMVT/exec";
     
+    // 優先從本機抓取，若無則初始化
     let store = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {
-        startH: "11:00", endH: "19:00", offColor: "#e5e5ea", gSheetUrl: GAS_URL,
+        startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
         stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
         tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], appointments: [], clients: [], offDays: []
     };
 
-    async function pullFromGSheet(isManual = false) {
-        if(!GAS_URL) return;
-        if(isManual) Swal.showLoading(); 
+    // 【重要】鋼鐵核心：必須是 async 才能確保導入成功
+    async function saveS() { 
+        // 1. 先存本機備份
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
+
+        // 2. 抓取店號並同步到 Firebase
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        if (auth && auth.id && auth.id !== "未綁定") {
+            try {
+                // 等待 Firebase 存檔完成
+                await db.collection("Salons").doc(auth.id).set(store);
+                console.log("雲端同步成功:", auth.id);
+                
+                // 成功同步後跳出提示 (不干擾操作的 Toast)
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
+                Toast.fire({ icon: 'success', title: '雲端已同步' });
+            } catch (e) {
+                console.error("雲端同步失敗", e);
+            }
+        }
+    }
+
+    // 從雲端抓回資料 (開機用)
+    async function pullFromCloud() {
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        if (!auth || !auth.id) return;
         try {
-            const finalUrl = GAS_URL + "?t=" + Date.now();
-            const response = await fetch(finalUrl);
-            const cloudData = await response.json();
-            if (cloudData && (cloudData.appointments || cloudData.stylists)) {
-                store = cloudData;
+            const doc = await db.collection("Salons").doc(auth.id).get();
+            if (doc.exists) {
+                store = doc.data();
                 localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
                 initAll();
-                if(isManual) Swal.fire({ icon: 'success', title: '雲端同步成功', timer: 1000, showConfirmButton: false });
             }
-        } catch (e) { console.error("同步失敗", e); }
+        } catch (e) { console.error("抓取雲端資料失敗", e); }
     }
-
-    function saveS() { localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); syncToGSheet(); }
-    async function syncToGSheet() { 
-        if(!store.gSheetUrl) return;
-        try { await fetch(store.gSheetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(store) }); } catch(e) { console.error("傳送失敗", e); } 
-    }
-
 // ==========================================================================
 // --- S4: 頁面顯示與分頁切換控制 ---
 // ==========================================================================
@@ -442,7 +455,7 @@ const db = firebase.firestore();
         });
     }
 
-    // [功能 B] 導入檔案 (關鍵搬家工具)
+    // [功能 B] 導入檔案 (放在 reAuth 外面，它是獨立的！)
     function triggerLoad() {
         const i = document.createElement('input');
         i.type = 'file';
@@ -450,20 +463,26 @@ const db = firebase.firestore();
         i.onchange = e => {
             const file = e.target.files[0];
             const r = new FileReader();
-            r.onload = () => {
+            r.onload = async () => {
                 try {
                     let d = JSON.parse(r.result);
-                    // 相容舊格式轉換
                     if (d.appointments) d.appointments = d.appointments.map(a => ({ ...a, n: a.n || a.name, p: a.p || a.phone, c: a.c || a.count }));
                     if (d.clients) d.clients = d.clients.map(c => ({ ...c, n: c.n || c.name, p: c.p || c.phone }));
                     
                     store = d;
-                    saveS(); // 核心：導入完立刻存檔並飛向 Firebase
+                    await saveS(); 
                     
-                    Swal.fire({ icon: 'success', title: '導入成功！', text: '舊資料已同步至雲端', timer: 2000 }).then(() => {
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: '導入並同步成功！', 
+                        text: '資料已安全存入雲端路徑', 
+                        timer: 2000,
+                        showConfirmButton: false 
+                    }).then(() => {
                         location.reload(); 
                     });
                 } catch (err) {
+                    console.error("導入錯誤:", err);
                     Swal.fire('格式錯誤', '這不是正確的備份檔案喔！', 'error');
                 }
             };
@@ -472,13 +491,15 @@ const db = firebase.firestore();
         i.click(); 
     }
 
-    // [功能 C] 導出備份
+    // [功能 C] 導出備份 (也是獨立的！)
     function exportToFile() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(store)], {type: 'application/json'}));
         a.download = `Salon_Backup_${new Date().toLocaleDateString()}.json`;
         a.click();
     }
+
+    
 
     // --- 工具函數 ---
     async function popCliSearch() { await Swal.fire({ title: '搜尋', html: `<input id="sw-search" class="luxe-btn" style="width:100%;" oninput="searchStored(this, 'sw-box')"><div id="sw-box" class="suggest-box"></div>`, showConfirmButton: false }); }
@@ -617,11 +638,16 @@ function copyKey(text) {
     }
 }
 
-// 開機程序
+// 開機程序：啟動時自動去雲端搬資料回來
 window.addEventListener('load', () => {
     const mPicker = document.getElementById('m-picker');
     if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
     initAll();
+    
+    // 改用雲端讀取函式
+    pullFromCloud(); 
+    
+    // 檢查授權
     checkLicense(); 
 });
 
