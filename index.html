@@ -1003,79 +1003,97 @@ function renderStats() {
     // 1. 過濾出該月份已完成的預約
     const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
     
-    // 2. 初始化週數據 (週一到週日)
-    const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0}; // 1=一, 0=日
-    const tagCounts = {};
+    // 2. 初始化數據
+    const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0};
+    const payStats = {}; // 存放支付類：現金、Line...
+    const guestStats = {}; // 存放客群類：男、女...
 
     filteredApts.forEach(a => {
         // 統計週客次
         const d = new Date(a.date);
         weekMap[d.getDay()] += 1;
-        // 統計標籤
+        
+        // 統計標籤 (自動分流邏輯)
         (a.payTags || []).forEach(tId => {
             const tName = (store.payTagsDef.find(x=>x.id===tId)||{}).name || "未知";
-            tagCounts[tName] = (tagCounts[tName] || 0) + 1;
+            // 判斷是否為支付類
+            const isPay = /現金|Line|街口|轉帳|刷卡|支付|錢/.test(tName);
+            if(isPay) {
+                payStats[tName] = (payStats[tName] || 0) + 1;
+            } else {
+                guestStats[tName] = (guestStats[tName] || 0) + 1;
+            }
         });
     });
 
     const maxVal = Math.max(...Object.values(weekMap), 1);
     const weekLabels = ['一','二','三','四','五','六','日'];
     const weekKeys = [1, 2, 3, 4, 5, 6, 0];
+    const mName = statsMonth.split('-')[1];
+
+    // 內部的進度條組件 (重複使用)
+    const renderPills = (dataObj) => {
+        return Object.entries(dataObj).sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
+            <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
+                <div style="width:90px; font-size:1rem; font-weight:900; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+                <div style="flex:1; height:10px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
+                    <div style="width:${(count/filteredApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
+                </div>
+                <div style="font-size:1.1rem; font-weight:900; color:var(--gold); min-width:40px; text-align:right;">${count}</div>
+            </div>
+        `).join('');
+    };
 
     area.innerHTML = `
-        <div style="padding:40px 30px;">
-            <p style="font-weight:900; color:#888; margin-bottom:15px; letter-spacing:1px;"># 月度經營數據分析</p>
-            
-            <input type="month" class="month-selector" value="${statsMonth}" 
-                   onchange="statsMonth=this.value; renderStats();">
-
-            <div class="stats-card">
-                <div style="font-weight:900; font-size:1.3rem; margin-bottom:40px;">
-                    <i class="fas fa-chart-line" style="color:var(--gold); margin-right:12px;"></i>每週預約課次起伏
-              </div>
-      
-<div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0; border-bottom:none;">
-    ${weekKeys.map((k, i) => {
-        const val = weekMap[k];
-        // 核心比例：讓最高的那天衝到 100%，其他按比例長高
-        const hPercent = maxVal > 0 ? (val / maxVal) * 100 : 0;
-        return `
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
-            <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative; overflow:visible;">
-                <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
-                            background:linear-gradient(to top, var(--gold), #f9e39d); 
-                            border-radius:15px; transition: height 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);">
-                    
-                    ${val > 0 ? `
-                    <div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--gold); font-size:1.2rem;">
-                        ${val}
-                    </div>` : ''}
+        <div style="padding:40px 25px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <p style="font-weight:900; color:#888; letter-spacing:1px; margin:0;"># 經營數據儀表板</p>
+                <div style="background:var(--gold); color:#fff; padding:8px 20px; border-radius:20px; font-weight:900; font-size:1rem; box-shadow:0 10px 20px rgba(212,175,55,0.2);">
+                   ${mName}月總課次：${filteredApts.length}
                 </div>
             </div>
-            <div style="margin-top:15px; font-weight:900; color:#888; font-size:1.1rem;">${weekLabels[i]}</div>
-        </div>`;
-    }).join('')}
-</div>
+            
+            <input type="month" class="month-selector" value="${statsMonth}" onchange="statsMonth=this.value; renderStats();">
+
+            <div class="stats-card">
+                <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
+                    <i class="fas fa-chart-line" style="color:var(--gold); margin-right:12px;"></i>每週平均起伏
+                </div>
+                <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0; border-bottom:none;">
+                    ${weekKeys.map((k, i) => {
+                        const val = weekMap[k];
+                        const hPercent = (val / maxVal) * 100;
+                        return `
+                        <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
+                            <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
+                                <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
+                                            background:linear-gradient(to top, var(--gold), #f9e39d); 
+                                            border-radius:15px; transition: height 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);">
+                                    ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--gold); font-size:1.1rem;">${val}</div>` : ''}
+                                </div>
+                            </div>
+                            <div style="margin-top:15px; font-weight:900; color:#888; font-size:1.1rem;">${weekLabels[i]}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+
             <div class="stats-card">
                 <div style="font-weight:900; font-size:1.3rem; margin-bottom:30px;">
-                    <i class="fas fa-fingerprint" style="color:var(--gold); margin-right:12px;"></i>客群與標籤分佈
+                    <i class="fas fa-wallet" style="color:var(--gold); margin-right:12px;"></i>支付金流分佈
                 </div>
-                <div style="display:flex; flex-direction:column; gap:25px;">
-                    ${Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
-                        <div style="display:flex; align-items:center; gap:20px;">
-                            <div style="width:100px; font-size:1.1rem; font-weight:900; color:#555;">${name}</div>
-                            <div style="flex:1; height:12px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
-                                <div style="width:${(count/filteredApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
-                            </div>
-                            <div style="font-size:1.2rem; font-weight:900; color:var(--gold); min-width:40px; text-align:right;">${count}</div>
-                        </div>
-                    `).join('')}
-                    ${filteredApts.length === 0 ? '<div style="text-align:center; color:#ccc; font-weight:700; padding:20px;">本月尚無成交數據</div>' : ''}
+                <div style="display:flex; flex-direction:column;">
+                    ${renderPills(payStats) || '<div style="color:#ccc; font-weight:700;">尚無支付數據</div>'}
                 </div>
             </div>
 
-            <div style="text-align:center; margin-top:30px;">
-               <p style="color:#bbb; font-weight:900; font-size:0.9rem;">總計本月已完成：${filteredApts.length} 課次</p>
+            <div class="stats-card">
+                <div style="font-weight:900; font-size:1.3rem; margin-bottom:30px;">
+                    <i class="fas fa-user-friends" style="color:var(--gold); margin-right:12px;"></i>客群屬性比例
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                    ${renderPills(guestStats) || '<div style="color:#ccc; font-weight:700;">尚無客群數據</div>'}
+                </div>
             </div>
         </div>
     `;
