@@ -31,7 +31,7 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
-        .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; padding: 25px 45px; }
+        .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
         .suggest-box { position: absolute; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border: 2px solid var(--gold); border-radius: 20px; z-index: 5000; display: none; max-height: 250px; overflow-y: auto; margin-top: 5px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
         .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
@@ -55,14 +55,19 @@
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-        @media (max-width: 480px) {
-            .header { padding: 55px 20px 15px; flex-direction: column; align-items: flex-start; gap: 15px; }
-            .header div:last-child { width: 100%; justify-content: space-between; }
-            .luxe-btn { height: 50px; padding: 10px 20px; font-size: 1rem; border-radius: 25px; }
-            .calendar-grid { margin: 5px 10px; border-radius: 25px; }
+        /* --- 【V318 全設備自適應大腦】 --- */
+        @media (max-width: 768px) {
+            .header { padding: 50px 20px 15px; flex-direction: column; align-items: flex-start; gap: 15px; }
+            .header div:last-child { width: 100%; justify-content: space-between; display: flex; }
+            .luxe-btn { height: 55px; padding: 10px 20px; font-size: 1rem; border-radius: 25px; }
+            .glow-title { font-size: 1.8rem; }
+            .calendar-grid { margin: 10px; border-radius: 25px; }
             .cal-day { min-height: 85px; font-size: 1rem; padding: 8px; }
             .nav { width: 92%; height: 90px; bottom: 25px; border-radius: 45px; }
-            .client-grid-container { grid-template-columns: 1fr; padding: 15px; }
+            .cli-luxe-card { padding: 20px; border-radius: 25px; margin-bottom: 15px; }
+            .stats-card { padding: 20px; margin: 0 10px 15px 10px; border-radius: 25px; }
+            .content-scroll { padding-bottom: 180px; }
+            .fab { width: 70px; height: 70px; bottom: 120px; right: 20px; font-size: 2rem; }
         }
     /* --- 【V318 專屬空間：設定頁面奢華改造樣式】 --- */
         .set-drawer-trigger {
