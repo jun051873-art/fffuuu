@@ -403,6 +403,21 @@ const db = firebase.firestore();
                     </div>
                 </div>
             </div>`;
+            // --- 這是補上的資料搬家區塊 ---
+container.innerHTML += `
+    <div style="margin-top:40px; padding-top:20px; border-top:1px dashed #eee;">
+        <p style="font-weight:900; color:#888;">5. 資料搬家 (備份與還原)</p>
+        <div style="display:flex; gap:15px;">
+            <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()">
+                <i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份 (.json)
+            </button>
+            <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()">
+                <i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份並同步
+            </button>
+        </div>
+        <p style="font-size:0.8rem; color:#aaa; margin-top:10px; text-align:center;">※ 從舊系統導出 JSON 後，在此導入即可同步至 Firebase 雲端。</p>
+    </div>
+`;
     }
 
     function reAuth() {
