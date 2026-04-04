@@ -115,25 +115,40 @@
             background: #f9f9fb; border-radius: 20px;
             padding: 20px; margin-top: 15px; border: 1px solid #f0f0f0;
         }
-        /* --- 【V318 數據儀表板奢華樣式】 --- */
+       /* --- 【V318 數據儀表板：旗艦大比例版】 --- */
         .stats-card {
-            background: #fff; border-radius: 30px;
-            padding: 25px; margin-bottom: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-            transition: 0.3s;
+            background: #fff; border-radius: 40px;
+            padding: 35px; margin-bottom: 30px;
+            border: 1.5px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.04);
+            width: 100%; /* 強制填滿 */
         }
-        .stats-bar-container { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 20px; }
+        .stats-bar-container { 
+            display: flex; align-items: flex-end; gap: 12px; 
+            height: 200px; /* 拉高圖表 */
+            padding: 20px 0; 
+            border-bottom: 2px solid #f2f2f7;
+        }
         .stats-bar {
-            flex: 1; background: #f2f2f7; border-radius: 10px 10px 4px 4px;
-            position: relative; overflow: hidden;
+            flex: 1; background: #f2f2f7; border-radius: 12px 12px 6px 6px;
+            position: relative; height: 100%;
         }
         .stats-bar-fill {
             position: absolute; bottom: 0; width: 100%;
             background: linear-gradient(to top, var(--gold), #f9e39d);
-            border-radius: 10px 10px 4px 4px; height: 0; transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px 12px 6px 6px; height: 0; transition: height 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
         }
-        .stats-label { font-size: 0.7rem; color: #bbb; text-align: center; margin-top: 8px; font-weight: 900; }
+        .stats-val-top {
+            position: absolute; top: -35px; width: 100%; text-align: center;
+            font-weight: 900; color: var(--gold); font-size: 1.1rem;
+        }
+        .stats-label { font-size: 1rem; color: #888; text-align: center; margin-top: 15px; font-weight: 900; }
+        .month-selector {
+            width: 100%; background: #f2f2f7; border: none; border-radius: 20px;
+            padding: 15px 25px; font-weight: 900; font-size: 1.2rem; color: var(--primary);
+            margin-bottom: 30px; appearance: none; text-align: center;
+        }
+
    </style>
 </head>
 <body>
@@ -980,89 +995,88 @@ window.addEventListener('load', () => {
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
 // ==========================================================================
+let statsMonth = new Date().toISOString().slice(0,7); // 預設當月
+
 function renderStats() {
     const area = document.getElementById('pg-stat').querySelector('.content-scroll');
-    const doneApts = store.appointments.filter(a => a.done);
     
-    // 1. 初始化數據容器
-    const weekData = [0,0,0,0,0,0,0]; // 日~六
-    const hourData = Array(15).fill(0); // 8點~22點
+    // 1. 過濾出該月份已完成的預約
+    const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
+    
+    // 2. 初始化週數據 (週一到週日)
+    const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0}; // 1=一, 0=日
     const tagCounts = {};
 
-    // 2. 執行大數據掃描
-    doneApts.forEach(a => {
-        // 週熱度
+    filteredApts.forEach(a => {
+        // 統計週客次
         const d = new Date(a.date);
-        weekData[d.getDay()]++;
-        // 時段熱度
-        const h = parseInt((a.time||"00").split(':')[0]);
-        if(h >= 8 && h <= 22) hourData[h-8]++;
-        // 標籤佔比
+        weekMap[d.getDay()] += 1;
+        // 統計標籤
         (a.payTags || []).forEach(tId => {
             const tName = (store.payTagsDef.find(x=>x.id===tId)||{}).name || "未知";
             tagCounts[tName] = (tagCounts[tName] || 0) + 1;
         });
     });
 
-    const maxW = Math.max(...weekData, 1);
-    const maxH = Math.max(...hourData, 1);
+    const maxVal = Math.max(...Object.values(weekMap), 1);
+    const weekLabels = ['一','二','三','四','五','六','日'];
+    const weekKeys = [1, 2, 3, 4, 5, 6, 0];
 
     area.innerHTML = `
-        <div style="padding:45px;">
-            <p style="font-weight:900; color:#888; margin-bottom:25px; letter-spacing:1px;"># 經營數據儀表板</p>
+        <div style="padding:40px 30px;">
+            <p style="font-weight:900; color:#888; margin-bottom:15px; letter-spacing:1px;"># 月度經營數據分析</p>
+            
+            <input type="month" class="month-selector" value="${statsMonth}" 
+                   onchange="statsMonth=this.value; renderStats();">
 
             <div class="stats-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <div style="font-weight:900;"><i class="fas fa-chart-bar" style="color:var(--gold); margin-right:10px;"></i>週預約分佈</div>
-                    <div style="background:rgba(212,175,55,0.1); color:var(--gold); padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:900;">
-                        熱點：週${['日','一','二','三','四','五','六'][weekData.indexOf(maxW)]}
-                    </div>
-                </div>
-                <div class="stats-bar-container">
-                    ${weekData.map((v, i) => `
-                        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
-                            <div class="stats-bar" style="width:100%; height:100px;">
-                                <div class="stats-bar-fill" style="height:${(v/maxW)*100}%"></div>
-                            </div>
-                            <div class="stats-label">${['日','一','二','三','四','五','六'][i]}</div>
-                        </div>
-                    `).join('')}
+                <div style="font-weight:900; font-size:1.3rem; margin-bottom:40px;">
+                    <i class="fas fa-chart-line" style="color:var(--gold); margin-right:12px;"></i>每週預約課次起伏
+              </div>
+      
+<div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0; border-bottom:none;">
+    ${weekKeys.map((k, i) => {
+        const val = weekMap[k];
+        // 核心比例：讓最高的那天衝到 100%，其他按比例長高
+        const hPercent = maxVal > 0 ? (val / maxVal) * 100 : 0;
+        return `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
+            <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative; overflow:visible;">
+                <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
+                            background:linear-gradient(to top, var(--gold), #f9e39d); 
+                            border-radius:15px; transition: height 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);">
+                    
+                    ${val > 0 ? `
+                    <div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--gold); font-size:1.2rem;">
+                        ${val}
+                    </div>` : ''}
                 </div>
             </div>
-
+            <div style="margin-top:15px; font-weight:900; color:#888; font-size:1.1rem;">${weekLabels[i]}</div>
+        </div>`;
+    }).join('')}
+</div>
             <div class="stats-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <div style="font-weight:900;"><i class="fas fa-clock" style="color:var(--gold); margin-right:10px;"></i>時段高峰熱力</div>
-                    <div style="color:#aaa; font-size:0.75rem; font-weight:900;">尖峰時段：${hourData.indexOf(maxH)+8}點</div>
+                <div style="font-weight:900; font-size:1.3rem; margin-bottom:30px;">
+                    <i class="fas fa-fingerprint" style="color:var(--gold); margin-right:12px;"></i>客群與標籤分佈
                 </div>
-                <div class="stats-bar-container" style="gap:4px;">
-                    ${hourData.map((v, i) => `
-                        <div class="stats-bar" style="height:80px;">
-                            <div class="stats-bar-fill" style="height:${(v/maxH)*100}%; opacity:0.8;"></div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-top:8px; color:#ccc; font-size:0.65rem; font-weight:900;">
-                    <span>08:00</span><span>15:00</span><span>22:00</span>
-                </div>
-            </div>
-
-            <div class="stats-card">
-                <div style="font-weight:900; margin-bottom:25px;"><i class="fas fa-tags" style="color:var(--gold); margin-right:10px;"></i>客群與標籤統計</div>
-                <div style="display:flex; flex-direction:column; gap:18px;">
+                <div style="display:flex; flex-direction:column; gap:25px;">
                     ${Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div style="width:85px; font-size:0.85rem; font-weight:900; color:#555; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</div>
-                            <div style="flex:1; height:10px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
-                                <div style="width:${(count/doneApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
+                        <div style="display:flex; align-items:center; gap:20px;">
+                            <div style="width:100px; font-size:1.1rem; font-weight:900; color:#555;">${name}</div>
+                            <div style="flex:1; height:12px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
+                                <div style="width:${(count/filteredApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
                             </div>
-                            <div style="width:50px; text-align:right; font-size:0.85rem; font-weight:900; color:var(--gold);">${count}次</div>
+                            <div style="font-size:1.2rem; font-weight:900; color:var(--gold); min-width:40px; text-align:right;">${count}</div>
                         </div>
                     `).join('')}
+                    ${filteredApts.length === 0 ? '<div style="text-align:center; color:#ccc; font-weight:700; padding:20px;">本月尚無成交數據</div>' : ''}
                 </div>
             </div>
 
-            <p style="text-align:center; color:#ccc; font-size:0.75rem; margin-top:50px; font-weight:700;">數據已與雲端資料庫同步</p>
+            <div style="text-align:center; margin-top:30px;">
+               <p style="color:#bbb; font-weight:900; font-size:0.9rem;">總計本月已完成：${filteredApts.length} 課次</p>
+            </div>
         </div>
     `;
 }
