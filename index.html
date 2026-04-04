@@ -159,7 +159,14 @@ const db = firebase.firestore();
     let store = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {
         startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
         stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
-        tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], appointments: [], clients: [], offDays: []
+        tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
+        // --- 這是新增的自定義標籤籃子 ---
+        payTagsDef: [
+            {id: 'L', name: 'Line', color: '#06C755'},
+            {id: 'J', name: '街口', color: '#ED1C24'},
+            {id: 'C', name: '現金', color: '#8B4513'}
+        ],
+        appointments: [], clients: [], offDays: []
     };
 
     // 【重要】鋼鐵核心：必須是 async 才能確保導入成功
@@ -314,13 +321,18 @@ const db = firebase.firestore();
                 const label = `<div style="position:absolute; left:-45px; top:12px; font-size:0.75rem; color:#bbb; font-weight:900;">${t}</div>`;
                 if(matched.length) {
                     row.innerHTML = label + matched.map(a => {
-                        const tagHtml = `<div class="tag-group">
-                            <span class="tag-pill ${a.payTags?.includes('L')?'active-L':''}" onclick="event.stopPropagation(); togglePay('${a.id}','L','🟢','Line','${ds}')">Line</span>
-                            <span class="tag-pill ${a.payTags?.includes('J')?'active-J':''}" onclick="event.stopPropagation(); togglePay('${a.id}','J','🧧','街口','${ds}')">街口</span>
-                            <span class="tag-pill ${a.payTags?.includes('C')?'active-C':''}" onclick="event.stopPropagation(); togglePay('${a.id}','C','💰','現金','${ds}')">現</span>
-                            <span class="tag-pill ${a.payTags?.includes('P')?'active-P':''}" onclick="event.stopPropagation(); togglePay('${a.id}','P','🔹','支付','${ds}')">支</span>
-                            <span class="tag-pill ${a.payTags?.includes('S')?'active-S':''}" onclick="event.stopPropagation(); togglePay('${a.id}','S','📦','販賣','${ds}')">販</span>
-                            <span class="tag-pill ${a.isVIP ? 'active-J' : ''}" style="border: 1px solid var(--gold); color: ${a.isVIP ? '#fff' : 'var(--gold)'}; margin-left: 5px;" onclick="event.stopPropagation(); toggleVIP('${a.id}','${ds}')">${a.isVIP ? '⭐ 指定' : '不指定'}</span>
+                 // --- 【方案四：快捷選單觸發器 (徹底防跳轉 + 數據同步版)】 ---
+                        const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
+                        const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;" 
+                            onclick="event.preventDefault(); event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
+                            ${selectedTags.length > 0 ? 
+                                selectedTags.map(pt => `<span class="tag-pill" style="background:${pt.color}; color:#fff; border:1px solid ${pt.color}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">${pt.name}</span>`).join('') 
+                                : `<span class="tag-pill" style="background:#f0f0f0; color:#aaa; border:1px dashed #ccc; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">+ 點擊記錄狀態</span>`
+                            }
+                            <span class="tag-pill" style="border:1.5px solid var(--gold); color:${a.isVIP ? '#fff' : 'var(--gold)'}; background:${a.isVIP ? 'var(--gold)' : 'transparent'}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;" 
+                                  onclick="event.preventDefault(); event.stopPropagation(); toggleVIP('${a.id}','${ds}')">
+                                ${a.isVIP ? '⭐ 指定' : '不指定'}
+                            </span>
                         </div>`;
                         return `<div class="apt-card ${a.done?'completed':''}" style="--c:${s.color}; margin-left:15px; width:calc(100% - 20px); padding:20px;">
                             ${tagHtml}
@@ -391,13 +403,13 @@ const db = firebase.firestore();
     }
 
 // ==========================================================================
-// --- S7: 系統後台設定與管理維護 (整合搬家功能版) ---
+// --- 【中文導航標籤：設定頁面渲染與雲端管理核心】 ---
 // ==========================================================================
     function renderSet() {
         const container = document.getElementById('set-content-container');
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
-        // 1. 先畫出基礎設定區塊 (0-4號)
+        // 【步驟 A：基礎設定區塊】包含營業時間、排休、人員與項目
         container.innerHTML = `
             <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">0. 營業時間</p><div style="display:flex; gap:25px;"><input type="time" class="luxe-btn" style="flex:1;" value="${store.startH}" onchange="store.startH=this.value;saveS();">至<input type="time" class="luxe-btn" style="flex:1;" value="${store.endH}" onchange="store.endH=this.value;saveS();"></div></div>
             
@@ -406,9 +418,32 @@ const db = firebase.firestore();
             <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">2. 人員管理</p>${store.stylists.map(s => `<div class="luxe-btn" style="width:100%; margin-bottom:15px; justify-content:space-between;"><div style="display:flex; align-items:center; gap:20px;"><div onclick="pickLuxeColor('sty', ${s.id})" style="width:40px; height:40px; border-radius:50%; background:${s.color}; border:3.5px solid #fff;"></div><span>${s.name}</span></div><div style="display:flex; gap:15px;"><i class="fas fa-pen" onclick="editStyTrig(${s.id},'${s.name}')"></i><i class="fas fa-times" style="color:#ff4d4d;" onclick="confirmDelSty(${s.id})"></i></div></div>`).join('')}<div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addStyTrig()">+ 新增人員</div></div>
             
             <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">3. 項目管理</p><div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">${store.tags.map(t => `<div class="luxe-btn" style="height:auto; padding:10px 25px;"><span>${t.name}</span><div style="margin-left:15px; display:flex; gap:12px;"><i class="fas fa-pen" onclick="editTagTrig(${t.id},'${t.name}')"></i><i class="fas fa-times" style="color:#ff4d4d;" onclick="confirmDelTag(${t.id})"></i></div></div>`).join('')}</div><div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addTagTrig()">+ 新增項目</div></div>
-            
+        `;
+
+        // 【步驟 B：自定義支付/狀態標籤管理】(修正空白問題)
+        container.innerHTML += `
             <div style="margin-bottom:60px;">
-                <p style="font-weight:900; color:#888;">4. 雲端授權狀態</p>
+                <p style="font-weight:900; color:#888;">4. 自定義支付/狀態標籤</p>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                    ${(store.payTagsDef || []).map(pt => `
+                        <div class="luxe-btn" style="height:auto; padding:10px 20px; border-color:${pt.color};">
+                            <div onclick="pickTagColor('${pt.id}')" style="width:20px; height:20px; border-radius:50%; background:${pt.color}; margin-right:10px; cursor:pointer;"></div>
+                            <span>${pt.name}</span>
+                            <div style="margin-left:15px; display:flex; gap:12px;">
+                                <i class="fas fa-pen" style="cursor:pointer;" onclick="editPayTag('${pt.id}','${pt.name}')"></i>
+                                <i class="fas fa-times" style="color:#ff4d4d; cursor:pointer;" onclick="delPayTag('${pt.id}')"></i>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addPayTag()">+ 新增標籤項目</div>
+            </div>
+        `;
+
+        // 【步驟 C：雲端狀態與資料搬家】
+        container.innerHTML += `
+            <div style="margin-bottom:60px;">
+                <p style="font-weight:900; color:#888;">5. 雲端授權狀態</p>
                 <div style="background:rgba(212,175,55,0.05); border:1px solid var(--gold); border-radius:30px; padding:25px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-weight:900;">目前店號：</span><span style="color:var(--gold); font-weight:900;">${auth.id}</span></div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><span style="font-weight:900;">授權狀態：</span><span style="color:#06C755; font-weight:900;">● 已激活 (Cloud)</span></div>
@@ -416,26 +451,19 @@ const db = firebase.firestore();
                         <i class="fas fa-redo-alt" style="margin-right:8px;"></i> 更換設備 / 重新激活
                     </div>
                 </div>
-            </div>`;
-
-        // 2. 額外追加「資料搬家」區塊
-        container.innerHTML += `
+            </div>
+            
             <div style="margin-top:40px; padding-top:20px; border-top:1px dashed #eee;">
-                <p style="font-weight:900; color:#888;">5. 資料搬家 (備份與還原)</p>
+                <p style="font-weight:900; color:#888;">6. 資料搬家 (備份與還原)</p>
                 <div style="display:flex; gap:15px;">
-                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()">
-                        <i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份
-                    </button>
-                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()">
-                        <i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份
-                    </button>
+                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()"><i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份</button>
+                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()"><i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份</button>
                 </div>
-                <p style="font-size:0.8rem; color:#aaa; margin-top:10px; text-align:center;">※ 從舊系統導出 JSON 後在此導入即可同步雲端。</p>
             </div>
         `;
     }
 
-    // --- 各項功能的靈魂 (獨立分開，不互相嵌套) ---
+    // --- 各項功能的靈魂 (包含重新激活、導入、導出、標籤管理) ---
 
     // [功能 A] 重新激活
     function reAuth() {
@@ -455,7 +483,7 @@ const db = firebase.firestore();
         });
     }
 
-    // [功能 B] 導入檔案 (放在 reAuth 外面，它是獨立的！)
+    // [功能 B] 導入檔案 (鋼鐵強化版：確保資料飛上雲端才重新整理)
     function triggerLoad() {
         const i = document.createElement('input');
         i.type = 'file';
@@ -491,7 +519,7 @@ const db = firebase.firestore();
         i.click(); 
     }
 
-    // [功能 C] 導出備份 (也是獨立的！)
+    // [功能 C] 導出備份
     function exportToFile() {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(store)], {type: 'application/json'}));
@@ -499,7 +527,63 @@ const db = firebase.firestore();
         a.click();
     }
 
+    // --- 【中文標籤：標籤管理工具 - 負責新增、修改、刪除、變色同步】 ---
+async function addPayTag() {
+    const {value: n} = await Swal.fire({ title: '新增標籤名稱', input: 'text', inputPlaceholder: '例如：信用卡' });
+    if(n) { 
+        if(!store.payTagsDef) store.payTagsDef = [];
+        store.payTagsDef.push({ id: 'PT'+Date.now(), name: n, color: '#D4AF37' }); 
+        await saveS(); renderSet(); 
+    }
+}
+
+async function editPayTag(id, old) {
+    const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
+    if(n) { store.payTagsDef.find(x => x.id === id).name = n; await saveS(); renderSet(); }
+}
+
+function delPayTag(id) {
+    Swal.fire({ title: '確定刪除？', icon: 'warning', showCancelButton: true }).then(async (res) => {
+        if(res.isConfirmed) {
+            store.payTagsDef = store.payTagsDef.filter(x => x.id !== id);
+            await saveS(); renderSet();
+        }
+    });
+}
+
+// --- 【中文導航：標籤選色店員 - 修正抓錯對象問題】 ---
+async function pickTagColor(id) {
+    const pt = store.payTagsDef.find(x => String(x.id) === String(id));
+    if(!pt) return;
+    const { value: res } = await Swal.fire({ 
+        title: '選擇標籤顏色', 
+        html: `<input type="color" id="tag-c-picker" value="${pt.color}" style="width:150px; height:150px;">`, 
+        preConfirm: () => document.getElementById('tag-c-picker').value 
+    });
+    if (res) { 
+        pt.color = res; 
+        await saveS(); 
+        renderSet(); 
+    }
+}
+
+// --- 【中文導航：標籤點擊變色開關 - 鋼鐵同步防跳轉版】 ---
+async function togglePay(aptId, tagId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
     
+    if(!a.payTags) a.payTags = [];
+    const idx = a.payTags.indexOf(tagId);
+    
+    if(idx > -1) {
+        a.payTags.splice(idx, 1); // 熄滅
+    } else {
+        a.payTags.push(tagId); // 點亮
+    }
+    
+    await saveS(); // 等待雲端存檔
+    renderDay(ds); // 重新畫卡片
+}
 
     // --- 工具函數 ---
     async function popCliSearch() { await Swal.fire({ title: '搜尋', html: `<input id="sw-search" class="luxe-btn" style="width:100%;" oninput="searchStored(this, 'sw-box')"><div id="sw-box" class="suggest-box"></div>`, showConfirmButton: false }); }
@@ -517,7 +601,31 @@ const db = firebase.firestore();
     function confirmDelCli(n) { Swal.fire({ title: '刪除顧客？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.clients = store.clients.filter(x => x.n !== n); saveS(); renderCli(); }}); }
     function toggleAptDone(id, ds) { const a = store.appointments.find(x => String(x.id) === String(id)); if(a) { a.done = !a.done; saveS(); renderDay(ds); } }
     function fillStySelect() { const sel = document.getElementById('cli-f-sty'); if(sel) sel.innerHTML = '<option value="">所有設計師</option>' + store.stylists.map(s => `<option value="${s.id}">${s.name}</option>`).join(''); }
-    function initAll() { initMonth(); renderCli(); fillStySelect(); renderSet(); }
+   // --- 中文標籤：修正舊資料結構 (確保標籤預設出現) ---
+function fixStoreStructure() {
+    if (!store.payTagsDef || store.payTagsDef.length === 0) {
+        store.payTagsDef = [
+            {id: 'L', name: 'Line', color: '#06C755'},
+            {id: 'J', name: '街口', color: '#ED1C24'},
+            {id: 'C', name: '現金', color: '#8B4513'}
+        ];
+        saveS();
+    }
+}
+
+// --- 【中文標籤：初始化大腦 - 確保舊標籤同步現身】 ---
+function initAll() {
+    // 如果資料庫沒標籤，就強制補上預設的三個
+    if (!store.payTagsDef || store.payTagsDef.length === 0) {
+        store.payTagsDef = [
+            {id: 'L', name: 'Line', color: '#06C755'},
+            {id: 'J', name: '街口', color: '#ED1C24'},
+            {id: 'C', name: '現金', color: '#8B4513'}
+        ];
+        saveS(); 
+    }
+    initMonth(); renderCli(); fillStySelect(); renderSet(); 
+}
 
 // ==========================================================================
 // --- S8: 鋼鐵門禁與金鑰生成 ---
@@ -642,14 +750,91 @@ function copyKey(text) {
 window.addEventListener('load', () => {
     const mPicker = document.getElementById('m-picker');
     if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
+    
+    fixStoreStructure(); // <--- 補上這行，標籤才會在開機時現身
     initAll();
-    
-    // 改用雲端讀取函式
     pullFromCloud(); 
-    
-    // 檢查授權
     checkLicense(); 
 });
+// --- 中文標籤：標籤管理工具函式 (讓新增/修改標籤按鈕通電) ---
+async function addPayTag() {
+    const {value: n} = await Swal.fire({ title: '新增標籤名稱', input: 'text', inputPlaceholder: '例如：信用卡' });
+    if(n) { 
+        if(!store.payTagsDef) store.payTagsDef = [];
+        store.payTagsDef.push({ id: 'PT'+Date.now(), name: n, color: '#D4AF37' }); 
+        await saveS(); renderSet(); 
+    }
+}
+
+async function editPayTag(id, old) {
+    const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
+    if(n) { store.payTagsDef.find(x => x.id === id).name = n; await saveS(); renderSet(); }
+}
+
+function delPayTag(id) {
+    Swal.fire({ title: '確定刪除標籤？', icon: 'warning', showCancelButton: true }).then(async (res) => {
+        if(res.isConfirmed) {
+            store.payTagsDef = store.payTagsDef.filter(x => x.id !== id);
+            await saveS(); renderSet();
+        }
+    });
+}
+
+async function pickTagColor(id) {
+    const pt = store.payTagsDef.find(x => x.id === id);
+    const { value: res } = await Swal.fire({ title: '選擇標籤顏色', html: `<input type="color" id="sw-c" value="${pt.color}" style="width:150px; height:150px;">`, preConfirm: () => document.getElementById('sw-c').value });
+    if (res) { pt.color = res; await saveS(); renderSet(); }
+}
+
+// --- 【中文導航：標籤選取彈窗大腦 - 支援動態同步、統計紀錄】 ---
+async function popTagPicker(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    if(!a.payTags) a.payTags = [];
+
+    const { value: selectedIds } = await Swal.fire({
+        title: '標記支付狀態',
+        html: `
+            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:20px;">
+                ${(store.payTagsDef || []).map(pt => `
+                    <div class="tag-chip-item ${a.payTags.includes(pt.id) ? 'selected' : ''}" 
+                         id="swal-tag-${pt.id}"
+                         style="border:2px solid ${pt.color}; color:${a.payTags.includes(pt.id) ? '#fff' : pt.color}; background:${a.payTags.includes(pt.id) ? pt.color : 'transparent'}; padding:12px 20px; border-radius:25px; font-weight:900; cursor:pointer; transition: 0.2s;"
+                         onclick="toggleSwalTag('${pt.id}', '${pt.color}')">
+                        ${pt.name}
+                    </div>
+                `).join('')}
+            </div>
+        `,
+        didOpen: () => { window.tmpSelected = [...a.payTags]; },
+        showCancelButton: true,
+        confirmButtonText: '確認存檔',
+        confirmButtonColor: '#D4AF37',
+        preConfirm: () => window.tmpSelected
+    });
+
+    if (selectedIds) {
+        a.payTags = selectedIds;
+        await saveS();    // 同步到雲端
+        renderDay(ds);    // 重新畫出變色後的卡片
+    }
+}
+
+// 輔助店員：點擊彈窗裡的標籤會切換發亮
+function toggleSwalTag(id, color) {
+    window.tmpSelected = window.tmpSelected || [];
+    const el = document.getElementById('swal-tag-' + id);
+    const idx = window.tmpSelected.indexOf(id);
+    if(idx > -1) {
+        window.tmpSelected.splice(idx, 1);
+        el.style.background = 'transparent';
+        el.style.color = color;
+    } else {
+        window.tmpSelected.push(id);
+        el.style.background = color;
+        el.style.color = '#fff';
+    }
+}
 
 </script>
 </body>
