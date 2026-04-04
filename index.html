@@ -64,13 +64,78 @@
             .nav { width: 92%; height: 90px; bottom: 25px; border-radius: 45px; }
             .client-grid-container { grid-template-columns: 1fr; padding: 15px; }
         }
-    </style>
+    /* --- 【V318 專屬空間：設定頁面奢華改造樣式】 --- */
+        .set-drawer-trigger {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 20px; padding: 25px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .set-drawer-trigger:hover {
+            transform: translateY(-3px); background: #fff;
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.1);
+        }
+        .set-drawer-trigger i { font-size: 1.8rem; color: #ccc; transition: color 0.3s; }
+        .set-drawer-trigger:hover i { color: var(--gold); }
+        .add-luxe-btn {
+            width: 100%; height: 60px; background: transparent; border: 2px dashed rgba(212, 175, 55, 0.4);
+            color: var(--gold); border-radius: 15px; font-weight: 900; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .add-luxe-btn:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); border-style: solid; }
+        .luxe-trash-btn { color: #ccc !important; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; padding: 5px; }
+        .luxe-trash-btn:hover { color: #ffcccc !important; transform: scale(1.2); }
+        .luxe-edit-icon { color: #ccc; font-size: 1.2rem; transition: color 0.2s; margin-right: 15px; cursor: pointer; }
+        .luxe-edit-icon:hover { color: var(--gold); }
+        /* --- 【V318 顧客頁面奢華樣式】 --- */
+        .cli-luxe-card {
+            background: #fff; border-radius: 35px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 30px; margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .cli-luxe-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(212,175,55,0.1); }
+        .cli-tag-pill {
+            background: rgba(212,175,55,0.08); color: var(--gold);
+            padding: 6px 15px; border-radius: 12px;
+            font-weight: 900; font-size: 0.9rem;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .cli-history-box {
+            background: #f9f9fb; border-radius: 20px;
+            padding: 20px; margin-top: 15px; border: 1px solid #f0f0f0;
+        }
+        /* --- 【V318 數據儀表板奢華樣式】 --- */
+        .stats-card {
+            background: #fff; border-radius: 30px;
+            padding: 25px; margin-bottom: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            transition: 0.3s;
+        }
+        .stats-bar-container { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 20px; }
+        .stats-bar {
+            flex: 1; background: #f2f2f7; border-radius: 10px 10px 4px 4px;
+            position: relative; overflow: hidden;
+        }
+        .stats-bar-fill {
+            position: absolute; bottom: 0; width: 100%;
+            background: linear-gradient(to top, var(--gold), #f9e39d);
+            border-radius: 10px 10px 4px 4px; height: 0; transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stats-label { font-size: 0.7rem; color: #bbb; text-align: center; margin-top: 8px; font-weight: 900; }
+   </style>
 </head>
 <body>
 
     <div id="pg-res" class="page active">
         <div class="header">
-            <div class="glow-title">專屬空間</div>
+            <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
                 <div class="luxe-btn" onclick="goToday()">今天</div>
                 <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
@@ -96,12 +161,12 @@
     </div>
 
     <div id="pg-cli" class="page">
-        <div class="header">
-            <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客</div>
+       <div class="header">
+            <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
             <div style="display:flex; gap:20px; align-items:center;">
-                <div style="position:relative;"><div class="luxe-btn" onclick="popCliSearch()"><i class="fas fa-search"></i></div><div id="cli-sw-box" class="suggest-box" style="width:350px; right:0;"></div></div>
-                <select id="cli-f-sty" class="luxe-btn" onchange="renderCli()"></select>
-                <div class="luxe-btn" onclick="addCliTrig()" style="font-size:2.2rem; padding:12px 35px;">+</div>
+                <div class="luxe-btn" onclick="popCliSearch()"><i class="fas fa-search"></i></div>
+                <select id="cli-f-sty" class="luxe-btn" onchange="renderCli()" style="width:180px;"></select>
+                <div class="luxe-btn" onclick="addCliTrig()" style="font-size:1.8rem; padding:12px 30px;"><i class="fas fa-user-plus"></i></div>
             </div>
         </div>
         <div class="content-scroll"><div class="client-grid-container" id="cli-list"></div></div>
@@ -216,6 +281,7 @@ const db = firebase.firestore();
         if(id.includes('res')) initMonth(); 
         else if(id==='pg-cli') { fillStySelect(); renderCli(); } 
         else if(id==='pg-set') renderSet(); 
+        else if(id==='pg-stat') renderStats(); // 補這一行
         else if(id==='pg-day') renderDay(curD.toLocaleDateString('sv'));
     }
 
@@ -360,36 +426,48 @@ const db = firebase.firestore();
     }
 
     function renderCli() {
-        const area = document.getElementById('cli-list');
-        const filterSty = document.getElementById('cli-f-sty').value;
-        area.innerHTML = store.clients.filter(c => ((c.n||"").includes(cliKw) || (c.p||"").includes(cliKw)) && (!filterSty || String(c.lastSty) === String(filterSty)))
-            .map(c => {
-                const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
-                const history = store.appointments.filter(a => (a.n === c.n || a.name === c.n) && a.done).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
+    const area = document.getElementById('cli-list');
+    const filterSty = document.getElementById('cli-f-sty').value;
+    
+    area.innerHTML = store.clients.filter(c => ((c.n||"").includes(cliKw) || (c.p||"").includes(cliKw)) && (!filterSty || String(c.lastSty) === String(filterSty)))
+        .map(c => {
+            const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
+            const history = store.appointments.filter(a => (a.n === c.n || a.name === c.n) && a.done).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
 
-                return `<div id="cli-card-${c.n}" class="apt-card" style="margin-bottom:25px; border-left:12px solid ${sty?.color||'#eee'}; padding:30px; border-radius:40px;">
+            return `
+                <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color||'#eee'};">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
-                            <div style="font-weight:900; font-size:2.2rem; margin-bottom:5px;">${c.n}</div>
-                            <div style="display:flex; gap:25px; font-size:1.1rem; color:#666; margin-bottom:10px;"><div>📞 ${c.p||"未設定"}</div><div>🎂 ${c.bm||""}/${c.bd||""}</div></div>
+                            <div style="font-weight:900; font-size:2rem; margin-bottom:10px; letter-spacing:-1px;">${c.n}</div>
+                            <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                                <div class="cli-tag-pill"><i class="fas fa-phone-alt"></i> ${c.p||"未設定"}</div>
+                                <div class="cli-tag-pill"><i class="fas fa-birthday-cake"></i> ${c.bm||"01"}/${c.bd||"01"}</div>
+                            </div>
                         </div>
-                        <div style="background:${sty?.color||'#eee'}; color:${sty?.color==='#1d1d1f'?'#fff':'#1d1d1f'}; padding:8px 18px; border-radius:20px; font-weight:900; font-size:1rem;">👤 ${sty?.name || "未指定"}</div>
+                        <div style="background:${sty?.color||'#eee'}; color:#fff; padding:8px 18px; border-radius:15px; font-weight:900; font-size:0.9rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                           👤 ${sty?.name || "未指定"}
+                        </div>
                     </div>
-                    <div style="background:#fcfcfd; padding:20px; border-radius:25px; border:1px solid #f0f0f0; margin-top:10px;">
-                        <div style="font-size:0.8rem; font-weight:900; color:#bbb; margin-bottom:10px;">最近 3 次預約紀錄</div>
-                        ${history.length ? history.map(h => `<div style="border-bottom:1px dashed #eee; padding:10px 0;">
-                            <div style="display:flex; justify-content:space-between;"><span style="font-weight:900;">📅 ${h.date}</span><span style="color:var(--gold); font-weight:700;">✂️ ${(h.tags||[]).join('+')}</span></div>
-                            <div style="font-size:0.9rem; color:#888; margin-top:5px;">📝 ${h.note_full || "無備註"}</div>
-                        </div>`).join('') : '<div style="color:#ccc;">尚無紀錄</div>'}
+
+                    <div class="cli-history-box">
+                        <div style="font-size:0.8rem; font-weight:900; color:#bbb; margin-bottom:12px; letter-spacing:1px;">RECENT HISTORY</div>
+                        ${history.length ? history.map(h => `
+                            <div style="border-bottom:1px dashed #eee; padding:12px 0; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:900; font-size:1rem; color:#1d1d1f;">📅 ${h.date}</div>
+                                    <div style="font-size:0.85rem; color:#888; margin-top:4px;">📝 ${h.note_full || "無備註"}</div>
+                                </div>
+                                <div style="color:var(--gold); font-weight:900; font-size:0.9rem;">✂️ ${(h.tags||[]).join('+')}</div>
+                            </div>`).join('') : '<div style="color:#ccc; font-weight:700;">目前尚未有成交紀錄</div>'}
                     </div>
-                    <div style="display:flex; justify-content:flex-end; gap:25px; margin-top:20px;">
-                        <i class="fas fa-pen" style="color:#ccc; font-size:1.2rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
-                        <i class="fas fa-trash-alt" style="color:rgba(255,0,0,0.1); font-size:1.2rem; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
+
+                    <div style="display:flex; justify-content:flex-end; gap:20px; margin-top:20px;">
+                        <i class="fas fa-ruler-combined luxe-edit-icon" style="font-size:1.2rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
+                        <i class="far fa-trash-alt luxe-trash-btn" style="font-size:1.2rem; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
                     </div>
                 </div>`;
-            }).join('');
-    }
-
+        }).join('');
+}
     function searchStored(el, boxId) {
         const val = el.value.trim(); const box = document.getElementById(boxId);
         if(!val) { box.style.display='none'; return; }
@@ -403,66 +481,203 @@ const db = firebase.firestore();
     }
 
 // ==========================================================================
-// --- 【中文導航標籤：設定頁面渲染與雲端管理核心】 ---
+// --- 【V318 專屬空間：設定頁面奢華大腦 - 終極整合版】 ---
 // ==========================================================================
-    function renderSet() {
-        const container = document.getElementById('set-content-container');
-        const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
+function renderSet() {
+    const container = document.getElementById('set-content-container');
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
-        // 【步驟 A：基礎設定區塊】包含營業時間、排休、人員與項目
-        container.innerHTML = `
-            <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">0. 營業時間</p><div style="display:flex; gap:25px;"><input type="time" class="luxe-btn" style="flex:1;" value="${store.startH}" onchange="store.startH=this.value;saveS();">至<input type="time" class="luxe-btn" style="flex:1;" value="${store.endH}" onchange="store.endH=this.value;saveS();"></div></div>
-            
-            <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">1. 排休設定</p><div style="display:flex; align-items:center; gap:20px;"><div class="luxe-btn" onclick="pickOffMulti()" style="flex:1;">選擇月份與日期</div><div onclick="pickLuxeColor('off')" style="width:65px; height:65px; border-radius:50%; background:${store.offColor}; border:4px solid #fff;"></div></div></div>
-            
-            <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">2. 人員管理</p>${store.stylists.map(s => `<div class="luxe-btn" style="width:100%; margin-bottom:15px; justify-content:space-between;"><div style="display:flex; align-items:center; gap:20px;"><div onclick="pickLuxeColor('sty', ${s.id})" style="width:40px; height:40px; border-radius:50%; background:${s.color}; border:3.5px solid #fff;"></div><span>${s.name}</span></div><div style="display:flex; gap:15px;"><i class="fas fa-pen" onclick="editStyTrig(${s.id},'${s.name}')"></i><i class="fas fa-times" style="color:#ff4d4d;" onclick="confirmDelSty(${s.id})"></i></div></div>`).join('')}<div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addStyTrig()">+ 新增人員</div></div>
-            
-            <div style="margin-bottom:60px;"><p style="font-weight:900; color:#888;">3. 項目管理</p><div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">${store.tags.map(t => `<div class="luxe-btn" style="height:auto; padding:10px 25px;"><span>${t.name}</span><div style="margin-left:15px; display:flex; gap:12px;"><i class="fas fa-pen" onclick="editTagTrig(${t.id},'${t.name}')"></i><i class="fas fa-times" style="color:#ff4d4d;" onclick="confirmDelTag(${t.id})"></i></div></div>`).join('')}</div><div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addTagTrig()">+ 新增項目</div></div>
-        `;
-
-        // 【步驟 B：自定義支付/狀態標籤管理】(修正空白問題)
-        container.innerHTML += `
-            <div style="margin-bottom:60px;">
-                <p style="font-weight:900; color:#888;">4. 自定義支付/狀態標籤</p>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    ${(store.payTagsDef || []).map(pt => `
-                        <div class="luxe-btn" style="height:auto; padding:10px 20px; border-color:${pt.color};">
-                            <div onclick="pickTagColor('${pt.id}')" style="width:20px; height:20px; border-radius:50%; background:${pt.color}; margin-right:10px; cursor:pointer;"></div>
-                            <span>${pt.name}</span>
-                            <div style="margin-left:15px; display:flex; gap:12px;">
-                                <i class="fas fa-pen" style="cursor:pointer;" onclick="editPayTag('${pt.id}','${pt.name}')"></i>
-                                <i class="fas fa-times" style="color:#ff4d4d; cursor:pointer;" onclick="delPayTag('${pt.id}')"></i>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="luxe-btn" style="width:100%; border:1px dashed var(--gold); background:transparent; color:var(--gold);" onclick="addPayTag()">+ 新增標籤項目</div>
+    container.innerHTML = `
+        <div style="padding-top:20px;">
+           <div class="set-drawer-trigger" onclick="popRenameStore()">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <i class="fas fa-store"></i><div style="font-weight:900;"># 品牌名稱設定</div>
             </div>
-        `;
+            <div style="color:var(--gold); font-weight:900;">${store.storeName || '專屬空間'}</div>
+        </div>
 
-        // 【步驟 C：雲端狀態與資料搬家】
-        container.innerHTML += `
-            <div style="margin-bottom:60px;">
-                <p style="font-weight:900; color:#888;">5. 雲端授權狀態</p>
-                <div style="background:rgba(212,175,55,0.05); border:1px solid var(--gold); border-radius:30px; padding:25px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font-weight:900;">目前店號：</span><span style="color:var(--gold); font-weight:900;">${auth.id}</span></div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><span style="font-weight:900;">授權狀態：</span><span style="color:#06C755; font-weight:900;">● 已激活 (Cloud)</span></div>
-                    <div class="luxe-btn" style="width:100%; height:50px; font-size:1rem; background:#ffefef; border:1.5px solid #ff4d4d; color:#ff4d4d;" onclick="reAuth()">
-                        <i class="fas fa-redo-alt" style="margin-right:8px;"></i> 更換設備 / 重新激活
+            <div class="set-drawer-trigger" onclick="popOffDayDrawer()">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fas fa-calendar-times"></i><div style="font-weight:900;">1. 店舖排休與配色</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:20px; height:20px; border-radius:50%; background:${store.offColor}; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.1);"></div>
+                    <div style="color:#aaa; font-weight:700;">${(store.offDays || []).length} 天</div>
+                </div>
+            </div>
+
+            <div class="set-drawer-trigger" onclick="popStyDrawer()">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fas fa-user-tie"></i><div style="font-weight:900;">2. 設計師團隊管理</div>
+                </div>
+                <div style="color:#aaa; font-weight:700;">${store.stylists.length} 位成員</div>
+            </div>
+
+            <div class="set-drawer-trigger" onclick="popTagDrawer()">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fas fa-concierge-bell"></i><div style="font-weight:900;">3. 服務項目管理</div>
+                </div>
+                <div style="color:#aaa; font-weight:700;">${store.tags.length} 個項目</div>
+            </div>
+
+            <div class="set-drawer-trigger" onclick="popPayTagDrawer()">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fas fa-wallet"></i><div style="font-weight:900;">4. 自定義支付標籤</div>
+                </div>
+                <div style="color:#aaa; font-weight:700;">${(store.payTagsDef||[]).length} 種標籤</div>
+            </div>
+
+            <div style="margin-top:60px; padding-top:30px; border-top:1px dashed #eee;">
+                <p style="font-weight:900; color:#888; margin-bottom:20px;"># 雲端同步與數據安全</p>
+                
+                <div style="background:rgba(212,175,55,0.05); border:1px solid rgba(212,175,55,0.2); border-radius:30px; padding:25px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-weight:900;">目前店號：</span>
+                        <span style="color:var(--gold); font-weight:900;">${auth.id}</span>
                     </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                        <span style="font-weight:900;">雲端狀態：</span>
+                        <span style="color:#06C755; font-weight:900;">● 已激活 (Cloud)</span>
+                    </div>
+                    <button class="luxe-btn" style="width:100%; height:50px; background:#ffefef; color:#ff4d4d; border:none; margin-top:10px; font-size:1rem;" onclick="reAuth()">
+                        <i class="fas fa-redo-alt" style="margin-right:8px;"></i> 更換設備 / 重新激活
+                    </button>
                 </div>
-            </div>
-            
-            <div style="margin-top:40px; padding-top:20px; border-top:1px dashed #eee;">
-                <p style="font-weight:900; color:#888;">6. 資料搬家 (備份與還原)</p>
+                
                 <div style="display:flex; gap:15px;">
-                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="exportToFile()"><i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份</button>
-                    <button class="luxe-btn" style="flex:1; height:50px; font-size:1rem; background:#f2f2f7;" onclick="triggerLoad()"><i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份</button>
+                    <button class="luxe-btn" style="flex:1; background:#f2f2f7; height:55px; font-size:1rem;" onclick="exportToFile()">
+                        <i class="fas fa-file-download" style="margin-right:8px;"></i> 導出備份
+                    </button>
+                    <button class="luxe-btn" style="flex:1; background:#f2f2f7; height:55px; font-size:1rem;" onclick="triggerLoad()">
+                        <i class="fas fa-file-upload" style="margin-right:8px;"></i> 導入備份
+                    </button>
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
+// --- 【配套：排休抽屜大腦 - 解決按鈕不起作用問題】 ---
+function popOffDayDrawer() {
+    Swal.fire({
+        title: '店舖排休設定',
+        html: `
+            <div style="padding:20px;">
+                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid;" onclick="pickOffMulti()">
+                    <i class="fas fa-calendar-plus"></i> 選擇月份與日期
+                </div>
+                <div class="add-luxe-btn" style="border-style:solid;" onclick="pickLuxeColor('off')">
+                    <i class="fas fa-palette"></i> 修改休假格顏色
+                </div>
+                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 點擊上方按鈕即可進行詳細設定 )</p>
+            </div>
+        `,
+        showConfirmButton: false
+    });
+}
+// 2. 設計師團隊管理抽屜
+function popStyDrawer() {
+    Swal.fire({
+        title: '設計師團隊管理',
+        html: `<div style="padding:10px;">
+                ${store.stylists.map(s => `
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px; background:#f9f9fb; border-radius:15px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div onclick="pickLuxeColor('sty', ${s.id})" style="width:30px; height:30px; border-radius:50%; background:${s.color}; cursor:pointer; border:2.5px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
+                            <span style="font-weight:900;">${s.name}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <i class="fas fa-ruler-combined luxe-edit-icon" onclick="editStyTrig(${s.id},'${s.name}')"></i>
+                            <i class="far fa-trash-alt luxe-trash-btn" onclick="confirmDelSty(${s.id})"></i>
+                        </div>
+                    </div>`).join('')}
+                <button class="add-luxe-btn" style="margin-top:10px;" onclick="addStyTrig()">+ 新增團隊成員</button>
+            </div>`, showConfirmButton: false
+    });
+}
+
+// 3. 服務項目管理抽屜
+function popTagDrawer() {
+    Swal.fire({
+        title: '服務項目管理',
+        html: `<div style="padding:10px;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;">
+                    ${store.tags.map(t => `
+                        <div style="display:flex; align-items:center; background:#f9f9fb; padding:10px 18px; border-radius:15px; border:1px solid #eee;">
+                            <span style="font-weight:900; margin-right:12px;">${t.name}</span>
+                            <i class="fas fa-ruler-combined luxe-edit-icon" style="font-size:0.9rem;" onclick="editTagTrig(${t.id},'${t.name}')"></i>
+                            <i class="far fa-trash-alt luxe-trash-btn" style="font-size:0.9rem;" onclick="confirmDelTag(${t.id})"></i>
+                        </div>`).join('')}
+                </div>
+                <button class="add-luxe-btn" onclick="addTagTrig()">+ 新增服務項目</button>
+            </div>`, showConfirmButton: false
+    });
+}
+
+// 4. 自定義支付標籤抽屜
+function popPayTagDrawer() {
+    Swal.fire({
+        title: '支付標籤管理',
+        html: `<div style="padding:10px;">
+                ${(store.payTagsDef || []).map(pt => `
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px; background:#f9f9fb; border-radius:15px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div onclick="pickTagColor('${pt.id}')" style="width:25px; height:25px; border-radius:50%; background:${pt.color}; cursor:pointer; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
+                            <span style="font-weight:900;">${pt.name}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <i class="fas fa-ruler-combined luxe-edit-icon" onclick="editPayTag('${pt.id}','${pt.name}')"></i>
+                            <i class="far fa-trash-alt luxe-trash-btn" onclick="delPayTag('${pt.id}')"></i>
+                        </div>
+                    </div>`).join('')}
+                <button class="add-luxe-btn" style="margin-top:10px;" onclick="addPayTag()">+ 新增支付標籤</button>
+            </div>`, showConfirmButton: false
+    });
+}
+
+// 0. 營業時間抽屜
+function popTimeDrawer() {
+    Swal.fire({
+        title: '營業時間設定',
+        html: `<div style="display:flex; align-items:center; gap:15px; padding:20px;">
+                <input type="time" class="luxe-btn" id="new-startH" value="${store.startH}" style="flex:1;">
+                <span style="font-weight:900; color:#ccc;">至</span>
+                <input type="time" class="luxe-btn" id="new-endH" value="${store.endH}" style="flex:1;">
+               </div>`,
+        confirmButtonText: '確認儲存', confirmButtonColor: '#D4AF37',
+        showCancelButton: true,
+        preConfirm: () => ({ start: document.getElementById('new-startH').value, end: document.getElementById('new-endH').value })
+    }).then(r => { if(r.value){ store.startH=r.value.start; store.endH=r.value.end; saveS(); renderSet(); } });
+}
+// --- 【品牌自定義大腦：一鍵更名系統】 ---
+async function popRenameStore() {
+    const { value: newName } = await Swal.fire({
+        title: '自定義品牌名稱',
+        input: 'text',
+        inputValue: store.storeName || '專屬空間',
+        inputPlaceholder: '請輸入您的店名',
+        showCancelButton: true,
+        confirmButtonText: '確認更名',
+        confirmButtonColor: '#D4AF37',
+        cancelButtonText: '取消'
+    });
+
+    if (newName) {
+        store.storeName = newName;
+        await saveS();      // 1. 同步到雲端與本機
+        updateStoreUI();    // 2. 立即刷新左上角的招牌字
+        renderSet();        // 3. 重新畫設定頁面，更新方塊裡的字
+        Swal.fire({ icon: 'success', title: '品牌更名成功！', timer: 1000, showConfirmButton: false });
+    }
+}
+
+// 刷新全站店名圖標的工具
+function updateStoreUI() {
+    const name = store.storeName || '專屬空間';
+    const el = document.getElementById('main-store-name');
+    if (el) el.innerText = name;
+    document.title = name + " V318"; // 連瀏覽器分頁標題也一起換掉
+}
     // --- 各項功能的靈魂 (包含重新激活、導入、導出、標籤管理) ---
 
     // [功能 A] 重新激活
@@ -753,9 +968,99 @@ window.addEventListener('load', () => {
     
     fixStoreStructure(); // <--- 補上這行，標籤才會在開機時現身
     initAll();
-    pullFromCloud(); 
+    updateStoreUI(); // <-- 補這一行
+    pullFromCloud();
     checkLicense(); 
 });
+// ==========================================================================
+// --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
+// ==========================================================================
+function renderStats() {
+    const area = document.getElementById('pg-stat').querySelector('.content-scroll');
+    const doneApts = store.appointments.filter(a => a.done);
+    
+    // 1. 初始化數據容器
+    const weekData = [0,0,0,0,0,0,0]; // 日~六
+    const hourData = Array(15).fill(0); // 8點~22點
+    const tagCounts = {};
+
+    // 2. 執行大數據掃描
+    doneApts.forEach(a => {
+        // 週熱度
+        const d = new Date(a.date);
+        weekData[d.getDay()]++;
+        // 時段熱度
+        const h = parseInt((a.time||"00").split(':')[0]);
+        if(h >= 8 && h <= 22) hourData[h-8]++;
+        // 標籤佔比
+        (a.payTags || []).forEach(tId => {
+            const tName = (store.payTagsDef.find(x=>x.id===tId)||{}).name || "未知";
+            tagCounts[tName] = (tagCounts[tName] || 0) + 1;
+        });
+    });
+
+    const maxW = Math.max(...weekData, 1);
+    const maxH = Math.max(...hourData, 1);
+
+    area.innerHTML = `
+        <div style="padding:45px;">
+            <p style="font-weight:900; color:#888; margin-bottom:25px; letter-spacing:1px;"># 經營數據儀表板</p>
+
+            <div class="stats-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div style="font-weight:900;"><i class="fas fa-chart-bar" style="color:var(--gold); margin-right:10px;"></i>週預約分佈</div>
+                    <div style="background:rgba(212,175,55,0.1); color:var(--gold); padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:900;">
+                        熱點：週${['日','一','二','三','四','五','六'][weekData.indexOf(maxW)]}
+                    </div>
+                </div>
+                <div class="stats-bar-container">
+                    ${weekData.map((v, i) => `
+                        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+                            <div class="stats-bar" style="width:100%; height:100px;">
+                                <div class="stats-bar-fill" style="height:${(v/maxW)*100}%"></div>
+                            </div>
+                            <div class="stats-label">${['日','一','二','三','四','五','六'][i]}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div style="font-weight:900;"><i class="fas fa-clock" style="color:var(--gold); margin-right:10px;"></i>時段高峰熱力</div>
+                    <div style="color:#aaa; font-size:0.75rem; font-weight:900;">尖峰時段：${hourData.indexOf(maxH)+8}點</div>
+                </div>
+                <div class="stats-bar-container" style="gap:4px;">
+                    ${hourData.map((v, i) => `
+                        <div class="stats-bar" style="height:80px;">
+                            <div class="stats-bar-fill" style="height:${(v/maxH)*100}%; opacity:0.8;"></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; color:#ccc; font-size:0.65rem; font-weight:900;">
+                    <span>08:00</span><span>15:00</span><span>22:00</span>
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div style="font-weight:900; margin-bottom:25px;"><i class="fas fa-tags" style="color:var(--gold); margin-right:10px;"></i>客群與標籤統計</div>
+                <div style="display:flex; flex-direction:column; gap:18px;">
+                    ${Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <div style="width:85px; font-size:0.85rem; font-weight:900; color:#555; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</div>
+                            <div style="flex:1; height:10px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
+                                <div style="width:${(count/doneApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
+                            </div>
+                            <div style="width:50px; text-align:right; font-size:0.85rem; font-weight:900; color:var(--gold);">${count}次</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <p style="text-align:center; color:#ccc; font-size:0.75rem; margin-top:50px; font-weight:700;">數據已與雲端資料庫同步</p>
+        </div>
+    `;
+}
 // --- 中文標籤：標籤管理工具函式 (讓新增/修改標籤按鈕通電) ---
 async function addPayTag() {
     const {value: n} = await Swal.fire({ title: '新增標籤名稱', input: 'text', inputPlaceholder: '例如：信用卡' });
