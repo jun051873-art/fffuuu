@@ -148,6 +148,15 @@
             padding: 15px 25px; font-weight: 900; font-size: 1.2rem; color: var(--primary);
             margin-bottom: 30px; appearance: none; text-align: center;
         }
+   /* --- 【V318 開單頁面性別切換鈕】 --- */
+        .gender-btn {
+            flex: 1; height: 50px; border-radius: 20px;
+            border: 2px solid #f2f2f7; background: #f2f2f7;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; color: #ccc; cursor: pointer; transition: 0.3s;
+        }
+        .gender-btn.active-boy { background: #fff; border-color: #007AFF; color: #007AFF; box-shadow: 0 4px 10px rgba(0,122,255,0.1); }
+        .gender-btn.active-girl { background: #fff; border-color: #FF2D55; color: #FF2D55; box-shadow: 0 4px 10px rgba(255,45,85,0.1); }
 
    </style>
 </head>
@@ -337,7 +346,15 @@ const db = firebase.firestore();
         const { value: res } = await Swal.fire({
             title: editId ? '修改預約' : '新增預約', width: '85%',
             html: `
-                <div style="position:relative; margin-bottom:15px;"><input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.5rem; border-radius:30px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')"><div id="pop-box" class="suggest-box"></div></div>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="flex:2; position:relative;">
+                        <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.5rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
+                        <div id="pop-box" class="suggest-box"></div>
+                    </div>
+                    <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" onclick="setSex('M')">♂ 男</div>
+                    <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" onclick="setSex('F')">♀ 女</div>
+                </div>
+                <input type="hidden" id="pop-sex" value="${apt?.sex || ''}">
                 <input id="pop-p" class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:30px;" value="${p}" placeholder="電話號碼">
                 <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
                     <select id="pop-s" class="luxe-btn" style="flex:1.5; border-radius:30px;">${store.stylists.map(s=>`<option value="${s.id}" ${String(s.id)===String(sId||1)?'selected':''}>${s.name}</option>`).join('')}</select>
@@ -348,12 +365,18 @@ const db = firebase.firestore();
                 <div id="pop-tg-dr" class="drawer-content">${store.tags.map(t=>`<div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" onclick="this.classList.toggle('selected'); const i=tempTags.indexOf('${t.name}'); if(i>-1) tempTags.splice(i,1); else tempTags.push('${t.name}')">${t.name}</div>`).join('')}</div>
                 <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin: 15px 0;"><input type="checkbox" id="pop-save-cli" style="width:22px; height:22px; accent-color:var(--gold);" ${editId?'disabled':'checked'}><label for="pop-save-cli" style="font-weight:900; color:var(--gold); font-size:1.1rem;">同步存至顧客名冊</label></div>
                 <div style="display:flex; gap:10px;"><input id="pop-d" class="luxe-btn" type="date" style="flex:1.5; border-radius:30px;" value="${apt?apt.date:curD.toLocaleDateString('sv')}"><input id="pop-t" class="luxe-btn" type="time" style="flex:1; border-radius:30px;" value="${apt?apt.time:'12:00'}"></div>`,
-            preConfirm: () => ({ n: document.getElementById('pop-n').value, p: document.getElementById('pop-p').value, styId: document.getElementById('pop-s').value, c: document.getElementById('pop-c').value, note: document.getElementById('pop-note').value, d: document.getElementById('pop-d').value, t: document.getElementById('pop-t').value, saveCli: document.getElementById('pop-save-cli').checked })
+            preConfirm: () => ({ n: document.getElementById('pop-n').value, sex: document.getElementById('pop-sex').value, p: document.getElementById('pop-p').value, styId: document.getElementById('pop-s').value, c: document.getElementById('pop-c').value, note: document.getElementById('pop-note').value, d: document.getElementById('pop-d').value, t: document.getElementById('pop-t').value, saveCli: document.getElementById('pop-save-cli').checked })
         });
+
         if (res && res.n) {
-            const data = { id: editId || String(Date.now()), n: res.n, p: res.p, styId: res.styId, c: res.c, note_full: res.note, date: res.d, time: res.t, tags: [...tempTags], done: apt?apt.done:false, payTags: apt?apt.payTags:[] };
+            const data = { id: editId || String(Date.now()), n: res.n, sex: res.sex, p: res.p, styId: res.styId, c: res.c, note_full: res.note, date: res.d, time: res.t, tags: [...tempTags], done: apt?apt.done:false, payTags: apt?apt.payTags:[] };
             if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
-            else { store.appointments.push(data); if(res.saveCli && !store.clients.find(c => (c.n||c.name) === res.n)) store.clients.push({ n: res.n, p: res.p, lastSty: res.styId, bm: '', bd: '', note: res.note }); }
+            else { 
+                store.appointments.push(data); 
+                if(res.saveCli && !store.clients.find(c => (c.n||c.name) === res.n)) {
+                    store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm: '', bd: '', note: res.note }); 
+                }
+            }
             saveS(); renderDay(res.d);
             if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
         }
@@ -449,44 +472,60 @@ const db = firebase.firestore();
     const area = document.getElementById('cli-list');
     const filterSty = document.getElementById('cli-f-sty').value;
     
-    area.innerHTML = store.clients.filter(c => ((c.n||"").includes(cliKw) || (c.p||"").includes(cliKw)) && (!filterSty || String(c.lastSty) === String(filterSty)))
-        .map(c => {
-            const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
-            const history = store.appointments.filter(a => (a.n === c.n || a.name === c.n) && a.done).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
+    // 1. 過濾邏輯：關鍵字搜尋 + 設計師篩選
+    const filteredClients = store.clients.filter(c => 
+        ((c.n || "").includes(cliKw) || (c.p || "").includes(cliKw)) && 
+        (!filterSty || String(c.lastSty) === String(filterSty))
+    );
 
-            return `
-                <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color||'#eee'};">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
-                            <div style="font-weight:900; font-size:2rem; margin-bottom:10px; letter-spacing:-1px;">${c.n}</div>
-                            <div style="display:flex; gap:15px; flex-wrap:wrap;">
-                                <div class="cli-tag-pill"><i class="fas fa-phone-alt"></i> ${c.p||"未設定"}</div>
-                                <div class="cli-tag-pill"><i class="fas fa-birthday-cake"></i> ${c.bm||"01"}/${c.bd||"01"}</div>
+    area.innerHTML = filteredClients.map(c => {
+        // 2. 抓取該顧客對應的設計師資訊
+        const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
+        
+        // 3. 掃描成交歷史：只抓「已完成」的前三筆
+        const history = store.appointments
+            .filter(a => (a.n === c.n || a.name === c.n) && a.done)
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 3);
+
+        return `
+            <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color || '#eee'};">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div style="font-weight:900; font-size:2rem; margin-bottom:10px; letter-spacing:-1px; display:flex; align-items:center; gap:12px;">
+                            ${c.n}
+                            <span style="font-size:1.3rem; display:flex; align-items:center;">
+                                ${c.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (c.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                            <div class="cli-tag-pill"><i class="fas fa-phone-alt"></i> ${c.p || "未設定"}</div>
+                            <div class="cli-tag-pill"><i class="fas fa-birthday-cake"></i> ${c.bm || "01"}/${c.bd || "01"}</div>
+                        </div>
+                    </div>
+                    <div style="background:${sty?.color || '#eee'}; color:#fff; padding:8px 18px; border-radius:15px; font-weight:900; font-size:0.9rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                       👤 ${sty?.name || "未指定"}
+                    </div>
+                </div>
+
+                <div class="cli-history-box">
+                    <div style="font-size:0.8rem; font-weight:900; color:#bbb; margin-bottom:12px; letter-spacing:1px;">RECENT HISTORY</div>
+                    ${history.length ? history.map(h => `
+                        <div style="border-bottom:1px dashed #eee; padding:12px 0; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-weight:900; font-size:1rem; color:#1d1d1f;">📅 ${h.date}</div>
+                                <div style="font-size:0.85rem; color:#888; margin-top:4px;">📝 ${h.note_full || "無備註"}</div>
                             </div>
-                        </div>
-                        <div style="background:${sty?.color||'#eee'}; color:#fff; padding:8px 18px; border-radius:15px; font-weight:900; font-size:0.9rem; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-                           👤 ${sty?.name || "未指定"}
-                        </div>
-                    </div>
+                            <div style="color:var(--gold); font-weight:900; font-size:0.9rem;">✂️ ${(h.tags || []).join('+')}</div>
+                        </div>`).join('') : '<div style="color:#ccc; font-weight:700; padding:10px 0;">目前尚未有成交紀錄</div>'}
+                </div>
 
-                    <div class="cli-history-box">
-                        <div style="font-size:0.8rem; font-weight:900; color:#bbb; margin-bottom:12px; letter-spacing:1px;">RECENT HISTORY</div>
-                        ${history.length ? history.map(h => `
-                            <div style="border-bottom:1px dashed #eee; padding:12px 0; display:flex; justify-content:space-between; align-items:center;">
-                                <div>
-                                    <div style="font-weight:900; font-size:1rem; color:#1d1d1f;">📅 ${h.date}</div>
-                                    <div style="font-size:0.85rem; color:#888; margin-top:4px;">📝 ${h.note_full || "無備註"}</div>
-                                </div>
-                                <div style="color:var(--gold); font-weight:900; font-size:0.9rem;">✂️ ${(h.tags||[]).join('+')}</div>
-                            </div>`).join('') : '<div style="color:#ccc; font-weight:700;">目前尚未有成交紀錄</div>'}
-                    </div>
-
-                    <div style="display:flex; justify-content:flex-end; gap:20px; margin-top:20px;">
-                        <i class="fas fa-ruler-combined luxe-edit-icon" style="font-size:1.2rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
-                        <i class="far fa-trash-alt luxe-trash-btn" style="font-size:1.2rem; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
-                    </div>
-                </div>`;
-        }).join('');
+                <div style="display:flex; justify-content:flex-end; gap:20px; margin-top:20px;">
+                    <i class="fas fa-ruler-combined luxe-edit-icon" style="font-size:1.2rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
+                    <i class="far fa-trash-alt luxe-trash-btn" style="font-size:1.2rem; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
+                </div>
+            </div>`;
+    }).join('');
 }
     function searchStored(el, boxId) {
         const val = el.value.trim(); const box = document.getElementById(boxId);
@@ -823,12 +862,32 @@ async function togglePay(aptId, tagId, ds) {
     // --- 工具函數 ---
     async function popCliSearch() { await Swal.fire({ title: '搜尋', html: `<input id="sw-search" class="luxe-btn" style="width:100%;" oninput="searchStored(this, 'sw-box')"><div id="sw-box" class="suggest-box"></div>`, showConfirmButton: false }); }
     async function addCliTrig() { const { value: r } = await Swal.fire({ title: '新增顧客', html: `<input id="cn" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" placeholder="姓名"><input id="cp" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" placeholder="電話"><select id="cs" class="luxe-btn" style="width:100%;border-radius:30px;">${store.stylists.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select><div style="display:flex; gap:5px; justify-content:center; align-items:center; margin-top:20px;"><span style="font-weight:900;">🎂</span><input id="cm" class="shield-input" type="text" placeholder="月"> / <input id="cd" class="shield-input" type="text" placeholder="日"></div>`, preConfirm: () => ({ n: document.getElementById('cn').value, p: document.getElementById('cp').value, s: document.getElementById('cs').value, m: document.getElementById('cm').value, d: document.getElementById('cd').value }) }); if (r && r.n) { store.clients.push({ n: r.n, p: r.p, lastSty: r.s, bm: r.m, bd: r.d }); saveS(); renderCli(); } }
-    async function editCli(oldN) { const c = store.clients.find(x => x.n === oldN); const { value: r } = await Swal.fire({ title: '修改資料', html: `<input id="en" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.n}"><input id="ep" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.p}"><select id="es" class="luxe-btn" style="width:100%;border-radius:30px;">${store.stylists.map(s=>`<option value="${s.id}" ${String(s.id)===String(c.lastSty)?'selected':''}>${s.name}</option>`).join('')}</select><div style="display:flex; gap:5px; justify-content:center; align-items:center; margin-top:20px;"><span style="font-weight:900;">🎂</span><input id="em" class="shield-input" value="${c.bm||''}" type="text"> / <input id="ed" class="shield-input" value="${c.bd||''}" type="text"></div>`, preConfirm: () => ({ n: document.getElementById('en').value, p: document.getElementById('ep').value, s: document.getElementById('es').value, m: document.getElementById('em').value, d: document.getElementById('ed').value }) }); if (r) { Object.assign(c, { n:r.n, p:r.p, lastSty:r.s, bm:r.m, bd:r.d }); saveS(); renderCli(); } }
-    async function pickLuxeColor(type, id = null) { const cur = type === 'off' ? store.offColor : store.stylists.find(x => x.id == id).color; const { value: res } = await Swal.fire({ title: '選色', html: `<input type="color" id="sw-c" value="${cur}" style="width:150px; height:150px;">`, showCancelButton: true, preConfirm: () => document.getElementById('sw-c').value }); if (res) { if(type === 'off') store.offColor = res; else store.stylists.find(x => x.id == id).color = res; saveS(); renderSet(); initMonth(); } }
-    async function pickOffMulti() { const { value: month } = await Swal.fire({ title: '選擇月份', input: 'month', showCancelButton: true }); if (!month) return; await Swal.fire({ title: `${month} 排休設定`, html: '<div id="sw-cal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;"></div>', didOpen: () => { const g = document.getElementById('sw-cal'); const pick = new Date(month + "-01"); const year = pick.getFullYear(), m = pick.getMonth(); const days = new Date(year, m+1, 0).getDate(); for(let d=1; d<=days; d++) { const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const el = document.createElement('div'); el.innerText = d; el.style.padding = "10px"; el.style.background = store.offDays.includes(ds) ? store.offColor : "#fff"; el.style.border = "1px solid #eee"; el.onclick = () => { const i = store.offDays.indexOf(ds); if(i>-1) store.offDays.splice(i,1); else store.offDays.push(ds); saveS(); el.style.background = store.offDays.includes(ds) ? store.offColor : "#fff"; initMonth(); }; g.appendChild(el); } }}); }
-    async function editStyTrig(id, old) { const {value:n}=await Swal.fire({title:'更名', input:'text', inputValue:old}); if(n){store.stylists.find(x=>x.id==id).name=n; saveS(); renderSet();} }
-    async function addStyTrig() { const {value:n}=await Swal.fire({title:'姓名', input:'text'}); if(n){store.stylists.push({id:Date.now(), name:n, color:'#D4AF37'}); saveS(); renderSet();} }
-    async function editTagTrig(id, old) { const {value:n}=await Swal.fire({title:'修改項目', input:'text', inputValue:old}); if(n){store.tags.find(x=>x.id==id).name=n; saveS(); renderSet();} }
+    async function editCli(oldN) {
+        const c = store.clients.find(x => x.n === oldN);
+        const { value: r } = await Swal.fire({
+            title: '修改顧客資料',
+            html: `
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="flex:2;"><input id="en" class="luxe-btn" style="width:100%; border-radius:25px;" value="${c.n}"></div>
+                    <div id="boy-btn" class="gender-btn ${c.sex === 'M' ? 'active-boy' : ''}" onclick="setSex('M')">♂ 男</div>
+                    <div id="girl-btn" class="gender-btn ${c.sex === 'F' ? 'active-girl' : ''}" onclick="setSex('F')">♀ 女</div>
+                </div>
+                <input type="hidden" id="pop-sex" value="${c.sex || ''}">
+                <input id="ep" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.p}">
+                <select id="es" class="luxe-btn" style="width:100%;border-radius:30px;">
+                    ${store.stylists.map(s=>`<option value="${s.id}" ${String(s.id)===String(c.lastSty)?'selected':''}>${s.name}</option>`).join('')}
+                </select>
+                <div style="display:flex; gap:5px; justify-content:center; align-items:center; margin-top:20px;">
+                    <span style="font-weight:900;">🎂</span>
+                    <input id="em" class="shield-input" value="${c.bm||''}" type="text"> / <input id="ed" class="shield-input" value="${c.bd||''}" type="text">
+                </div>`,
+            preConfirm: () => ({ n: document.getElementById('en').value, p: document.getElementById('ep').value, sex: document.getElementById('pop-sex').value, s: document.getElementById('es').value, m: document.getElementById('em').value, d: document.getElementById('ed').value })
+        });
+        if (r) { 
+            Object.assign(c, { n:r.n, p:r.p, sex:r.sex, lastSty:r.s, bm:r.m, bd:r.d }); 
+            saveS(); renderCli(); 
+        }
+    }
     async function addTagTrig() { const {value:n}=await Swal.fire({title:'項目名稱', input:'text'}); if(n){store.tags.push({id:Date.now(), name:n}); saveS(); renderSet();} }
     function confirmDelApt(id, ds) { Swal.fire({ title: '刪除預約？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.appointments = store.appointments.filter(a => String(a.id) !== String(id)); saveS(); renderDay(ds); }}); }
     function confirmDelSty(id) { Swal.fire({ title: '移除人員？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.stylists = store.stylists.filter(s => s.id !== id); saveS(); renderSet(); }}); }
@@ -846,8 +905,18 @@ function fixStoreStructure() {
         ];
         saveS();
     }
+    
 }
-
+// 【V318 性別切換控制大腦】
+function setSex(s) {
+    document.getElementById('pop-sex').value = s;
+    const b = document.getElementById('boy-btn');
+    const g = document.getElementById('girl-btn');
+    b.classList.remove('active-boy');
+    g.classList.remove('active-girl');
+    if(s === 'M') b.classList.add('active-boy');
+    if(s === 'F') g.classList.add('active-girl');
+}
 // --- 【中文標籤：初始化大腦 - 確保舊標籤同步現身】 ---
 function initAll() {
     // 如果資料庫沒標籤，就強制補上預設的三個
