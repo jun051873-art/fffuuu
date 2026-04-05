@@ -1005,8 +1005,8 @@ function renderStats() {
     
     // 2. 初始化數據
     const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0};
-    const payStats = {}; // 存放支付類：現金、Line...
-    const guestStats = {}; // 存放客群類：男、女...
+    const payStats = {};   // 存放支付類：現金、Line...
+    const guestStats = {}; // 存放客群與指定類：男、女、指定、不指定...
 
     filteredApts.forEach(a => {
         // 統計週客次
@@ -1016,11 +1016,14 @@ function renderStats() {
         // 統計標籤 (自動分流邏輯)
         (a.payTags || []).forEach(tId => {
             const tName = (store.payTagsDef.find(x=>x.id===tId)||{}).name || "未知";
-            // 判斷是否為支付類
-            const isPay = /現金|Line|街口|轉帳|刷卡|支付|錢/.test(tName);
+            
+            // 判斷是否為支付類 (包含錢、支付、或具體支付工具名)
+            const isPay = /現金|Line|街口|轉帳|刷卡|支付|錢|匯款/.test(tName);
+            
             if(isPay) {
                 payStats[tName] = (payStats[tName] || 0) + 1;
             } else {
+                // 這裡會包含：男、女、指定、不指定、新客、舊客等
                 guestStats[tName] = (guestStats[tName] || 0) + 1;
             }
         });
@@ -1031,15 +1034,17 @@ function renderStats() {
     const weekKeys = [1, 2, 3, 4, 5, 6, 0];
     const mName = statsMonth.split('-')[1];
 
-    // 內部的進度條組件 (重複使用)
+    // 內部進度條組件：增加排序，讓「指定/不指定」或「男/女」這種高頻詞排前面
     const renderPills = (dataObj) => {
-        return Object.entries(dataObj).sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
+        return Object.entries(dataObj)
+            .sort((a, b) => b[1] - a[1]) // 按次數由高到低排
+            .map(([name, count]) => `
             <div style="display:flex; align-items:center; gap:20px; margin-bottom:20px;">
-                <div style="width:90px; font-size:1rem; font-weight:900; color:#555; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+                <div style="width:90px; font-size:1rem; font-weight:900; color:#555; white-space:nowrap;">${name}</div>
                 <div style="flex:1; height:10px; background:#f2f2f7; border-radius:10px; overflow:hidden;">
                     <div style="width:${(count/filteredApts.length)*100}%; height:100%; background:var(--gold); border-radius:10px;"></div>
                 </div>
-                <div style="font-size:1.1rem; font-weight:900; color:var(--gold); min-width:40px; text-align:right;">${count}</div>
+                <div style="font-size:1.1rem; font-weight:900; color:var(--gold); min-width:45px; text-align:right;">${count}</div>
             </div>
         `).join('');
     };
@@ -1049,7 +1054,7 @@ function renderStats() {
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <p style="font-weight:900; color:#888; letter-spacing:1px; margin:0;"># 經營數據儀表板</p>
                 <div style="background:var(--gold); color:#fff; padding:8px 20px; border-radius:20px; font-weight:900; font-size:1rem; box-shadow:0 10px 20px rgba(212,175,55,0.2);">
-                   ${mName}月總課次：${filteredApts.length}
+                   ${mName}月總成交：${filteredApts.length} 
                 </div>
             </div>
             
@@ -1059,7 +1064,7 @@ function renderStats() {
                 <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
                     <i class="fas fa-chart-line" style="color:var(--gold); margin-right:12px;"></i>每週平均起伏
                 </div>
-                <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0; border-bottom:none;">
+                <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0;">
                     ${weekKeys.map((k, i) => {
                         const val = weekMap[k];
                         const hPercent = (val / maxVal) * 100;
@@ -1068,7 +1073,7 @@ function renderStats() {
                             <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
                                 <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
                                             background:linear-gradient(to top, var(--gold), #f9e39d); 
-                                            border-radius:15px; transition: height 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);">
+                                            border-radius:15px; transition: height 1s;">
                                     ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--gold); font-size:1.1rem;">${val}</div>` : ''}
                                 </div>
                             </div>
@@ -1080,7 +1085,7 @@ function renderStats() {
 
             <div class="stats-card">
                 <div style="font-weight:900; font-size:1.3rem; margin-bottom:30px;">
-                    <i class="fas fa-wallet" style="color:var(--gold); margin-right:12px;"></i>支付金流分佈
+                    <i class="fas fa-wallet" style="color:var(--gold); margin-right:12px;"></i>支付方式分佈
                 </div>
                 <div style="display:flex; flex-direction:column;">
                     ${renderPills(payStats) || '<div style="color:#ccc; font-weight:700;">尚無支付數據</div>'}
@@ -1089,10 +1094,10 @@ function renderStats() {
 
             <div class="stats-card">
                 <div style="font-weight:900; font-size:1.3rem; margin-bottom:30px;">
-                    <i class="fas fa-user-friends" style="color:var(--gold); margin-right:12px;"></i>客群屬性比例
+                    <i class="fas fa-user-check" style="color:var(--gold); margin-right:12px;"></i>客群與指定佔比
                 </div>
                 <div style="display:flex; flex-direction:column;">
-                    ${renderPills(guestStats) || '<div style="color:#ccc; font-weight:700;">尚無客群數據</div>'}
+                    ${renderPills(guestStats) || '<div style="color:#ccc; font-weight:700;">尚無分類數據</div>'}
                 </div>
             </div>
         </div>
