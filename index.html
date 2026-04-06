@@ -1551,11 +1551,14 @@ const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType =
     const maxVal = Math.max(...Object.values(dataObj), 1);
     
     // 定義以太色譜
+    // 在 colorSchemes 裡面補上 eco 與 aura
     const colorSchemes = {
         gold: "linear-gradient(to top, #D4AF37, #f9e39d)",   // 財富金
         fire: "linear-gradient(to top, #FF512F, #DD2476)",   // 熱度紅
         tech: "linear-gradient(to top, #6A11CB, #2575FC)",   // 專業紫
-        flow: "linear-gradient(to top, #4facfe, #00f2fe)"    // 流動藍
+        flow: "linear-gradient(to top, #4facfe, #00f2fe)",   // 流動藍
+        eco: "linear-gradient(to top, #11998e, #38ef7d)",    // 客群綠 (New!)
+        aura: "linear-gradient(to top, #ff9a9e, #fad0c4)"    // 魅力粉 (New!)
     };
 
     const gradient = colorSchemes[colorType] || colorSchemes.gold;
@@ -1653,10 +1656,15 @@ const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType =
     ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
     
     ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}              
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人")}
-                    ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次")}
-                </div>
+                
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                
+                ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人", "eco")}
+                
+                ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次", "aura")}
+                
+              </div>
+            
             </div>
     `;
 }
