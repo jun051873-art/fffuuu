@@ -1545,34 +1545,45 @@ function renderStats() {
             }
         });
     });
-    // 2. 輔助函式：畫出「以太流能量直條圖」
-    const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "") => {
-        const entries = Object.entries(dataObj);
-        const maxVal = Math.max(...Object.values(dataObj), 1);
-        
-        return `
-            <div class="stats-card">
-                <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
-                    <i class="${titleIcon}" style="color:var(--gold); margin-right:12px;"></i>${titleText}
-                </div>
-                <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0;">
-                    ${entries.map(([label, val]) => {
-                        const hPercent = (val / maxVal) * 100;
-                        return `
-                        <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
-                            <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
-                                <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
-                                            background:linear-gradient(to top, var(--gold), #f9e39d); 
-                                            border-radius:15px; transition: height 1s cubic-bezier(0.23, 1, 0.32, 1);">
-                                    ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--gold); font-size:0.85rem;">${val}${suffix}</div>` : ''}
-                                </div>
-                            </div>
-                            <div style="margin-top:15px; font-weight:900; color:#888; font-size:0.8rem; white-space:nowrap;">${label}</div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>`;
+    // --- 【以太流：多色彩能量條引擎】 ---
+const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType = "gold") => {
+    const entries = Object.entries(dataObj);
+    const maxVal = Math.max(...Object.values(dataObj), 1);
+    
+    // 定義以太色譜
+    const colorSchemes = {
+        gold: "linear-gradient(to top, #D4AF37, #f9e39d)",   // 財富金
+        fire: "linear-gradient(to top, #FF512F, #DD2476)",   // 熱度紅
+        tech: "linear-gradient(to top, #6A11CB, #2575FC)",   // 專業紫
+        flow: "linear-gradient(to top, #4facfe, #00f2fe)"    // 流動藍
     };
+
+    const gradient = colorSchemes[colorType] || colorSchemes.gold;
+
+    return `
+        <div class="stats-card">
+            <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
+                <i class="${titleIcon}" style="background:${gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-right:12px;"></i>${titleText}
+            </div>
+            <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0;">
+                ${entries.map(([label, val]) => {
+                    const hPercent = (val / maxVal) * 100;
+                    return `
+                    <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
+                        <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
+                            <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
+                                        background:${gradient}; 
+                                        border-radius:15px; transition: height 1s cubic-bezier(0.23, 1, 0.32, 1);
+                                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                                ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--primary); font-size:0.85rem; opacity:0.6;">${val}${suffix}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="margin-top:15px; font-weight:900; color:#888; font-size:0.8rem; white-space:nowrap;">${label}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+};
 
     const weekLabels = ['一','二','三','四','五','六','日'];
     const weekKeys = [1, 2, 3, 4, 5, 6, 0];
@@ -1632,14 +1643,29 @@ function renderStats() {
                            解鎖 Aether Pro<br>
                            <span style="font-size:0.9rem; color:#888; font-weight:400;">即可查看商業營收趨勢與項目分析</span>
                         </p>
-                    </div>` : ''}
+                    
+                        </div>` : ''}
 
-                ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)")}
-                ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人")}
-                ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次") : ''}
-                ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次") : ''}
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+// ============================================================
+            // --- 【 Aether Flow 以太流：數據圖表色彩配置區 】 ---
+            // 這裡控制下方四個圖表的數據來源與漸變顏色 (gold / fire / tech / flow)
+            // ============================================================
+
+            // 1. 營收趨勢圖：金色 (gold) - 代表財富與核心經營
+            ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)", "", "gold")}
+            
+            // 2. 預約熱度圖：紅色 (fire) - 代表人氣火熱與客流分析
+            ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人", "fire")}
+            
+            // 3. 服務項目圖：紫色 (tech) - 代表職人專業與項目分布
+            ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
+            
+            // 4. 支付方式圖：藍色 (flow) - 代表資金流動與結帳偏好
+            ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}
+
+            // ============================================================
+                       
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人")}
                     ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次")}
                 </div>
@@ -1855,35 +1881,80 @@ async function addStyTrig() {
     }
 }
 
-// 3. 多選排休日曆引擎
+// --- 【Aether Flow：互動式多選排休日曆】 ---
 async function pickOffMulti() {
-    const { value: res } = await Swal.fire({
-        title: '設定排休日期',
-        html: `
-            <div style="padding:15px;">
-                <input type="month" id="off-m" class="luxe-btn" style="width:100%; margin-bottom:15px;" value="${new Date().toISOString().slice(0,7)}">
-                <p style="font-size:0.85rem; color:#888; font-weight:700;">輸入日期 (多個日期請用逗號隔開)</p>
-                <input id="off-d-list" class="swal2-input" placeholder="例如: 05, 12, 19">
+    const now = new Date();
+    let viewM = now.getMonth() + 1;
+    let viewY = now.getFullYear();
+
+    // 渲染互動日曆的工具
+    const renderInteractiveCal = () => {
+        const daysInM = new Date(viewY, viewM, 0).getDate();
+        const startDay = new Date(viewY, viewM - 1, 1).getDay();
+        const offset = startDay === 0 ? 6 : startDay - 1; // 調整為週一開始
+        
+        let html = `
+            <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                <button onclick="window.changeOffMonth(-1)" class="luxe-btn" style="height:40px; width:40px; padding:0;">＜</button>
+                <div style="font-weight:900; font-size:1.2rem;">${viewY} / ${String(viewM).padStart(2,'0')}</div>
+                <button onclick="window.changeOffMonth(1)" class="luxe-btn" style="height:40px; width:40px; padding:0;">＞</button>
             </div>
-        `,
-        preConfirm: () => ({
-            m: document.getElementById('off-m').value,
-            d: document.getElementById('off-d-list').value
-        })
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:5px; text-align:center;">
+        `;
+        
+        // 標題
+        ['一','二','三','四','五','六','日'].forEach(w => html += `<div style="font-size:0.7rem; font-weight:900; color:#ccc;">${w}</div>`);
+        
+        // 空白格
+        for(let i=0; i<offset; i++) html += `<div></div>`;
+        
+        // 日期格
+        for(let d=1; d<=daysInM; d++) {
+            const ds = `${viewY}-${String(viewM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isOff = store.offDays.includes(ds);
+            html += `
+                <div onclick="window.toggleOffDay('${ds}')" id="cell-${ds}" 
+                     style="padding:10px 0; border-radius:12px; cursor:pointer; font-weight:900; transition:0.3s;
+                     background:${isOff ? 'var(--gold)' : 'rgba(0,0,0,0.03)'}; 
+                     color:${isOff ? '#fff' : 'var(--primary)'};">
+                    ${d}
+                </div>`;
+        }
+        html += `</div>`;
+        return html;
+    };
+
+    // 全域輔助函式，讓彈窗內的按鈕可以作用
+    window.toggleOffDay = (ds) => {
+        const idx = store.offDays.indexOf(ds);
+        if(idx > -1) store.offDays.splice(idx, 1);
+        else store.offDays.push(ds);
+        const cell = document.getElementById(`cell-${ds}`);
+        if(cell) {
+            const active = store.offDays.includes(ds);
+            cell.style.background = active ? 'var(--gold)' : 'rgba(0,0,0,0.03)';
+            cell.style.color = active ? '#fff' : 'var(--primary)';
+        }
+    };
+
+    window.changeOffMonth = (v) => {
+        viewM += v;
+        if(viewM > 12) { viewM = 1; viewY++; }
+        if(viewM < 1) { viewM = 12; viewY--; }
+        document.getElementById('interactive-cal-container').innerHTML = renderInteractiveCal();
+    };
+
+    await Swal.fire({
+        title: '設定店舖排休',
+        html: `<div id="interactive-cal-container" style="padding:10px;">${renderInteractiveCal()}</div>`,
+        confirmButtonText: '完成設定',
+        confirmButtonColor: 'var(--gold)',
+        didClose: () => {
+            saveS();     // 關閉視窗時自動存檔
+            initMonth(); // 刷新主預約表
+        }
     });
-
-    if (res && res.d) {
-        const days = res.d.split(',').map(d => d.trim().padStart(2, '0'));
-        days.forEach(d => {
-            const fullDate = `${res.m}-${d}`;
-            if(!store.offDays.includes(fullDate)) store.offDays.push(fullDate);
-        });
-        await saveS();
-        initMonth(); // 刷新背景格子顏色
-        Swal.fire({ icon:'success', title:'排休設定成功', timer:1000, showConfirmButton:false });
-    }
 }
-
 // 4. 刪除設計師的配套邏輯 (防止原本 confirmDelSty 沒寫完)
 function confirmDelSty(id) {
     Swal.fire({
