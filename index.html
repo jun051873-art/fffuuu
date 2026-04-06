@@ -564,17 +564,23 @@ const db = firebase.firestore();
                     row.innerHTML = label + matched.map(a => {
                  // --- 【方案四：快捷選單觸發器 (徹底防跳轉 + 數據同步版)】 ---
                         const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
-                        const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;" 
-                            onclick="event.preventDefault(); event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
-                            ${selectedTags.length > 0 ? 
-                                selectedTags.map(pt => `<span class="tag-pill" style="background:${pt.color}; color:#fff; border:1px solid ${pt.color}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">${pt.name}</span>`).join('') 
-                                : `<span class="tag-pill" style="background:#f0f0f0; color:#aaa; border:1px dashed #ccc; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">+ 點擊記錄狀態</span>`
-                            }
-                            <span class="tag-pill" style="border:1.5px solid var(--gold); color:${a.isVIP ? '#fff' : 'var(--gold)'}; background:${a.isVIP ? 'var(--gold)' : 'transparent'}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;" 
-                                  onclick="event.preventDefault(); event.stopPropagation(); toggleVIP('${a.id}','${ds}')">
-                                ${a.isVIP ? '⭐ 指定' : '不指定'}
-                            </span>
-                        </div>`;
+                       // --- 修改後的卡片標籤區 (加入性別符號顯示) ---
+const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;" 
+    onclick="event.preventDefault(); event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
+    
+    <span style="font-size:1.2rem; display:flex; align-items:center; margin-right:5px;">
+        ${a.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (a.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
+    </span>
+
+    ${selectedTags.length > 0 ? 
+        selectedTags.map(pt => `<span class="tag-pill" style="background:${pt.color}; color:#fff; border:1px solid ${pt.color}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">${pt.name}</span>`).join('') 
+        : `<span class="tag-pill" style="background:#f0f0f0; color:#aaa; border:1px dashed #ccc; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;">+ 狀態</span>`
+    }
+    <span class="tag-pill" style="border:1.5px solid var(--gold); color:${a.isVIP ? '#fff' : 'var(--gold)'}; background:${a.isVIP ? 'var(--gold)' : 'transparent'}; padding:6px 14px; border-radius:12px; font-size:0.85rem; font-weight:900;" 
+          onclick="event.preventDefault(); event.stopPropagation(); toggleVIP('${a.id}','${ds}')">
+        ${a.isVIP ? '⭐ 指定' : '不指定'}
+    </span>
+</div>`;
                         return `<div class="apt-card ${a.done?'completed':''}" style="--c:${s.color}; margin-left:15px; width:calc(100% - 20px); padding:20px;">
                             ${tagHtml}
                             <div style="position:absolute; right:15px; top:15px; display:flex; gap:12px; align-items:center;">
@@ -753,26 +759,60 @@ function renderSet() {
     `;
 }
 
-// --- 【配套：排休抽屜大腦 - 解決按鈕不起作用問題】 ---
+// --- 【配套：排休抽屜大腦 - 已加上 2 天商業鎖並修正點擊】 ---
 function popOffDayDrawer() {
+    // 【Aether Pro 門禁核心】
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+
+    // 商業鎖：如果不是 Pro 且排休天數已經達到 2 天
+    if (!isPro && (store.offDays || []).length >= 2) {
+        Swal.fire({ 
+            icon: 'lock', 
+            title: '排休功能上限', 
+            html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>請輸入金鑰解鎖 Aether Pro 以進行完整團隊排班。</p>`, 
+            confirmButtonColor: '#D4AF37',
+            confirmButtonText: '取得金鑰'
+        });
+        return; // 直接攔截，不讓視窗打開
+    }
+
+    // --- 若通過檢查，才打開排休視窗 ---
     Swal.fire({
         title: '店舖排休設定',
         html: `
             <div style="padding:20px;">
-                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid;" onclick="pickOffMulti()">
+                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" onclick="Swal.close(); setTimeout(() => pickOffMulti(), 300);">
                     <i class="fas fa-calendar-plus"></i> 選擇月份與日期
                 </div>
-                <div class="add-luxe-btn" style="border-style:solid;" onclick="pickLuxeColor('off')">
+                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" onclick="Swal.close(); setTimeout(() => pickLuxeColor('off'), 300);">
                     <i class="fas fa-palette"></i> 修改休假格顏色
                 </div>
-                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 點擊上方按鈕即可進行詳細設定 )</p>
+                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
             </div>
         `,
         showConfirmButton: false
     });
 }
-// 2. 設計師團隊管理抽屜
+// 2. 設計師團隊管理抽屜 (已加上 2 人商業鎖)
 function popStyDrawer() {
+    // 【Aether Pro 門禁核心】
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+
+    // 商業鎖：如果不是 Pro 且人數已經達到 2 人
+    if (!isPro && store.stylists.length >= 2) {
+        Swal.fire({ 
+            icon: 'lock', 
+            title: '設計師人數上限', 
+            html: `<p style="font-weight:700; color:#888;">試用版僅限設定 2 位設計師成員。<br>請輸入金鑰解鎖 Aether Pro 以新增更多團隊夥伴。</p>`, 
+            confirmButtonColor: '#D4AF37',
+            confirmButtonText: '取得金鑰'
+        });
+        return; // 直接擋住，不讓視窗打開
+    }
+
+    // --- 以下為原本的代碼，只有符合條件才會執行 ---
     Swal.fire({
         title: '設計師團隊管理',
         html: `<div style="padding:10px;">
@@ -792,8 +832,25 @@ function popStyDrawer() {
     });
 }
 
-// 3. 服務項目管理抽屜
+// 3. 服務項目管理抽屜 (已加上 2 個項目商業鎖)
 function popTagDrawer() {
+    // 【Aether Pro 門禁核心】
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+
+    // 商業鎖：如果不是 Pro 且項目已經達到 2 個
+    if (!isPro && store.tags.length >= 2) {
+        Swal.fire({ 
+            icon: 'lock', 
+            title: '服務項目上限', 
+            html: `<p style="font-weight:700; color:#888;">試用版僅限設定 2 個服務項目。<br>請輸入金鑰解鎖 Aether Pro 以建立完整價目表。</p>`, 
+            confirmButtonColor: '#D4AF37',
+            confirmButtonText: '取得金鑰'
+        });
+        return; // 直接擋住，不讓視窗打開
+    }
+
+    // --- 以下為原本的代碼 ---
     Swal.fire({
         title: '服務項目管理',
         html: `<div style="padding:10px;">
@@ -810,15 +867,32 @@ function popTagDrawer() {
     });
 }
 
-// 4. 自定義支付標籤抽屜
+// 4. 自定義支付標籤抽屜 (已加上 2 個標籤商業鎖)
 function popPayTagDrawer() {
+    // 【Aether Pro 門禁核心】
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+
+    // 商業鎖：如果不是 Pro 且標籤已經達到 2 個
+    if (!isPro && (store.payTagsDef || []).length >= 2) {
+        Swal.fire({ 
+            icon: 'lock', 
+            title: '支付標籤上限', 
+            html: `<p style="font-weight:700; color:#888;">試用版僅限 2 種自定義支付方式。<br>請輸入金鑰解鎖 Aether Pro 以開啟多元支付管理。</p>`, 
+            confirmButtonColor: '#D4AF37',
+            confirmButtonText: '取得金鑰'
+        });
+        return; // 直接擋住
+    }
+
+    // --- 以下為原本的代碼 ---
     Swal.fire({
         title: '支付標籤管理',
         html: `<div style="padding:10px;">
                 ${(store.payTagsDef || []).map(pt => `
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:15px; background:#f9f9fb; border-radius:15px; margin-bottom:10px;">
                         <div style="display:flex; align-items:center; gap:15px;">
-                            <div onclick="pickTagColor('${pt.id}')" style="width:25px; height:25px; border-radius:50%; background:${pt.color}; cursor:pointer; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
+                            <div onclick="pickTagColor('${pt.id}')" style="width:25px; height:25px; border-radius:50%; background:${pt.color}; cursor:pointer; border:2.5px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
                             <span style="font-weight:900;">${pt.name}</span>
                         </div>
                         <div style="display:flex; align-items:center;">
@@ -896,6 +970,18 @@ function updateStoreUI() {
 
     // [功能 B] 導入檔案 (鋼鐵強化版：確保資料飛上雲端才重新整理)
     function triggerLoad() {
+       // --- Aether Pro 門禁鎖開始 ---
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id || auth.id === "未綁定") {
+        Swal.fire({
+            icon: 'lock',
+            title: 'Aether Pro 專屬',
+            text: '導入功能僅限已激活的商業版用戶。',
+            confirmButtonColor: 'var(--gold)'
+        });
+        return; // 這行是關鍵，會直接把後面的功能切斷
+    }
+    // --- 門禁鎖結束 ---
         const i = document.createElement('input');
         i.type = 'file';
         i.accept = '.json'; 
@@ -931,7 +1017,13 @@ function updateStoreUI() {
     }
 
     // [功能 C] 導出備份
-    function exportToFile() {
+    // --- 更改後 (鎖定樣式) ---
+async function exportToFile() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if(!auth || auth.id === "未綁定") {
+        Swal.fire({ icon: 'lock', title: 'Aether Pro 專屬', text: '導出備份功能僅限已激活的商業版用戶。', confirmButtonColor: '#D4AF37' });
+        return;
+    }
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([JSON.stringify(store)], {type: 'application/json'}));
         a.download = `Salon_Backup_${new Date().toLocaleDateString()}.json`;
@@ -999,6 +1091,18 @@ async function togglePay(aptId, tagId, ds) {
     // --- 工具函數 ---
     async function popCliSearch() { await Swal.fire({ title: '搜尋', html: `<input id="sw-search" class="luxe-btn" style="width:100%;" oninput="searchStored(this, 'sw-box')"><div id="sw-box" class="suggest-box"></div>`, showConfirmButton: false }); }
     async function addCliTrig() {
+       // --- Aether Pro 顧客上限鎖 ---
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+    if (!isPro && store.clients.length >= 20) {
+        Swal.fire({
+            icon: 'warning',
+            title: '已達試用上限',
+            text: '試用版僅限 20 位顧客，請解鎖 Aether Pro 以儲存無限顧客。',
+            confirmButtonColor: 'var(--gold)'
+        });
+        return;
+    }
         // 設定初始性別 (預設女)
         window.tempSex = 'F'; 
         
@@ -1217,6 +1321,9 @@ window.addEventListener('load', () => {
 let statsMonth = new Date().toISOString().slice(0,7); // 預設當月
 
 function renderStats() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+  const isPro = auth && auth.id && auth.id !== "未綁定";
+
     const area = document.getElementById('pg-stat').querySelector('.content-scroll');
     const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
     
@@ -1244,20 +1351,23 @@ function renderStats() {
             tagUsageMap[t] = (tagUsageMap[t] || 0) + 1;
         });
 
-        // 統計支付標籤與性別 (自動分流)
+        // --- Aether Flow: 數據自動分流大腦 ---
+        // 1. 性別統計：直接抓取系統性別欄位，100% 精準
+        if (a.sex === 'M') sexMap['Mars ♂'] += 1;
+        else if (a.sex === 'F') sexMap['Venus ♀'] += 1;
+
+        // 2. 支付標籤統計：過濾掉性別關鍵字，只留純支付數據
         (a.payTags || []).forEach(tId => {
-            const pt = store.payTagsDef.find(x=>x.id===tId);
-            if(!pt) return;
+            const pt = store.payTagsDef.find(x => x.id === tId);
+            if (!pt) return;
             const tName = pt.name;
             
-            if(/現金|Line|街口|轉帳|刷卡|支付|錢|匯款/.test(tName)) {
+            // 只要標籤名稱包含支付相關字眼，就計入支付分佈圖
+            if (/現金|Line|街口|轉帳|刷卡|支付|錢|匯款|Apple|Google/.test(tName)) {
                 payMap[tName] = (payMap[tName] || 0) + 1;
-            } 
-            else if(/男|♂|Mars/.test(tName)) sexMap['Mars ♂'] += 1;
-            else if(/女|♀|Venus/.test(tName)) sexMap['Venus ♀'] += 1;
+            }
         });
     });
-
     // 2. 輔助函式：畫出「以太流能量直條圖」
     const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "") => {
         const entries = Object.entries(dataObj);
@@ -1332,17 +1442,28 @@ function renderStats() {
             
             <input type="month" class="month-selector" value="${statsMonth}" onchange="statsMonth=this.value; renderStats();">
 
-            ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)")}
+            <div style="position:relative;">
+                ${!isPro ? `
+                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:100; 
+                                backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+                                display:flex; flex-direction:column; align-items:center; justify-content:center;
+                                background:rgba(255,255,255,0.3); border-radius:40px;">
+                        <i class="fas fa-lock" style="font-size:3.5rem; color:var(--gold); margin-bottom:15px;"></i>
+                        <p style="font-weight:900; color:#1d1d1f; text-align:center; font-size:1.2rem;">
+                           解鎖 Aether Pro<br>
+                           <span style="font-size:0.9rem; color:#888; font-weight:400;">即可查看商業營收趨勢與項目分析</span>
+                        </p>
+                    </div>` : ''}
 
-            ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次") : ''}
-
-            ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次") : ''}
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人")}
-                ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次")}
+                ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)")}
+                ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次") : ''}
+                ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次") : ''}
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人")}
+                    ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次")}
+                </div>
             </div>
-        </div>
     `;
 }
 // --- 中文標籤：標籤管理工具函式 (讓新增/修改標籤按鈕通電) ---
