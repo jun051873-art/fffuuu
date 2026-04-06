@@ -39,43 +39,47 @@
         .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
         .apt-card { padding: 30px; background: #fff; border-radius: 40px; border: 1px solid var(--luxe-border); border-left: 15px solid var(--c); position: relative; flex: 1; display: flex; flex-direction: column; justify-content: space-between; transition: 0.4s; }
         .apt-card.completed { opacity: 0.3 !important; background: #f9f9fb !important; filter: grayscale(1); }
-        /* --- 【Aether Flow 美學語言：導航核心】 --- */
+       /* --- 【Aether Flow 美學語言：比例優化版】 --- */
         .nav {
-            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 600px; height: 90px;
-            /* 以太外殼：極輕微灰階底座 */
+            position: fixed; 
+            bottom: 25px; /* 稍微下移，更符合視覺重力 */
+            left: 50%; transform: translateX(-50%);
+            width: 92%; 
+            max-width: 500px; /* 限制最大寬度，在平板/Mac上才不會拉太長 */
+            height: 75px; /* 從90px瘦身至75px，更精緻 */
             background: rgba(0, 0, 0, 0.03); 
-            border-radius: 45px; display: flex; align-items: center; position: relative;
-            padding: 6px; border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.03);
+            border-radius: 40px; display: flex; align-items: center; position: relative;
+            padding: 5px; border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
             z-index: 5000;
         }
 
         #nav-aether-mover {
-            position: absolute; left: 6px; 
-            width: calc(25% - 12px); height: calc(100% - 12px);
-            /* 極致剔透的毛玻璃質感 */
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(35px) saturate(210%);
-            -webkit-backdrop-filter: blur(35px) saturate(210%);
-            border-radius: 40px; z-index: 1;
-            /* 物理阻尼曲線：0.6s 溫潤吸附感 */
-            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            /* 模擬真玻璃的 Rim Light 邊框亮痕 */
+            position: absolute; left: 5px; 
+            width: calc(25% - 10px); height: calc(100% - 10px);
+            background: rgba(255, 255, 255, 0.45); /* 稍微調亮一點 */
+            backdrop-filter: blur(25px) saturate(210%);
+            -webkit-backdrop-filter: blur(25px) saturate(210%);
+            border-radius: 35px; z-index: 1;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.06), inset 0 3px 6px rgba(255,255,255,1), inset 0 -2px 10px rgba(0,0,0,0.02);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.04), inset 0 2px 5px rgba(255,255,255,1);
         }
 
         .nav-item {
-            flex: 1; text-align: center; color: #888; cursor: pointer;
-            transition: color 0.4s ease;
+            flex: 1; text-align: center; color: #999; cursor: pointer;
+            transition: all 0.3s ease;
             position: relative; height: 100%; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 2;
         }
 
-        .nav-item.active { color: #1d1d1f; font-weight: 900; }
-        .nav-item i { font-size: 1.6rem; margin-bottom: 4px; }
-        .nav-item span { font-size: 0.85rem; letter-spacing: 1px; }
+        .nav-item.active { color: #1d1d1f; }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; } /* 圖示縮小一點點 */
+        .nav-item span { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.5px; }
+
+        /* 內容區塊的間距調整，確保不被導航條遮住 */
+        .content-scroll { padding-bottom: 150px !important; }
+
         .page { display: none; width: 100%; height: 100%; }
         .page.active { display: flex; flex-direction: column; }
         .tag-pill { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 12px; background: #f0f0f0; color: #aaa; cursor: pointer; border: 1px solid #eee; transition: 0.2s; }
@@ -346,33 +350,41 @@ const db = firebase.firestore();
 // --- S4: 頁面顯示與分頁切換控制 ---
 // ==========================================================================
     function showP(id, index) {
-    // 1. 執行原有的頁面切換邏輯
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    const pageEl = document.getElementById(id);
-    if(pageEl) pageEl.classList.add('active');
-    
-    // 2. 獲取當前導航項並高亮
-    const targetNavId = 'n-' + id.split('-')[1];
-    const targetNav = document.getElementById(targetNavId);
-    if(targetNav) targetNav.classList.add('active');
-
-    // 3. 【Aether Flow 核心指揮】：移動毛玻璃滑塊
+    // 1. 【以太先行】：立即啟動「以太流」滑塊，視覺先行，絕對不卡頓
     const mover = document.getElementById('nav-aether-mover');
     if(mover && index !== undefined) {
+        // 修正後的語法：使用反引號包住 translateX
         mover.style.transform = `translateX(${index * 100}%)`;
     }
 
-    // 4. 觸發各頁面專屬的渲染
-    if(id.includes('res')) initMonth(); 
-    else if(id==='pg-cli') { fillStySelect(); renderCli(); } 
-    else if(id==='pg-set') renderSet(); 
-    else if(id==='pg-stat') renderStats(); 
-    else if(id==='pg-day') renderDay(curD.toLocaleDateString('sv'));
+    // 2. 立即高亮導航文字與圖示
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+        n.classList.toggle('active', i === index);
+    });
 
-    // 5. 物理觸感回饋 (香皂滑動的微震)
-    if(window.navigator.vibrate) window.navigator.vibrate(12);
+    // 3. 【柔和銜接】：使用 100ms 延遲，等滑塊移動到中間才換頁
+    // 這樣視覺上會覺得頁面是被滑塊「帶」過來的，非常自然
+    setTimeout(() => {
+        // 切換頁面顯示
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const pageEl = document.getElementById(id);
+        if(pageEl) {
+            pageEl.classList.add('active');
+            // 每次換頁自動回到最頂端，維持以太流的純淨感
+            const scrollArea = pageEl.querySelector('.content-scroll');
+            if(scrollArea) scrollArea.scrollTop = 0;
+        }
+
+        // 4. 安靜載入數據 (這些是比較重的任務，放在 setTimeout 裡才不會卡到動畫)
+        if(id.includes('res')) initMonth(); 
+        else if(id==='pg-cli') { fillStySelect(); renderCli(); } 
+        else if(id==='pg-set') renderSet(); 
+        else if(id==='pg-stat') renderStats(); 
+        else if(id==='pg-day') renderDay(curD.toLocaleDateString('sv'));
+    }, 100);
+
+    // 5. 觸感回饋：極短微震，模擬香皂滑動的物理阻尼
+    if(window.navigator.vibrate) window.navigator.vibrate(8);
 }
 
     function initMonth() {
