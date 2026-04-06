@@ -1646,26 +1646,14 @@ const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType =
                     
                         </div>` : ''}
 
-// ============================================================
-            // --- 【 Aether Flow 以太流：數據圖表色彩配置區 】 ---
-            // 這裡控制下方四個圖表的數據來源與漸變顏色 (gold / fire / tech / flow)
-            // ============================================================
-
-            // 1. 營收趨勢圖：金色 (gold) - 代表財富與核心經營
-            ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)", "", "gold")}
-            
-            // 2. 預約熱度圖：紅色 (fire) - 代表人氣火熱與客流分析
-            ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人", "fire")}
-            
-            // 3. 服務項目圖：紫色 (tech) - 代表職人專業與項目分布
-            ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
-            
-            // 4. 支付方式圖：藍色 (flow) - 代表資金流動與結帳偏好
-            ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}
-
-            // ============================================================
-                       
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+    ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)", "", "gold")}
+    
+    ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人", "fire")}
+    
+    ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
+    
+    ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}              
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人")}
                     ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次")}
                 </div>
