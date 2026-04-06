@@ -759,149 +759,179 @@ function renderSet() {
     `;
 }
 
-// --- 【配套：排休抽屜大腦 - 已加上 2 天商業鎖並修正點擊】 ---
+// --- 【Aether Flow：排休抽屜大腦 - 穩定觸發版】 ---
 function popOffDayDrawer() {
     // 【Aether Pro 門禁核心】
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 商業鎖：如果不是 Pro 且排休天數已經達到 2 天
+    // 1. 商業鎖：如果不是 Pro 且排休天數已經達到 2 天
     if (!isPro && (store.offDays || []).length >= 2) {
         Swal.fire({ 
             icon: 'lock', 
-            title: '排休功能上限', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>請輸入金鑰解鎖 Aether Pro 以進行完整團隊排班。</p>`, 
+            title: '✨ 升級 Aether Pro', 
+            html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>解鎖旗艦版以享有無限排班功能。</p>`, 
             confirmButtonColor: '#D4AF37',
-            confirmButtonText: '取得金鑰'
+            confirmButtonText: '立即解鎖'
+        }).then((result) => {
+            if (result.isConfirmed) checkLicense();
         });
-        return; // 直接攔截，不讓視窗打開
+        return;
     }
 
-    // --- 若通過檢查，才打開排休視窗 ---
+    // 2. 正常打開視窗 (修正 onclick 邏輯，確保穩定性)
     Swal.fire({
         title: '店舖排休設定',
         html: `
             <div style="padding:20px;">
-                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" onclick="Swal.close(); setTimeout(() => pickOffMulti(), 300);">
+                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" id="btn-pick-off">
                     <i class="fas fa-calendar-plus"></i> 選擇月份與日期
                 </div>
-                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" onclick="Swal.close(); setTimeout(() => pickLuxeColor('off'), 300);">
+                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" id="btn-pick-color">
                     <i class="fas fa-palette"></i> 修改休假格顏色
                 </div>
                 <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
             </div>
         `,
-        showConfirmButton: false
+        showConfirmButton: false,
+        didOpen: () => {
+            // 使用 Aether Flow 的監聽模式，取代傳統 onclick，防止事件衝突
+            document.getElementById('btn-pick-off').onclick = () => {
+                Swal.close();
+                setTimeout(() => pickOffMulti(), 300); // 給予 300ms 讓舊視窗徹底謝幕
+            };
+            document.getElementById('btn-pick-color').onclick = () => {
+                Swal.close();
+                setTimeout(() => pickLuxeColor('off'), 300);
+            };
+        }
     });
 }
-// 2. 設計師團隊管理抽屜 (已加上 2 人商業鎖)
+// --- 【Aether Flow：設計師團隊管理 - 穩定通電版】 ---
 function popStyDrawer() {
-    // 【Aether Pro 門禁核心】
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 商業鎖：如果不是 Pro 且人數已經達到 2 人
-    if (!isPro && store.stylists.length >= 2) {
-        Swal.fire({ 
-            icon: 'lock', 
-            title: '設計師人數上限', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅限設定 2 位設計師成員。<br>請輸入金鑰解鎖 Aether Pro 以新增更多團隊夥伴。</p>`, 
-            confirmButtonColor: '#D4AF37',
-            confirmButtonText: '取得金鑰'
-        });
-        return; // 直接擋住，不讓視窗打開
-    }
-
-    // --- 以下為原本的代碼，只有符合條件才會執行 ---
     Swal.fire({
         title: '設計師團隊管理',
-        html: `<div style="padding:10px;">
+        width: '90%',
+        html: `
+            <div style="padding:10px;" id="sty-manage-container">
                 ${store.stylists.map(s => `
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px; background:#f9f9fb; border-radius:15px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px; background:#f9f9fb; border-radius:20px; margin-bottom:12px; border:1px solid #eee;">
                         <div style="display:flex; align-items:center; gap:15px;">
-                            <div onclick="pickLuxeColor('sty', ${s.id})" style="width:30px; height:30px; border-radius:50%; background:${s.color}; cursor:pointer; border:2.5px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900;">${s.name}</span>
+                            <div class="sty-color-dot" data-id="${s.id}" style="width:35px; height:35px; border-radius:50%; background:${s.color}; cursor:pointer; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1);"></div>
+                            <span style="font-weight:900; font-size:1.1rem;">${s.name}</span>
                         </div>
-                        <div style="display:flex; align-items:center;">
-                            <i class="fas fa-ruler-combined luxe-edit-icon" onclick="editStyTrig(${s.id},'${s.name}')"></i>
-                            <i class="far fa-trash-alt luxe-trash-btn" onclick="confirmDelSty(${s.id})"></i>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <i class="fas fa-ruler-combined luxe-edit-icon sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.3rem; color:#ccc; cursor:pointer;"></i>
+                            <i class="far fa-trash-alt luxe-trash-btn sty-del-btn" data-id="${s.id}" style="font-size:1.3rem; color:#ffcccc; cursor:pointer;"></i>
                         </div>
                     </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:10px;" onclick="addStyTrig()">+ 新增團隊成員</button>
-            </div>`, showConfirmButton: false
+                <button class="add-luxe-btn" style="margin-top:15px; width:100%; height:60px; border-radius:20px; border:2px dashed var(--gold); color:var(--gold); font-weight:900; background:transparent;" id="btn-add-sty">
+                    <i class="fas fa-user-plus"></i> 新增團隊成員
+                </button>
+            </div>`,
+        showConfirmButton: false,
+        didOpen: () => {
+            // 1. 綁定「新增」按鈕邏輯
+            document.getElementById('btn-add-sty').onclick = () => {
+                if (!isPro && store.stylists.length >= 2) {
+                    Swal.showValidationMessage('試用版上限 2 人，請升級 Pro 版');
+                    popUpgradeNotice('設計師團隊'); // 觸發我們之前寫的升級彈窗
+                    return;
+                }
+                Swal.close();
+                setTimeout(() => addStyTrig(), 300);
+            };
+
+            // 2. 綁定「修改名字」圖示
+            document.querySelectorAll('.sty-edit-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const id = e.target.closest('.sty-edit-btn').dataset.id;
+                    const oldName = e.target.closest('.sty-edit-btn').dataset.name;
+                    Swal.close();
+                    setTimeout(() => editStyTrig(id, oldName), 300);
+                };
+            });
+
+            // 3. 綁定「刪除」圖示
+            document.querySelectorAll('.sty-del-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const id = e.target.closest('.sty-del-btn').dataset.id;
+                    Swal.close();
+                    setTimeout(() => confirmDelSty(id), 300);
+                };
+            });
+
+            // 4. 綁定「選色」圓點
+            document.querySelectorAll('.sty-color-dot').forEach(dot => {
+                dot.onclick = (e) => {
+                    const id = e.target.dataset.id;
+                    Swal.close();
+                    setTimeout(() => pickLuxeColor('sty', id), 300);
+                };
+            });
+        }
     });
 }
 
-// 3. 服務項目管理抽屜 (已加上 2 個項目商業鎖)
+// --- 【Aether Flow：服務項目管理 - 靈魂連通版】 ---
 function popTagDrawer() {
-    // 【Aether Pro 門禁核心】
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 商業鎖：如果不是 Pro 且項目已經達到 2 個
-    if (!isPro && store.tags.length >= 2) {
-        Swal.fire({ 
-            icon: 'lock', 
-            title: '服務項目上限', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅限設定 2 個服務項目。<br>請輸入金鑰解鎖 Aether Pro 以建立完整價目表。</p>`, 
-            confirmButtonColor: '#D4AF37',
-            confirmButtonText: '取得金鑰'
-        });
-        return; // 直接擋住，不讓視窗打開
-    }
-
-    // --- 以下為原本的代碼 ---
     Swal.fire({
         title: '服務項目管理',
-        html: `<div style="padding:10px;">
-                <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;">
+        width: '90%',
+        html: `
+            <div style="padding:15px;" id="tag-manage-container">
+                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:25px;">
                     ${store.tags.map(t => `
-                        <div style="display:flex; align-items:center; background:#f9f9fb; padding:10px 18px; border-radius:15px; border:1px solid #eee;">
-                            <span style="font-weight:900; margin-right:12px;">${t.name}</span>
-                            <i class="fas fa-ruler-combined luxe-edit-icon" style="font-size:0.9rem;" onclick="editTagTrig(${t.id},'${t.name}')"></i>
-                            <i class="far fa-trash-alt luxe-trash-btn" style="font-size:0.9rem;" onclick="confirmDelTag(${t.id})"></i>
+                        <div class="aether-tag-pill" style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:12px 20px; border-radius:25px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 4px 10px rgba(0,0,0,0.02);">
+                            <span style="font-weight:900; margin-right:15px; color:#1d1d1f; font-size:1.1rem;">${t.name}</span>
+                            <div style="display:flex; gap:12px;">
+                                <i class="fas fa-ruler-combined luxe-edit-icon tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
+                                <i class="far fa-trash-alt luxe-trash-btn tag-del-btn" data-id="${t.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
+                            </div>
                         </div>`).join('')}
                 </div>
-                <button class="add-luxe-btn" onclick="addTagTrig()">+ 新增服務項目</button>
-            </div>`, showConfirmButton: false
-    });
-}
+                <button class="add-luxe-btn" id="btn-add-tag" style="width:100%; height:60px; border-radius:20px; border:2px dashed var(--gold); color:var(--gold); font-weight:900; background:transparent;">
+                    <i class="fas fa-plus-circle"></i> 新增服務項目
+                </button>
+            </div>`,
+        showConfirmButton: false,
+        didOpen: () => {
+            // 1. 綁定「新增項目」邏輯
+            document.getElementById('btn-add-tag').onclick = () => {
+                if (!isPro && store.tags.length >= 2) {
+                    Swal.showValidationMessage('試用版上限 2 個項目');
+                    popUpgradeNotice('服務價目表'); // 呼叫奢華升級彈窗
+                    return;
+                }
+                Swal.close();
+                setTimeout(() => addTagTrig(), 300);
+            };
 
-// 4. 自定義支付標籤抽屜 (已加上 2 個標籤商業鎖)
-function popPayTagDrawer() {
-    // 【Aether Pro 門禁核心】
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
+            // 2. 綁定「修改項目」圖示
+            document.querySelectorAll('.tag-edit-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const id = e.target.closest('.tag-edit-btn').dataset.id;
+                    const oldName = e.target.closest('.tag-edit-btn').dataset.name;
+                    Swal.close();
+                    setTimeout(() => editTagTrig(id, oldName), 300);
+                };
+            });
 
-    // 商業鎖：如果不是 Pro 且標籤已經達到 2 個
-    if (!isPro && (store.payTagsDef || []).length >= 2) {
-        Swal.fire({ 
-            icon: 'lock', 
-            title: '支付標籤上限', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅限 2 種自定義支付方式。<br>請輸入金鑰解鎖 Aether Pro 以開啟多元支付管理。</p>`, 
-            confirmButtonColor: '#D4AF37',
-            confirmButtonText: '取得金鑰'
-        });
-        return; // 直接擋住
-    }
-
-    // --- 以下為原本的代碼 ---
-    Swal.fire({
-        title: '支付標籤管理',
-        html: `<div style="padding:10px;">
-                ${(store.payTagsDef || []).map(pt => `
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px; background:#f9f9fb; border-radius:15px; margin-bottom:10px;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div onclick="pickTagColor('${pt.id}')" style="width:25px; height:25px; border-radius:50%; background:${pt.color}; cursor:pointer; border:2.5px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900;">${pt.name}</span>
-                        </div>
-                        <div style="display:flex; align-items:center;">
-                            <i class="fas fa-ruler-combined luxe-edit-icon" onclick="editPayTag('${pt.id}','${pt.name}')"></i>
-                            <i class="far fa-trash-alt luxe-trash-btn" onclick="delPayTag('${pt.id}')"></i>
-                        </div>
-                    </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:10px;" onclick="addPayTag()">+ 新增支付標籤</button>
-            </div>`, showConfirmButton: false
+            // 3. 綁定「刪除項目」圖示
+            document.querySelectorAll('.tag-del-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const id = e.target.closest('.tag-del-btn').dataset.id;
+                    Swal.close();
+                    setTimeout(() => confirmDelTag(id), 300);
+                };
+            });
+        }
     });
 }
 
