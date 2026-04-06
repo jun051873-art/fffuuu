@@ -18,14 +18,47 @@
     :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
-    /* --- 以太流物理釘子：釘死背景 --- */
-    html, body { 
-        height: 100%; width: 100%; margin: 0; padding: 0; 
-        overflow: hidden !important; 
-        position: fixed !important; 
-        background: #fff; 
-        -webkit-overflow-scrolling: touch;
-    }
+    /* --- Aether Flow: 物理釘子修正版 --- */
+html, body { 
+    height: 100%; width: 100%; margin: 0; padding: 0; 
+    /* 這裡要保留，防止整片背景彈跳 */
+    overflow: hidden !important; 
+    position: fixed !important; 
+    background: #fff; 
+}
+
+/* --- 內容捲軸區：核心解鎖 --- */
+.content-scroll {
+    /* 必須明確給予高度，否則手機不知道滑動範圍 */
+    height: 100vh; 
+    flex: 1;
+    overflow-y: auto !important; 
+    /* 關鍵：開啟 iOS 原生絲滑滾動 */
+    -webkit-overflow-scrolling: touch !important; 
+    /* 給予底部空間，避開導航條 */
+    padding-bottom: 220px !important; 
+}
+
+/* --- 顧客頁面比例修正：讓卡片在手機上縮小 --- */
+.client-grid-container {
+    display: grid;
+    /* 修正：將 350px 降到 280px，卡片才不會撐破手機寬度 */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 15px;
+    padding: 15px;
+}
+
+/* --- 針對小手機的極致壓縮 (自適應) --- */
+@media (max-width: 480px) {
+    .header { padding: 45px 20px 15px !important; }
+    .glow-title { font-size: 1.6rem !important; }
+    /* 縮小卡片內文字，防止頁面太大 */
+    .cli-luxe-card { padding: 18px !important; border-radius: 25px !important; }
+    .cli-luxe-card div[style*="font-size:2rem"] { font-size: 1.5rem !important; }
+    
+    /* 導航條稍微縮小比例 */
+    .nav { height: 75px !important; width: 94% !important; bottom: 20px !important; }
+}
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
         .swal2-popup { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(25px) saturate(180%) !important; border-radius: 45px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important; }
         .swal2-title { color: #1d1d1f !important; font-weight: 900 !important; }
@@ -1556,13 +1589,15 @@ window.addEventListener('load', () => {
     pullFromCloud();
     checkLicense(); 
 
-    // --- 【以太流：物理防禦攔截器】 ---
-    // 只有在滑動卡片區時才放行，摸到標題或導航條想滑動會被攔截，畫面就不會亂跳了
-    document.body.addEventListener('touchmove', function(e) {
-        if (!e.target.closest('.content-scroll')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
+    // --- 【以太流：精準防禦攔截器】 ---
+document.body.addEventListener('touchmove', function(e) {
+    // 如果手指摸的地方「在」滾動區或跑道區，就放行，讓你正常滑動
+    if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
+        return; // 直接放行，不攔截
+    }
+    // 只有摸到標題、導航條等「背景」時才攔截，防止整片背景彈跳
+    e.preventDefault();
+}, { passive: false });
 });
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
