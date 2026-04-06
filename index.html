@@ -1502,7 +1502,10 @@ function renderStats() {
     
     // 1. 初始化經營數據大腦
     let totalRevenue = 0; // 總營收
-    const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0}; // 營收起伏 (存錢)
+    // 原有的營收統計
+    const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0}; 
+    // --- 新增：人次統計 ---
+    const weekCountMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0};
     const tagUsageMap = {}; // 服務項目熱度 (剪、染、燙次數)
     const payMap = {};      // 支付方式分布
     const sexMap = { 'Mars ♂': 0, 'Venus ♀': 0 };
@@ -1514,6 +1517,7 @@ function renderStats() {
         
         // 累加營收與週起伏
         totalRevenue += price;
+        weekCountMap[d.getDay()] += 1;
         weekMap[d.getDay()] += price; 
 
         // 統計指定比
@@ -1574,7 +1578,9 @@ function renderStats() {
     const weekKeys = [1, 2, 3, 4, 5, 6, 0];
     const revData = {};
     weekKeys.forEach((k, i) => revData[weekLabels[i]] = weekMap[k]);
-
+    const countData = {};
+    weekKeys.forEach((k, i) => countData[weekLabels[i]] = weekCountMap[k]);
+    
     const mName = statsMonth.split('-')[1];
 
     area.innerHTML = `
@@ -1629,6 +1635,7 @@ function renderStats() {
                     </div>` : ''}
 
                 ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)")}
+                ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人")}
                 ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次") : ''}
                 ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次") : ''}
                 
@@ -1893,6 +1900,67 @@ function confirmDelSty(id) {
             popStyDrawer();
         }
     });
+}
+// --- 【以太流：顧客資料修改引擎】 ---
+async function editCli(oldName) {
+    // 1. 找到該位顧客的原有資料
+    const c = store.clients.find(x => x.n === oldName);
+    if (!c) return;
+
+    const { value: res } = await Swal.fire({
+        title: '修改顧客資料',
+        width: '85%',
+        html: `
+            <input id="edit-cn" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.n}" placeholder="姓名">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div id="boy-btn-cli" class="gender-btn ${c.sex === 'M' ? 'active-boy' : ''}" onclick="setSexCli('M')">♂ 男</div>
+                <div id="girl-btn-cli" class="gender-btn ${c.sex === 'F' ? 'active-girl' : ''}" onclick="setSexCli('F')">♀ 女</div>
+            </div>
+            <input type="hidden" id="edit-pop-sex" value="${c.sex || 'F'}">
+            <input id="edit-cp" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.p || ''}" placeholder="電話">
+            <select id="edit-cs" class="luxe-btn" style="width:100%;border-radius:30px; margin-bottom:20px;">
+                ${store.stylists.map(s => `<option value="${s.id}" ${String(s.id) === String(c.lastSty) ? 'selected' : ''}>${s.name}</option>`).join('')}
+            </select>
+            <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
+                <span style="font-weight:900; color:#888;">🎂 生日：</span>
+                <input id="edit-cm" class="shield-input" type="text" value="${c.bm || ''}" placeholder="月"> / 
+                <input id="edit-cd" class="shield-input" type="text" value="${c.bd || ''}" placeholder="日">
+            </div>
+        `,
+        preConfirm: () => ({
+            n: document.getElementById('edit-cn').value,
+            p: document.getElementById('edit-cp').value,
+            sex: document.getElementById('edit-pop-sex').value,
+            s: document.getElementById('edit-cs').value,
+            m: document.getElementById('edit-cm').value,
+            d: document.getElementById('edit-cd').value
+        })
+    });
+
+    if (res && res.n) {
+        // 2. 更新資料庫（連同歷史紀錄的名字也要考慮到，這裡先做顧客檔更新）
+        c.n = res.n;
+        c.p = res.p;
+        c.sex = res.sex;
+        c.lastSty = res.s;
+        c.bm = res.m;
+        c.bd = res.d;
+
+        await saveS();   // 同步雲端
+        renderCli();     // 立即重新渲染顧客清單
+        Swal.fire({ icon: 'success', title: '修改成功', timer: 800, showConfirmButton: false });
+    }
+}
+
+// 輔助：顧客修改視窗專用的性別切換器
+function setSexCli(s) {
+    document.getElementById('edit-pop-sex').value = s;
+    const b = document.getElementById('boy-btn-cli');
+    const g = document.getElementById('girl-btn-cli');
+    b.classList.remove('active-boy');
+    g.classList.remove('active-girl');
+    if(s === 'M') b.classList.add('active-boy');
+    if(s === 'F') g.classList.add('active-girl');
 }
 </script>
 </body>
