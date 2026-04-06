@@ -15,10 +15,18 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <style>
-        :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-y: auto; background: #fff; }
-        body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
+    :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    
+    /* --- 以太流物理釘子：釘死背景 --- */
+        html, body { 
+        height: 100%; width: 100%; margin: 0; padding: 0; 
+        overflow: hidden !important; 
+        position: fixed !important; 
+        background: #fff; 
+        -webkit-overflow-scrolling: touch;
+    }
+         body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
         .swal2-popup { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(25px) saturate(180%) !important; border-radius: 45px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important; }
         .swal2-title { color: #1d1d1f !important; font-weight: 900 !important; }
         .swal2-confirm { background: var(--gold) !important; border-radius: 30px !important; font-weight: 900 !important; padding: 12px 35px !important; }
@@ -206,7 +214,31 @@
         .gender-btn.active-boy { background: #fff; border-color: #007AFF; color: #007AFF; box-shadow: 0 4px 10px rgba(0,122,255,0.1); }
         .gender-btn.active-girl { background: #fff; border-color: #FF2D55; color: #FF2D55; box-shadow: 0 4px 10px rgba(255,45,85,0.1); }
 
-   </style>
+  /* --- 【Aether Flow：物理錨定，防止整塊頁面亂滑】 --- */
+html, body {
+    /* 核心：禁止整個網頁層級的彈跳滾動 */
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 確保只有每一頁內部的滾動區可以滑動 */
+.content-scroll {
+    overflow-y: auto;
+    /* 這是關鍵：允許內部滾動，但不觸發外部回彈 */
+    overscroll-behavior-y: contain; 
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+}
+
+/* 針對顧客頁面特別強化 */
+#pg-cli .content-scroll {
+    touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
+}
+  
+  </style>
 </head>
 <body>
 
@@ -1518,11 +1550,19 @@ window.addEventListener('load', () => {
     const mPicker = document.getElementById('m-picker');
     if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
     
-    fixStoreStructure(); // <--- 補上這行，標籤才會在開機時現身
+    fixStoreStructure(); 
     initAll();
-    updateStoreUI(); // <-- 補這一行
+    updateStoreUI(); 
     pullFromCloud();
     checkLicense(); 
+
+    // --- 【以太流：物理防禦攔截器】 ---
+    // 只有在滑動卡片區時才放行，摸到標題或導航條想滑動會被攔截，畫面就不會亂跳了
+    document.body.addEventListener('touchmove', function(e) {
+        if (!e.target.closest('.content-scroll')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
 });
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
