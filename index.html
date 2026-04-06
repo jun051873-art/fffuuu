@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -678,9 +678,30 @@ const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap
     }
 
     function pickSug(n, p, s, boxId) {
-        if(boxId === 'sw-box' || boxId === 'cli-sw-box') { cliKw = n; renderCli(); Swal.close(); }
-        else { document.getElementById('pop-n').value=n; document.getElementById('pop-p').value=p; document.getElementById('pop-s').value=s; document.getElementById('pop-box').style.display='none'; }
+    // 情況 A：如果是從「顧客名冊的搜尋放大鏡」點擊結果
+    if(boxId === 'sw-box' || boxId === 'cli-sw-box') { 
+        cliKw = n;          // 1. 將搜尋關鍵字設定為該顧客姓名
+        Swal.close();       // 2. 關閉搜尋彈窗
+        
+        // 3. 【核心修正】執行頁面切換：跳轉到「顧客」分頁
+        // ID 是 pg-cli，分頁 index 是 1
+        showP('pg-cli', 1); 
+
+        // 4. 【以太連動】稍微延遲後強制刷新清單，確保「王」先生的卡片排在第一位
+        setTimeout(() => {
+            renderCli();
+        }, 150);
+    } 
+    // 情況 B：如果是從「新增預約」彈窗裡的姓名建議點擊
+    else { 
+        document.getElementById('pop-n').value = n; 
+        document.getElementById('pop-p').value = p; 
+        // 確保設計師下拉選單同步（如果有的話）
+        const sEl = document.getElementById('pop-s');
+        if(sEl) sEl.value = s; 
+        document.getElementById('pop-box').style.display = 'none'; 
     }
+}
 
 // ==========================================================================
 // --- 【V318 專屬空間：設定頁面奢華大腦 - 終極整合版】 ---
@@ -1262,7 +1283,22 @@ async function togglePay(aptId, tagId, ds) {
 }
 
     // --- 工具函數 ---
-    async function popCliSearch() { await Swal.fire({ title: '搜尋', html: `<input id="sw-search" class="luxe-btn" style="width:100%;" oninput="searchStored(this, 'sw-box')"><div id="sw-box" class="suggest-box"></div>`, showConfirmButton: false }); }
+    async function popCliSearch() { 
+    await Swal.fire({ 
+        title: '搜尋顧客資料', 
+        html: `
+            <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px;" 
+                   placeholder="請輸入姓名或電話..." 
+                   oninput="searchStored(this, 'sw-box')">
+            <div id="sw-box" class="suggest-box"></div>
+        `, 
+        showConfirmButton: false,
+        didOpen: () => {
+            // 自動聚焦輸入框，手機一打開就能直接打字，不用再點一下
+            document.getElementById('sw-search').focus();
+        }
+    }); 
+}
     async function addCliTrig() {
        // --- Aether Pro 顧客上限鎖 ---
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -1668,16 +1704,6 @@ const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType =
             </div>
     `;
 }
-// --- 中文標籤：標籤管理工具函式 (讓新增/修改標籤按鈕通電) ---
-async function addPayTag() {
-    const {value: n} = await Swal.fire({ title: '新增標籤名稱', input: 'text', inputPlaceholder: '例如：信用卡' });
-    if(n) { 
-        if(!store.payTagsDef) store.payTagsDef = [];
-        store.payTagsDef.push({ id: 'PT'+Date.now(), name: n, color: '#D4AF37' }); 
-        await saveS(); renderSet(); 
-    }
-}
-
 async function editPayTag(id, old) {
     const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
     if(n) { store.payTagsDef.find(x => x.id === id).name = n; await saveS(); renderSet(); }
