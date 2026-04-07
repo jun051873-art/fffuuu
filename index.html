@@ -2130,6 +2130,22 @@ function setSexCli(s) {
     if(s === 'M') b.classList.add('active-boy');
     if(s === 'F') g.classList.add('active-girl');
 }
+
+// --- 【以太流：物理防禦攔截器 終極版】 ---
+// 這裡負責決定螢幕哪裡可以滑、哪裡要釘死
+document.body.addEventListener('touchmove', function(e) {
+    // 1. 特許權：如果是在「彈窗」或「項目抽屜」裡，絕對放行，讓你滑動選項目
+    if (e.target.closest('.swal2-container') || e.target.closest('.drawer-content')) {
+        return; 
+    }
+    // 2. 特許權：如果是顧客名冊 (.content-scroll) 或 預約跑道 (.lane-container)，也放行
+    if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
+        return;
+    }
+    // 3. 攔截：除了以上區域，摸到背景、標題、導航條一律鎖死，防止畫面亂飄
+    if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
 </script>
 </body>
 </html>
