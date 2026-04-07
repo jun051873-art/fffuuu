@@ -638,7 +638,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ==========================================================================
-// --- S3: 資料核心與 Firebase 雲端同步模組 ---
+// --- S3: 資料核心與 Firebase 雲端同步模組 (以太流修正版) ---
 // ==========================================================================
     let curD = new Date();
     let tempTags = [];
@@ -649,7 +649,6 @@ const db = firebase.firestore();
         startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
         stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
         tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
-        // --- 這是新增的自定義標籤籃子 ---
         payTagsDef: [
             {id: 'L', name: 'Line', color: '#06C755'},
             {id: 'J', name: '街口', color: '#ED1C24'},
@@ -658,7 +657,7 @@ const db = firebase.firestore();
         appointments: [], clients: [], offDays: []
     };
 
-    // 【重要】鋼鐵核心：必須是 async 才能確保導入成功
+    // 【重要】鋼鐵核心：同步存檔邏輯
     async function saveS() { 
         // 1. 先存本機備份
         localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
@@ -671,9 +670,29 @@ const db = firebase.firestore();
                 await db.collection("Salons").doc(auth.id).set(store);
                 console.log("雲端同步成功:", auth.id);
                 
-                // 成功同步後跳出提示 (不干擾操作的 Toast)
-                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
-                Toast.fire({ icon: 'success', title: '雲端已同步' });
+                // --- 這裡就是妳要的：修正後的「以太小膠囊」提示 ---
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top', // 位置移到螢幕正上方
+                    showConfirmButton: false,
+                    timer: 1200, // 稍微縮短時間，減少干擾
+                    didOpen: (toast) => {
+                        // 強制鎖定寬度與外觀，對抗全域大玻璃樣式
+                        toast.style.width = '160px'; 
+                        toast.style.height = '48px';
+                        toast.style.borderRadius = '24px';
+                        toast.style.background = 'rgba(255, 255, 255, 0.95)'; 
+                        toast.style.backdropFilter = 'blur(10px)'; 
+                        toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                        toast.style.marginTop = '25px';
+                    }
+                });
+                
+                Toast.fire({
+                    icon: 'success',
+                    title: '<span style="font-weight:900; font-size:0.95rem; color:#1d1d1f; letter-spacing:1px;">同步成功</span>'
+                });
+
             } catch (e) {
                 console.error("雲端同步失敗", e);
             }
