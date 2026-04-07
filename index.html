@@ -349,12 +349,6 @@ div[style*="display:flex; gap:10px"] {
         }
         .set-drawer-trigger i { font-size: 1.8rem; color: #ccc; transition: color 0.3s; }
         .set-drawer-trigger:hover i { color: var(--gold); }
-        .add-luxe-btn {
-            width: 100%; height: 60px; background: transparent; border: 2px dashed rgba(212, 175, 55, 0.4);
-            color: var(--gold); border-radius: 15px; font-weight: 900; font-size: 1.1rem;
-            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s;
-        }
-        .add-luxe-btn:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); border-style: solid; }
         .luxe-trash-btn { color: #ccc !important; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; padding: 5px; }
         .luxe-trash-btn:hover { color: #ffcccc !important; transform: scale(1.2); }
         .luxe-edit-icon { color: #ccc; font-size: 1.2rem; transition: color 0.2s; margin-right: 15px; cursor: pointer; }
@@ -421,7 +415,28 @@ div[style*="display:flex; gap:10px"] {
         .gender-btn.active-boy { background: #fff; border-color: #007AFF; color: #007AFF; box-shadow: 0 4px 10px rgba(0,122,255,0.1); }
         .gender-btn.active-girl { background: #fff; border-color: #FF2D55; color: #FF2D55; box-shadow: 0 4px 10px rgba(255,45,85,0.1); }
 
-  /* --- 【Aether Flow：物理錨定，防止整塊頁面亂滑】 --- */
+  /* --- Aether Flow: 核心卡片地基 --- */
+.aether-card-row {
+    background: #fff !important; /* 確保底色純淨 */
+    border-radius: 30px !important; /* 妳要的膨潤感 */
+    padding: 20px 25px !important;
+    margin-bottom: 15px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    /* 物理深度陰影：這行就是「以太流」不生硬的祕訣 */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(0, 0, 0, 0.02) !important;
+    transition: transform 0.2s ease;
+}
+
+/* 確保彈窗背景夠模糊，卡片才浮得起來 */
+.swal2-backdrop-show {
+    backdrop-filter: blur(25px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
 html, body {
     /* 核心：禁止整個網頁層級的彈跳滾動 */
     overflow: hidden;
@@ -445,6 +460,42 @@ html, body {
     touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
 }
   
+/* --- Aether Flow: 全景掌控視角 --- */
+/* 當觸發縮放模式時，強制壓縮跑道寬度，實現「一眼全覽」 */
+.lane-container.zoom-out .lane {
+    min-width: 140px !important; /* 原本 380px，縮小後讓 3 個人同時擠進螢幕 */
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.lane-container.zoom-out .apt-card {
+    padding: 12px !important; /* 縮小內距，讓卡片變瘦長 */
+    border-radius: 20px !important; /* 縮小圓角，對齊比例 */
+}
+
+.lane-container.zoom-out .apt-card div[style*="font-size:1.8rem"] {
+    font-size: 1.1rem !important; /* 名字縮小，防止在窄跑道裡折行 */
+}
+
+/* 讓全景切換鈕浮在右上角，像系統按鈕一樣高級 */
+#zoom-trigger {
+    position: fixed;
+    top: 125px; /* 避開標題區 */
+    right: 20px;
+    z-index: 9999;
+    width: 45px;
+    height: 45px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(15px); /* 以太流標配：毛玻璃 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.5);
+    color: #1d1d1f;
+    cursor: pointer;
+}
+
   </style>
 </head>
 <body>
@@ -505,7 +556,10 @@ html, body {
     </div>
 
     <button class="fab" onclick="popBooking()"><i class="fas fa-plus"></i></button>
-   <div class="nav">
+    <div id="zoom-trigger" onclick="toggleAetherZoom()">
+    <i id="zoom-icon" class="fas fa-expand-alt"></i>
+</div>
+    <div class="nav">
         <div id="nav-aether-mover"></div>
 
         <div onclick="showP('pg-res', 0)" id="n-res" class="nav-item active">
@@ -1029,313 +1083,218 @@ function popOffDayDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 1. 商業鎖：試用版僅支援 2 天
     if (!isPro && (store.offDays || []).length >= 2) {
-        Swal.fire({ 
-            icon: 'lock', title: '✨ 升級 Aether Pro', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>解鎖旗艦版以享有無限排班功能。</p>`, 
-            confirmButtonColor: '#D4AF37', confirmButtonText: '立即解鎖'
-        }).then((result) => { if (result.isConfirmed) checkLicense(); });
+        Swal.fire({ icon: 'lock', title: '<span style="color:#1d1d1f; font-weight:900;">Aether Pro 專屬</span>', html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。</p>`, confirmButtonColor: '#1d1d1f', confirmButtonText: '立即解鎖' });
         return;
     }
 
-    // 2. 打開視窗 (改用 didOpen 綁定監聽，防止點擊跳掉)
     Swal.fire({
-        title: '店舖排休設定',
+        title: '<div style="color:#1d1d1f; font-weight:900; font-size:1.8rem; margin-top:10px; letter-spacing:-1px;">店舖排休設定</div>',
+        width: '90%',
+        backdrop: `rgba(0,0,0,0.3) blur(20px)`,
+        padding: '25px 15px',
         html: `
-            <div style="padding:20px;">
-                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" id="btn-pick-off">
-                    <i class="fas fa-calendar-plus"></i> 選擇月份與日期
+            <div style="margin-top: 15px; padding: 0 10px;">
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    
+                    <div onclick="Swal.close(); setTimeout(() => pickOffMulti(), 300)" 
+                         style="background:#fff; border-radius:30px; padding:20px 25px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 8px 25px rgba(0,0,0,0.05); cursor:pointer; border:1px solid rgba(0,0,0,0.02);">
+                        <div style="display:flex; align-items:center; gap:18px;">
+                            <i class="fas fa-calendar-alt" style="font-size:1.3rem; color:#1d1d1f;"></i>
+                            <span style="font-weight:900; font-size:1.3rem; color:#1d1d1f; letter-spacing:-0.5px;">選擇月份與日期</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:#d1d1d6; font-size:1.1rem;"></i>
+                    </div>
+
+                    <div onclick="Swal.close(); setTimeout(() => pickLuxeColor('off'), 300)" 
+                         style="background:#fff; border-radius:30px; padding:20px 25px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 8px 25px rgba(0,0,0,0.05); cursor:pointer; border:1px solid rgba(0,0,0,0.02);">
+                        <div style="display:flex; align-items:center; gap:18px;">
+                            <div style="width:24px; height:24px; border-radius:50%; background:${store.offColor}; border:4.5px solid #fff; box-shadow:0 2px 10px rgba(0,0,0,0.12);"></div>
+                            <span style="font-weight:900; font-size:1.3rem; color:#1d1d1f; letter-spacing:-0.5px;">修改休假格顏色</span>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:#d1d1d6; font-size:1.1rem;"></i>
+                    </div>
+
                 </div>
-                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" id="btn-pick-color">
-                    <i class="fas fa-palette"></i> 修改休假格顏色
+
+                <div style="margin-top: 35px; display: flex; justify-content: center;">
+                    <button onclick="Swal.close()" 
+                            style="width: auto; min-width: 170px; height: 55px; background:#1d1d1f !important; color:#fff !important; border:none !important; border-radius:30px !important; font-weight:900 !important; font-size:1.1rem !important; cursor:pointer !important; display:flex !important; align-items:center !important; justify-content:center !important; box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;">
+                        確認並返回
+                    </button>
                 </div>
-                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
-            </div>
-        `,
-        showConfirmButton: false,
-        didOpen: () => {
-            document.getElementById('btn-pick-off').onclick = () => {
-                Swal.close();
-                setTimeout(() => pickOffMulti(), 300);
-            };
-            document.getElementById('btn-pick-color').onclick = () => {
-                Swal.close();
-                setTimeout(() => pickLuxeColor('off'), 300);
-            };
-        }
+                
+                <p style="text-align:center; color:#ccc; font-weight:900; margin-top:20px; font-size:0.95rem; letter-spacing:1px; opacity:0.8;">
+                    目前已設定 ${(store.offDays || []).length} 天休假
+                </p>
+            </div>`,
+        showConfirmButton: false
     });
 }
+// ==========================================================================
+// --- 【Aether Flow 終極整合：人員與服務管理模組】 ---
+// ==========================================================================
+
+// 1. 人員管理彈窗 (以太流旗艦版)
 function popStyDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
-
+    
     Swal.fire({
-        title: '設計師團隊管理',
+        title: '<div style="color:#1d1d1f; font-weight:900; font-size:1.8rem; letter-spacing:-1px; margin-top:10px;">設計師管理</div>',
         width: '90%',
-        html: `<div style="padding:10px;" id="swal-sty-list">
-                ${store.stylists.map(s => `
-                    <div class="sty-item" style="display:flex; align-items:center; justify-content:space-between; padding:18px; background:#f9f9fb; border-radius:20px; margin-bottom:12px; border:1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div class="sty-color-dot-trigger" data-id="${s.id}" style="width:45px; height:45px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                                <div style="width:30px; height:30px; border-radius:50%; background:${s.color}; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1); pointer-events:none;"></div>
+        padding: '25px 15px',
+        html: `
+            <div style="margin-top: 15px; padding: 0 10px;">
+                <div style="display:flex; flex-direction:column;">
+                    ${store.stylists.map(s => `
+                        <div class="aether-card-row">
+                            <div style="display:flex; align-items:center; gap:18px;">
+                                <div style="width:24px; height:24px; border-radius:50%; background:${s.color}; border:4px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor:pointer;" 
+                                     onclick="pickLuxeColor('sty', '${s.id}')"></div>
+                                <span style="font-weight:900; font-size:1.4rem; color:#1d1d1f; letter-spacing:-0.5px;">${s.name}</span>
                             </div>
-                            <span style="font-weight:900; font-size:1.1rem;">${s.name}</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="fas fa-edit sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.3rem; color:#ccc; cursor:pointer;"></i>
-                            <i class="fas fa-trash sty-del-btn" data-id="${s.id}" style="font-size:1.3rem; color:#ffcccc; cursor:pointer;"></i>
-                        </div>
-                    </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:15px; width:100%;" id="btn-add-sty-real">+ 新增團隊成員</button>
+                            <div style="display:flex; gap:18px; color:#d1d1d6;">
+                                <i class="fas fa-pen-nib" style="cursor:pointer; font-size:1.2rem;" onclick="Swal.close(); setTimeout(()=>editStyTrig('${s.id}', '${s.name}'), 300)"></i>
+                                <i class="fas fa-trash-alt" style="cursor:pointer; font-size:1.2rem;" onclick="confirmDelSty('${s.id}')"></i>
+                            </div>
+                        </div>`).join('')}
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button id="btn-add-sty-real" class="swal2-confirm swal2-styled" style="width:100%; height:62px; background:#1d1d1f !important; color:#fff !important; border:none; border-radius:25px; font-weight:900; font-size:1.25rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <i class="fas fa-plus" style="font-size:1rem;"></i> 新增團隊成員
+                    </button>
+                    
+                    <div style="text-align:center; margin-top:20px;">
+                        <span onclick="Swal.close()" style="color:#aaa; font-weight:900; font-size:1rem; cursor:pointer; opacity:0.6;">取消返回</span>
+                    </div>
+                </div>
             </div>`,
         showConfirmButton: false,
         didOpen: () => {
-            const container = document.getElementById('swal-sty-list');
-
-            // 1. 【選色氣復活】監聽彩色圓點
-            container.querySelectorAll('.sty-color-dot-trigger').forEach(dot => {
-                dot.onclick = (e) => {
-                    e.stopPropagation();
-                    const id = dot.dataset.id;
-                    pickLuxeColor('sty', id); // 呼叫選色引擎
-                };
-            });
-
-            // 2. 監聽修改
-            container.querySelectorAll('.sty-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    editStyTrig(btn.dataset.id, btn.dataset.name);
-                };
-            });
-
-            // 3. 監聽刪除
-            container.querySelectorAll('.sty-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    confirmDelSty(btn.dataset.id);
-                };
-            });
-
-            // 4. 監聽新增
-            document.getElementById('btn-add-sty-real').onclick = (e) => {
-                e.stopPropagation();
-                if (!isPro && store.stylists.length >= 2) {
-                    Swal.showValidationMessage('試用版上限 2 人');
-                    return;
+            document.getElementById('btn-add-sty-real').onclick = () => {
+                if (!isPro && store.stylists.length >= 2) { 
+                    Swal.showValidationMessage('試用版上限 2 人'); 
+                    return; 
                 }
                 addStyTrig();
             };
         }
     });
 }
-// --- 【Aether Flow：服務項目管理 - 靈靈連通版】 ---
+
+// 2. 服務項目管理彈窗 (以太流旗艦版)
 function popTagDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
-
     Swal.fire({
-        title: '服務項目管理',
+        title: '<div style="color:#1d1d1f; font-weight:900; font-size:2.2rem; letter-spacing:-1.5px; margin-top:10px;">服務項目</div>',
         width: '90%',
+        backdrop: `rgba(0,0,0,0.3) blur(20px)`,
+        padding: '25px 15px',
         html: `
-            <div style="padding:15px;">
-                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:25px;">
+            <div style="margin-top: 15px;">
+                <div style="display:flex; flex-direction:column;">
                     ${store.tags.map(t => `
-                        <div class="aether-tag-pill" style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:12px 20px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);">
-                            <span style="font-weight:900; margin-right:15px; color:#1d1d1f;">${t.name}</span>
-                            <div style="display:flex; gap:12px;">
-                                <i class="fas fa-ruler-combined luxe-edit-icon tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
-                                <i class="far fa-trash-alt luxe-trash-btn tag-del-btn" data-id="${t.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
+                        <div class="aether-card-row">
+                            <span style="font-weight:900; font-size:1.35rem; color:#1d1d1f;">${t.name}</span>
+                            <div style="display:flex; gap:20px; color:#bbb;">
+                                <i class="fas fa-pen-nib" style="cursor:pointer; font-size:1.3rem;" onclick="Swal.close(); setTimeout(() => editTagTrig('${t.id}', '${t.name}'), 300)"></i>
+                                <i class="fas fa-trash-alt" style="cursor:pointer; font-size:1.3rem;" onclick="confirmDelTag('${t.id}')"></i>
                             </div>
                         </div>`).join('')}
                 </div>
-                <button class="add-luxe-btn" id="btn-add-tag">
-                    <i class="fas fa-plus-circle"></i> 新增服務項目
-                </button>
+                <div style="margin-top: 25px; padding: 0 5px;">
+                    <button id="btn-add-tag-real" style="width:100%; height:65px; background:#1d1d1f !important; color:#fff !important; border:none; border-radius:22px; font-weight:900; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">
+                        <i class="fas fa-plus" style="color:#fff !important; font-size:1rem;"></i> 新增項目
+                    </button>
+                    <div style="text-align:center; margin-top:20px;">
+                        <span onclick="Swal.close()" style="color:#aaa; font-weight:900; font-size:1.1rem; cursor:pointer;">取消返回</span>
+                    </div>
+                </div>
             </div>`,
         showConfirmButton: false,
         didOpen: () => {
-            document.getElementById('btn-add-tag').onclick = () => {
-                if (!isPro && store.tags.length >= 2) {
-                    Swal.showValidationMessage('試用版上限 2 個項目');
-                    return;
-                }
-                Swal.close();
-                setTimeout(() => addTagTrig(), 300);
+            document.getElementById('btn-add-tag-real').onclick = () => {
+                if (!isPro && store.tags.length >= 2) { Swal.showValidationMessage('試用版上限 2 個項目'); return; }
+                addTagTrig();
             };
-            document.querySelectorAll('.tag-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.tag-edit-btn').dataset.id;
-                    const oldName = e.target.closest('.tag-edit-btn').dataset.name;
-                    Swal.close();
-                    setTimeout(() => editTagTrig(id, oldName), 300);
-                };
-            });
-            document.querySelectorAll('.tag-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.tag-del-btn').dataset.id;
-                    Swal.close();
-                    setTimeout(() => confirmDelTag(id), 300);
-                };
-            });
         }
     });
 }
 
-// --- 【Aether Flow：排休抽屜大腦 - 穩定觸發版】 ---
-function popOffDayDrawer() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
+// 3. 鋼鐵刪除鎖：人員移除
+async function confirmDelSty(id) {
+    const res = await Swal.fire({
+        title: '<span style="color:#1d1d1f; font-weight:900;">移除成員？</span>',
+        icon: 'warning', showCancelButton: true, confirmButtonColor: '#1d1d1f', confirmButtonText: '確定移除', backdrop: `rgba(0,0,0,0.3) blur(20px)`
+    });
+    if (res.isConfirmed) {
+        store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+        await saveS(); renderSet(); popStyDrawer();
+    } else { popStyDrawer(); }
+}
 
-    // 1. 商業鎖：試用版僅支援 2 天
-    if (!isPro && (store.offDays || []).length >= 2) {
-        Swal.fire({ 
-            icon: 'lock', title: '✨ 升級 Aether Pro', 
-            html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>解鎖旗艦版以享有無限排班功能。</p>`, 
-            confirmButtonColor: '#D4AF37', confirmButtonText: '立即解鎖'
-        }).then((result) => { if (result.isConfirmed) checkLicense(); });
-        return;
+// 4. 鋼鐵刪除鎖：項目移除
+async function confirmDelTag(id) {
+    const res = await Swal.fire({
+        title: '<span style="color:#1d1d1f; font-weight:900;">確定移除項目？</span>',
+        icon: 'warning', showCancelButton: true, confirmButtonColor: '#1d1d1f', confirmButtonText: '確定刪除', backdrop: `rgba(0,0,0,0.3) blur(20px)`
+    });
+    if (res.isConfirmed) {
+        store.tags = store.tags.filter(t => String(t.id) !== String(id));
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+        await saveS(); renderSet(); popTagDrawer();
+    } else { popTagDrawer(); }
+}
+// 人員管理專屬刪除鎖 (對齊服務項目邏輯)
+async function confirmDelSty(id) {
+    const res = await Swal.fire({
+        title: '<span style="color:#1d1d1f; font-weight:900;">移除成員？</span>',
+        icon: 'warning', showCancelButton: true, confirmButtonColor: '#1d1d1f', confirmButtonText: '確定移除', backdrop: `rgba(0,0,0,0.3) blur(20px)`
+    });
+    if (res.isConfirmed) {
+        store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); // 強制同步
+        await saveS(); renderSet(); popStyDrawer();
+    } else { popStyDrawer(); }
+}
+// --- 【以太流：服務項目刪除鎖 - 補完版】 ---
+async function confirmDelTag(id) {
+    const res = await Swal.fire({
+        title: '<span style="color:#1d1d1f; font-weight:900;">確定移除項目？</span>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#1d1d1f',
+        confirmButtonText: '確定刪除',
+        cancelButtonText: '取消',
+        backdrop: `rgba(0,0,0,0.3) blur(20px)`
+    });
+
+    if (res.isConfirmed) {
+        // 1. 從變數中過濾掉該項目
+        store.tags = store.tags.filter(t => String(t.id) !== String(id));
+        
+        // 2. 重點：立即寫入本地緩存，鎖死資料庫
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+        
+        // 3. 同步到雲端並等待完成
+        await saveS(); 
+        
+        // 4. 更新後方設定頁面數字
+        renderSet(); 
+        
+        // 5. 重新打開玻璃抽屜
+        popTagDrawer(); 
+
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
+        Toast.fire({ icon: 'success', title: '移除成功' });
+    } else {
+        // 按取消也要開回來
+        popTagDrawer();
     }
-
-    // 2. 打開視窗 (改用 didOpen 綁定監聽，防止點擊跳掉)
-    Swal.fire({
-        title: '店舖排休設定',
-        html: `
-            <div style="padding:20px;">
-                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" id="btn-pick-off">
-                    <i class="fas fa-calendar-plus"></i> 選擇月份與日期
-                </div>
-                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" id="btn-pick-color">
-                    <i class="fas fa-palette"></i> 修改休假格顏色
-                </div>
-                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
-            </div>
-        `,
-        showConfirmButton: false,
-        didOpen: () => {
-            document.getElementById('btn-pick-off').onclick = () => {
-                Swal.close();
-                setTimeout(() => pickOffMulti(), 300);
-            };
-            document.getElementById('btn-pick-color').onclick = () => {
-                Swal.close();
-                setTimeout(() => pickLuxeColor('off'), 300);
-            };
-        }
-    });
-}
-// --- 【Aether Flow：設計師團隊管理 - 穩定通電版】 ---
-function popStyDrawer() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
-
-    Swal.fire({
-        title: '設計師團隊管理',
-        width: '90%',
-        html: `
-            <div style="padding:10px;">
-                ${store.stylists.map(s => `
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px; background:#f9f9fb; border-radius:20px; margin-bottom:12px; border:1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div class="sty-color-dot" data-id="${s.id}" style="width:35px; height:35px; border-radius:50%; background:${s.color}; cursor:pointer; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900; font-size:1.1rem;">${s.name}</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="fas fa-ruler-combined luxe-edit-icon sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.3rem; color:#ccc; cursor:pointer;"></i>
-                            <i class="far fa-trash-alt luxe-trash-btn sty-del-btn" data-id="${s.id}" style="font-size:1.3rem; color:#ffcccc; cursor:pointer;"></i>
-                        </div>
-                    </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:15px;" id="btn-add-sty">
-                    <i class="fas fa-user-plus"></i> 新增團隊成員
-                </button>
-            </div>`,
-        showConfirmButton: false,
-        didOpen: () => {
-            document.getElementById('btn-add-sty').onclick = () => {
-                if (!isPro && store.stylists.length >= 2) {
-                    Swal.showValidationMessage('試用版上限 2 人');
-                    return;
-                }
-                Swal.close();
-                setTimeout(() => addStyTrig(), 300);
-            };
-            document.querySelectorAll('.sty-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.sty-edit-btn').dataset.id;
-                    const oldName = e.target.closest('.sty-edit-btn').dataset.name;
-                    Swal.close();
-                    setTimeout(() => editStyTrig(id, oldName), 300);
-                };
-            });
-            document.querySelectorAll('.sty-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.sty-del-btn').dataset.id;
-                    Swal.close();
-                    setTimeout(() => confirmDelSty(id), 300);
-                };
-            });
-            document.querySelectorAll('.sty-color-dot').forEach(dot => {
-                dot.onclick = (e) => {
-                    const id = e.target.dataset.id;
-                    Swal.close();
-                    setTimeout(() => pickLuxeColor('sty', id), 300);
-                };
-            });
-        }
-    });
-}
-// --- 【Aether Flow：服務項目管理 - 靈靈連通版】 ---
-function popTagDrawer() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
-
-    Swal.fire({
-        title: '服務項目管理',
-        width: '90%',
-        html: `
-            <div style="padding:15px;">
-                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:25px;">
-                    ${store.tags.map(t => `
-                        <div class="aether-tag-pill" style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:12px 20px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);">
-                            <span style="font-weight:900; margin-right:15px; color:#1d1d1f;">${t.name}</span>
-                            <div style="display:flex; gap:12px;">
-                                <i class="fas fa-ruler-combined luxe-edit-icon tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
-                                <i class="far fa-trash-alt luxe-trash-btn tag-del-btn" data-id="${t.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
-                            </div>
-                        </div>`).join('')}
-                </div>
-                <button class="add-luxe-btn" id="btn-add-tag">
-                    <i class="fas fa-plus-circle"></i> 新增服務項目
-                </button>
-            </div>`,
-        showConfirmButton: false,
-        didOpen: () => {
-            document.getElementById('btn-add-tag').onclick = () => {
-                if (!isPro && store.tags.length >= 2) {
-                    Swal.showValidationMessage('試用版上限 2 個項目');
-                    return;
-                }
-                Swal.close();
-                setTimeout(() => addTagTrig(), 300);
-            };
-            document.querySelectorAll('.tag-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.tag-edit-btn').dataset.id;
-                    const oldName = e.target.closest('.tag-edit-btn').dataset.name;
-                    Swal.close();
-                    setTimeout(() => editTagTrig(id, oldName), 300);
-                };
-            });
-            document.querySelectorAll('.tag-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.tag-del-btn').dataset.id;
-                    Swal.close();
-                    setTimeout(() => confirmDelTag(id), 300);
-                };
-            });
-        }
-    });
 }
 
 // 0. 營業時間抽屜
@@ -1593,7 +1552,6 @@ async function togglePay(aptId, tagId, ds) {
     async function addTagTrig() { const {value:n}=await Swal.fire({title:'項目名稱', input:'text'}); if(n){store.tags.push({id:Date.now(), name:n}); saveS(); renderSet();} }
     function confirmDelApt(id, ds) { Swal.fire({ title: '刪除預約？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.appointments = store.appointments.filter(a => String(a.id) !== String(id)); saveS(); renderDay(ds); }}); }
     function confirmDelSty(id) { Swal.fire({ title: '移除人員？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.stylists = store.stylists.filter(s => s.id !== id); saveS(); renderSet(); }}); }
-    function confirmDelTag(id) { Swal.fire({ title: '移除項目？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.tags = store.tags.filter(t => t.id !== id); saveS(); renderSet(); }}); }
     function confirmDelCli(n) { Swal.fire({ title: '刪除顧客？', icon: 'warning', showCancelButton: true }).then(res => { if(res.isConfirmed) { store.clients = store.clients.filter(x => x.n !== n); saveS(); renderCli(); }}); }
     function toggleAptDone(id, ds) { const a = store.appointments.find(x => String(x.id) === String(id)); if(a) { a.done = !a.done; saveS(); renderDay(ds); } }
     function fillStySelect() { const sel = document.getElementById('cli-f-sty'); if(sel) sel.innerHTML = '<option value="">所有設計師</option>' + store.stylists.map(s => `<option value="${s.id}">${s.name}</option>`).join(''); }
@@ -1967,28 +1925,51 @@ function delPayTag(id) {
     });
 }
 
-// --- 【以太流補全：自定義支付標籤管理抽屜】 ---
+// --- 【以太流：支付方式管理 - 門禁鎖定版】 ---
 function popPayTagDrawer() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+    
     Swal.fire({
-        title: '支付方式管理',
+        title: '<div style="color:#1d1d1f; font-weight:900; font-size:2.2rem; letter-spacing:-1.5px; margin-top:10px;">支付標籤</div>',
         width: '90%',
+        backdrop: `rgba(0,0,0,0.3) blur(20px)`,
+        padding: '25px 15px',
         html: `
-            <div style="padding:10px;">
-                <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;">
+            <div style="margin-top: 15px;">
+                <div style="display:flex; flex-direction:column;">
                     ${(store.payTagsDef || []).map(pt => `
-                        <div style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                            <div onclick="pickTagColor('${pt.id}')" style="width:22px; height:22px; border-radius:50%; background:${pt.color}; cursor:pointer; margin-right:10px; border:2px solid #fff; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900; margin-right:12px;">${pt.name}</span>
-                            <div style="display:flex; gap:8px;">
-                                <i class="fas fa-edit" style="color:#ccc; cursor:pointer;" onclick="editPayTag('${pt.id}', '${pt.name}')"></i>
-                                <i class="fas fa-trash" style="color:#ffcccc; cursor:pointer;" onclick="delPayTag('${pt.id}')"></i>
+                        <div class="aether-card-row">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <div style="width:25px; height:25px; border-radius:50%; background:${pt.color}; border:2px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1); cursor:pointer;" onclick="pickTagColor('${pt.id}')"></div>
+                                <span style="font-weight:900; font-size:1.35rem; color:#1d1d1f; letter-spacing:-0.5px;">${pt.name}</span>
                             </div>
-                        </div>
-                    `).join('')}
+                            <div style="display:flex; gap:20px; color:#bbb;">
+                                <i class="fas fa-pen-nib" style="cursor:pointer; font-size:1.3rem;" onclick="editPayTag('${pt.id}', '${pt.name}')"></i>
+                                <i class="fas fa-trash-alt" style="cursor:pointer; font-size:1.3rem;" onclick="delPayTag('${pt.id}')"></i>
+                            </div>
+                        </div>`).join('')}
                 </div>
-                <button class="add-luxe-btn" onclick="addPayTag()">+ 新增支付方式</button>
+                
+                <div style="margin-top: 25px; padding: 0 5px;">
+                    <button id="btn-add-paytag-real" style="width:100%; height:65px; background:#1d1d1f !important; color:#fff !important; border:none; border-radius:22px; font-weight:900; font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow: 0 15px 30px rgba(0,0,0,0.2);">
+                        <i class="fas fa-plus" style="color:#fff !important; font-size:1rem;"></i> 新增支付標籤
+                    </button>
+                    <div style="text-align:center; margin-top:20px;">
+                        <span onclick="Swal.close()" style="color:#aaa; font-weight:900; font-size:1.1rem; cursor:pointer;">取消返回</span>
+                    </div>
+                </div>
             </div>`,
-        showConfirmButton: false
+        showConfirmButton: false,
+        didOpen: () => {
+            document.getElementById('btn-add-paytag-real').onclick = () => {
+                if (!isPro && (store.payTagsDef || []).length >= 2) { 
+                    Swal.showValidationMessage('試用版上限 2 個標籤'); 
+                    return; 
+                }
+                addPayTag();
+            };
+        }
     });
 }
 // --- 【中文導航：標籤選取彈窗大腦 - 支援動態同步、統計紀錄】 ---
@@ -2158,36 +2139,38 @@ async function pickOffMulti() {
     let viewM = now.getMonth() + 1;
     let viewY = now.getFullYear();
 
-    // 渲染互動日曆的工具
     const renderInteractiveCal = () => {
         const daysInM = new Date(viewY, viewM, 0).getDate();
         const startDay = new Date(viewY, viewM - 1, 1).getDay();
-        const offset = startDay === 0 ? 6 : startDay - 1; // 調整為週一開始
+        const offset = startDay === 0 ? 6 : startDay - 1; 
         
         let html = `
-            <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-                <button onclick="window.changeOffMonth(-1)" class="luxe-btn" style="height:40px; width:40px; padding:0;">＜</button>
-                <div style="font-weight:900; font-size:1.2rem;">${viewY} / ${String(viewM).padStart(2,'0')}</div>
-                <button onclick="window.changeOffMonth(1)" class="luxe-btn" style="height:40px; width:40px; padding:0;">＞</button>
+            <div style="margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; padding:0 10px;">
+                <div onclick="window.changeOffMonth(-1)" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.05); border-radius:50%; cursor:pointer;"><i class="fas fa-chevron-left" style="font-size:0.9rem; color:#1d1d1f;"></i></div>
+                
+                <div style="font-weight:900; font-size:1.4rem; color:#1d1d1f; letter-spacing:-1px;">${viewY} / ${String(viewM).padStart(2,'0')}</div>
+                
+                <div onclick="window.changeOffMonth(1)" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.05); border-radius:50%; cursor:pointer;"><i class="fas fa-chevron-right" style="font-size:0.9rem; color:#1d1d1f;"></i></div>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:5px; text-align:center;">
+            
+            <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; text-align:center;">
         `;
         
-        // 標題
-        ['一','二','三','四','五','六','日'].forEach(w => html += `<div style="font-size:0.7rem; font-weight:900; color:#ccc;">${w}</div>`);
+        const weeks = ['一','二','三','四','五','六','日'];
+        weeks.forEach(w => html += `<div style="font-size:0.8rem; font-weight:900; color:#d1d1d6; margin-bottom:10px;">${w}</div>`);
         
-        // 空白格
         for(let i=0; i<offset; i++) html += `<div></div>`;
         
-        // 日期格
         for(let d=1; d<=daysInM; d++) {
             const ds = `${viewY}-${String(viewM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const isOff = store.offDays.includes(ds);
+            // 這裡的配色對齊「以太流」：選中後變深黑，平時是淡灰
             html += `
                 <div onclick="window.toggleOffDay('${ds}')" id="cell-${ds}" 
-                     style="padding:10px 0; border-radius:12px; cursor:pointer; font-weight:900; transition:0.3s;
-                     background:${isOff ? 'var(--gold)' : 'rgba(0,0,0,0.03)'}; 
-                     color:${isOff ? '#fff' : 'var(--primary)'};">
+                     style="height:45px; display:flex; align-items:center; justify-content:center; border-radius:15px; cursor:pointer; font-weight:900; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                     background:${isOff ? '#1d1d1f' : 'rgba(0,0,0,0.03)'}; 
+                     color:${isOff ? '#fff' : '#1d1d1f'};
+                     ${isOff ? 'box-shadow: 0 8px 15px rgba(0,0,0,0.2); transform:scale(1.05);' : ''}">
                     ${d}
                 </div>`;
         }
@@ -2195,7 +2178,6 @@ async function pickOffMulti() {
         return html;
     };
 
-    // 全域輔助函式，讓彈窗內的按鈕可以作用
     window.toggleOffDay = (ds) => {
         const idx = store.offDays.indexOf(ds);
         if(idx > -1) store.offDays.splice(idx, 1);
@@ -2203,9 +2185,12 @@ async function pickOffMulti() {
         const cell = document.getElementById(`cell-${ds}`);
         if(cell) {
             const active = store.offDays.includes(ds);
-            cell.style.background = active ? 'var(--gold)' : 'rgba(0,0,0,0.03)';
-            cell.style.color = active ? '#fff' : 'var(--primary)';
+            cell.style.background = active ? '#1d1d1f' : 'rgba(0,0,0,0.03)';
+            cell.style.color = active ? '#fff' : '#1d1d1f';
+            cell.style.boxShadow = active ? '0 8px 15px rgba(0,0,0,0.2)' : 'none';
+            cell.style.transform = active ? 'scale(1.05)' : 'scale(1)';
         }
+        if(window.navigator.vibrate) window.navigator.vibrate(5); // 點擊微震
     };
 
     window.changeOffMonth = (v) => {
@@ -2216,13 +2201,28 @@ async function pickOffMulti() {
     };
 
     await Swal.fire({
-        title: '設定店舖排休',
-        html: `<div id="interactive-cal-container" style="padding:10px;">${renderInteractiveCal()}</div>`,
+        title: '<div style="font-weight:900; color:#1d1d1f; letter-spacing:-1px;">點選休假日</div>',
+        width: '90%',
+        backdrop: `rgba(0,0,0,0.3) blur(20px)`,
+        html: `<div id="interactive-cal-container" style="padding:10px 5px;">${renderInteractiveCal()}</div>`,
+        // --- 底部動作按鈕：統一對齊以太黑磚 ---
         confirmButtonText: '完成設定',
-        confirmButtonColor: 'var(--gold)',
+        customClass: { confirmButton: 'aether-confirm-btn' },
+        didOpen: () => {
+            // 強制覆寫按鈕樣式為黑膠囊
+            const btn = Swal.getConfirmButton();
+            btn.style.width = 'auto';
+            btn.style.minWidth = '160px';
+            btn.style.height = '55px';
+            btn.style.background = '#1d1d1f';
+            btn.style.borderRadius = '30px';
+            btn.style.fontSize = '1.1rem';
+            btn.style.fontWeight = '900';
+            btn.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+        },
         didClose: () => {
-            saveS();     // 關閉視窗時自動存檔
-            initMonth(); // 刷新主預約表
+            saveS(); 
+            initMonth(); 
         }
     });
 }
@@ -2351,6 +2351,26 @@ function toggleCentralTag(tagName, el) {
     // 香皂滑動微震
     if(window.navigator.vibrate) window.navigator.vibrate(5);
 }
+
+// --- 以太流：視角縮放引擎 ---
+function toggleAetherZoom() {
+    const container = document.getElementById('day-lanes');
+    const icon = document.getElementById('zoom-icon');
+    
+    // 切換縮放 Class
+    container.classList.toggle('zoom-out');
+    
+    // 切換圖示：縮小時顯示縮小圖標，放大時顯示放大圖標
+    if(container.classList.contains('zoom-out')) {
+        icon.className = 'fas fa-compress-alt';
+        // 輕微震動回饋
+        if(window.navigator.vibrate) window.navigator.vibrate(15);
+    } else {
+        icon.className = 'fas fa-expand-alt';
+        if(window.navigator.vibrate) window.navigator.vibrate(10);
+    }
+}
+
 
 // --- 【Aether Flow：物理防禦攔截器 智慧版】 ---
 document.body.addEventListener('touchmove', function(e) {
