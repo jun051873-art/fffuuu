@@ -140,7 +140,13 @@ html, body {
         .active-P { background: #007AFF !important; color: #fff !important; border-color: #007AFF !important; }
         .active-S { background: #6f42c1 !important; color: #fff !important; border-color: #6f42c1 !important; }
         .drawer-btn { width: 100%; padding: 20px; background: #f9f9fb; border: 1px solid var(--gold); border-radius: 30px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 900; margin-bottom: 15px; }
-        .drawer-content { display: none; padding: 10px; background: #f9f9fb; border-radius: 0 0 30px 30px; border: 1px solid var(--gold); border-top: none; margin-top: -15px; margin-bottom: 15px; text-align: left; }
+        .drawer-content {display: none;padding: 15px;background: rgba(0,0,0,0.02);border-radius: 0 0 30px 30px;border: 1px solid var(--gold);border-top: none;margin-top: -15px;margin-bottom: 15px;text-align: left;
+    
+    /* --- 空間彈性核心 --- */
+    max-height: 300px; /* 超過這個高度就開啟捲軸 */
+    overflow-y: auto !important; /* 強制開啟垂直滑動 */
+    -webkit-overflow-scrolling: touch; /* iOS 絲滑手感 */
+}
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
@@ -425,41 +431,33 @@ const db = firebase.firestore();
 // --- S4: 頁面顯示與分頁切換控制 ---
 // ==========================================================================
     function showP(id, index) {
-    // 1. 【以太先行】：立即啟動「以太流」滑塊，視覺先行，絕對不卡頓
+    // 1. 【瞬發反應】：立即移動滑塊，不再等待
     const mover = document.getElementById('nav-aether-mover');
     if(mover && index !== undefined) {
-        // 修正後的語法：使用反引號包住 translateX
         mover.style.transform = `translateX(${index * 100}%)`;
     }
 
-    // 2. 立即高亮導航文字與圖示
+    // 2. 立即點亮導航圖示 (反應時間從 100ms 降至 0ms)
     document.querySelectorAll('.nav-item').forEach((n, i) => {
         n.classList.toggle('active', i === index);
     });
 
-    // 3. 【柔和銜接】：使用 100ms 延遲，等滑塊移動到中間才換頁
-    // 這樣視覺上會覺得頁面是被滑塊「帶」過來的，非常自然
-    setTimeout(() => {
-        // 切換頁面顯示
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const pageEl = document.getElementById(id);
-        if(pageEl) {
-            pageEl.classList.add('active');
-            // 每次換頁自動回到最頂端，維持以太流的純淨感
-            const scrollArea = pageEl.querySelector('.content-scroll');
-            if(scrollArea) scrollArea.scrollTop = 0;
-        }
+    // 3. 立即切換分頁，不使用 setTimeout
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const pageEl = document.getElementById(id);
+    if(pageEl) {
+        pageEl.classList.add('active');
+    }
 
-        // 4. 安靜載入數據 (這些是比較重的任務，放在 setTimeout 裡才不會卡到動畫)
-        if(id.includes('res')) initMonth(); 
-        else if(id==='pg-cli') { fillStySelect(); renderCli(); } 
-        else if(id==='pg-set') renderSet(); 
-        else if(id==='pg-stat') renderStats(); 
-        else if(id==='pg-day') renderDay(curD.toLocaleDateString('sv'));
-    }, 100);
+    // 4. 背景安靜載入數據
+    if(id.includes('res')) initMonth(); 
+    else if(id==='pg-cli') { fillStySelect(); renderCli(); } 
+    else if(id==='pg-set') renderSet(); 
+    else if(id==='pg-stat') renderStats(); 
+    else if(id==='pg-day') renderDay(curD.toLocaleDateString('sv'));
 
-    // 5. 觸感回饋：極短微震，模擬香皂滑動的物理阻尼
-    if(window.navigator.vibrate) window.navigator.vibrate(8);
+    // 5. 香皂滑動的微震回饋 (物理手感)
+    if(window.navigator.vibrate) window.navigator.vibrate(10);
 }
 
     function initMonth() {
@@ -492,8 +490,9 @@ const db = firebase.firestore();
         const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
         tempTags = apt ? [...(apt.tags || [])] : [];
         const { value: res } = await Swal.fire({
-            title: editId ? '修改預約' : '新增預約', width: '85%',
-            html: `
+          title: editId ? '修改預約' : '新增預約', width: '90%',
+html: `
+    <div style="max-height: 65vh; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch;">
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <div style="flex:2; position:relative;">
                         <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
@@ -536,7 +535,8 @@ const db = firebase.firestore();
                     <input id="pop-d" class="luxe-btn" type="date" style="flex:1.5; border-radius:25px;" value="${apt?apt.date:curD.toLocaleDateString('sv')}">
                     <input id="pop-t" class="luxe-btn" type="time" style="flex:1; border-radius:25px;" value="${apt?apt.time:'12:00'}">
                 </div>
-            `,
+            </div>
+             `,
             preConfirm: () => ({ 
                 n: document.getElementById('pop-n').value, 
                 sex: document.getElementById('pop-sex').value, 
