@@ -102,9 +102,28 @@ body.swal2-shown .nav {
     border: 1px solid rgba(255, 255, 255, 0.7) !important;
     border-radius: 45px !important;
     
-    /* 深邃立體投影 */
-    box-shadow: 0 25px 80px rgba(0,0,0,0.15) !important;
-    padding: 30px 15px !important;
+/* --- 關鍵：削薄底部灰色板塊高度 --- */
+.swal2-actions {
+    margin-top: 0 !important;
+    padding: 5px 0 12px !important; /* 縮減內距，灰色區域立刻變窄 */
+    background: rgba(0, 0, 0, 0.04) !important; 
+    width: 100% !important;
+}
+
+/* 內容區底部留白歸零，讓零件下沉 */
+.swal2-html-container {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 針對小手機：縮小 OK 按鈕本身的高度 */
+@media (max-width: 480px) {
+    .swal2-confirm {
+        height: 40px !important;
+        margin: 5px 0 !important;
+    }
+}
+
 }
 
 /* 彈窗內的標題 */
