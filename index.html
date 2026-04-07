@@ -98,19 +98,38 @@ body.swal2-shown .nav {
     z-index: 10000 !important;
 }
 
-/* --- Aether Flow: 彈窗內容區空間解鎖版 --- */
+/* --- Aether Flow: 設定頁全彈窗內容滑動解鎖 --- */
 .swal2-html-container {
-    display: block !important;
-    overflow-y: auto !important; 
-    /* 1. 關鍵高度判斷：維持 65vh 確保在手機上不會頂天立地 */
+    /* 1. 關鍵：設定最大高度，確保彈窗不會頂到天花板 */
     max-height: 65vh !important; 
     
-    /* 2. 核心修正：增加底部內距 (原本 15px 增加到 40px) */
-    /* 這樣日期方塊底部就不會被切掉，會完整露出圓潤邊緣 */
-    padding: 15px 8px 40px 8px !important; 
+    /* 2. 強制解鎖垂直滑動：不管妳有 10 個還是 50 個項目都能滑 */
+    overflow-y: auto !important; 
     
+    /* 3. 確保佈局是垂直排列，項目才不會擠在一起 */
+    display: block !important; 
+    
+    /* 4. iOS 原生絲滑慣性滾動 (必加) */
+    -webkit-overflow-scrolling: touch !important; 
+    
+    /* 5. 滾動條美化：隱藏醜陋的條條，但保留滑動功能 (賈伯斯美學) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    
+    /* 6. 內距微調：給卡片留點呼吸空間 */
+    padding: 10px 8px 30px 8px !important; 
     margin: 10px 0 0 !important;
-    -webkit-overflow-scrolling: touch !important;
+}
+
+/* 針對 Chrome, Safari, Opera 隱藏滾動條 */
+.swal2-html-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* 額外補強：確保彈窗內的容器不會被截斷 */
+.swal2-popup {
+    max-height: 90vh !important;
+    overflow: hidden !important; /* 讓內部 container 自己滑，外框不動 */
 }
 
 /* 3. 強化日期/時間方塊的「浮出」視覺感 */
