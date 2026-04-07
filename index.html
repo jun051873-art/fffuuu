@@ -137,20 +137,35 @@ body.swal2-shown .nav {
     font-weight: 900 !important;
 }
 
-/* 解鎖：強制讓彈窗內部可以滑動，並限制最大高度 */
+/* 1. 壓縮彈窗內的垂直留白 */
 .swal2-html-container {
-    /* 必須開啟這個，手機才知道裡面可以滑 */
-    overflow-y: auto !important; 
-    max-height: 60vh !important; /* 稍微縮短一點，給鍵盤留空間 */
-    -webkit-overflow-scrolling: touch !important; /* iOS 絲滑滾動靈魂 */
-    padding: 10px !important;
-    display: block !important; /* 確保它是區塊顯示 */
+    margin: 10px 0 0 !important; /* 縮小上方間距 */
+    padding: 0 5px !important;    /* 縮小左右內距 */
+    overflow-y: auto !important; /* 萬一被擠出，開啟滑動保險 */
+    max-height: 65vh !important; /* 限制高度，確保 OK 按鈕在螢幕內 */
 }
 
-/* 修正彈窗本體的位置，防止它往上飄移 */
-.swal2-popup {
-    margin: auto !important;
-    max-height: 90vh !important;
+/* 2. 壓縮以太流按鈕與輸入框的高度 (針對手機) */
+@media (max-width: 480px) {
+    .luxe-btn {
+        height: 55px !important; /* 原本 65px，縮小 10px */
+        margin-bottom: 8px !important; /* 縮小下方間距 */
+        padding: 10px 20px !important;
+    }
+    
+    .swal2-popup {
+        padding: 20px 10px !important; /* 縮小彈窗上下內距 */
+    }
+
+    /* 3. 特別縮小備註欄高度 */
+    textarea#pop-note {
+        height: 60px !important; /* 縮小備註欄高度 */
+    }
+
+    /* 4. 讓日期與時間那一橫排更緊湊 */
+    div[style*="display:flex; gap:10px"] {
+        gap: 5px !important;
+    }
 }
 
          .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
