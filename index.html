@@ -109,11 +109,23 @@ html, body {
     font-weight: 900 !important;
 }
 
-/* 解鎖：確保彈窗內的 HTML 內容可以滑動 */
+/* 解鎖：強制讓彈窗內部可以滑動，並限制最大高度 */
 .swal2-html-container {
-    overflow-y: auto !important;
-    max-height: 65vh !important;
+    overflow-y: auto !important; 
+    /* 這裡最重要：限制在手機上最高只顯示螢幕的 75%，剩下的用滑的 */
+    max-height: 70vh !important; 
+    padding: 10px 5px !important;
+    margin: 1.5em 0 0 !important;
+    /* 開啟 iOS 絲滑滾動 */
+    -webkit-overflow-scrolling: touch !important; 
 }
+
+/* 修正彈窗本體的位置，防止它往上飄移 */
+.swal2-popup {
+    margin: auto !important;
+    max-height: 90vh !important;
+}
+
          .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
@@ -547,97 +559,104 @@ const db = firebase.firestore();
 // ==========================================================================
 // --- S5: 預約表核心功能 ---
 // ==========================================================================
-    async function popBooking(n="", p="", sId=null, editId=null) {
-        const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
-        tempTags = apt ? [...(apt.tags || [])] : [];
-        const { value: res } = await Swal.fire({
-          title: editId ? '修改預約' : '新增預約', width: '90%',
-html: `
-    <div style="max-height: 65vh; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch;">
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <div style="flex:2; position:relative;">
-                        <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
-                        <div id="pop-box" class="suggest-box"></div>
-                    </div>
-                    <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" onclick="setSex('M')">♂ 男</div>
-                    <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" onclick="setSex('F')">♀ 女</div>
+async function popBooking(n = "", p = "", sId = null, editId = null) {
+    const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
+    tempTags = apt ? [...(apt.tags || [])] : [];
+    
+    const { value: res } = await Swal.fire({
+        title: editId ? '修改預約' : '新增預約',
+        width: '90%',
+        allowOutsideClick: false,
+        html: `
+            <div style='display:flex; gap:10px; margin-bottom:15px;'>
+                <div style='flex:2; position:relative;'>
+                    <input id='pop-n' class='luxe-btn' style='width:100%; font-size:1.4rem; border-radius:25px;' value='${n}' placeholder='姓名' oninput="searchStored(this, 'pop-box')">
+                    <div id='pop-box' class='suggest-box'></div>
                 </div>
-                <input type="hidden" id="pop-sex" value="${apt?.sex || ''}">
+                <div id='boy-btn' class='gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}' onclick="setSex('M')">♂ 男</div>
+                <div id='girl-btn' class='gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}' onclick="setSex('F')">♀ 女</div>
+            </div>
+            <input type='hidden' id='pop-sex' value='${apt?.sex || ''}'>
 
-                <input id="pop-p" class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:25px;" value="${p}" placeholder="電話號碼">
+            <input id='pop-p' class='luxe-btn' style='width:100%; margin-bottom:15px; border-radius:25px;' value='${p}' placeholder='電話號碼'>
 
-                <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);">
-                    <div style="flex:1.2; display:flex; align-items:center;">
-                        <span style="font-weight:900; color:var(--gold); margin-right:8px; font-size:1.1rem;">$</span>
-                        <input id="pop-price" type="number" class="shield-input" style="flex:1; width:auto !important; border:none !important; background:transparent !important; font-size:1.3rem !important; text-align:left !important;" value="${apt?apt.price||'':''}" placeholder="金額">
-                    </div>
-                    <div style="width:1px; height:25px; background:#ddd;"></div>
-                    <div style="flex:1; display:flex; align-items:center; justify-content:flex-end;">
-                        <span style="font-weight:900; color:#888; margin-right:8px;">👤</span>
-                        <input id="pop-c" class="shield-input" style="width:50px !important; border:none !important; background:transparent !important; font-size:1.3rem !important;" type="text" value="${apt?apt.c||apt.count:''}" placeholder="1">
-                    </div>
+            <div style='display:flex; gap:10px; margin-bottom:15px; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);'>
+                <div style='flex:1.2; display:flex; align-items:center;'>
+                    <span style='font-weight:900; color:var(--gold); margin-right:8px; font-size:1.1rem;'>$</span>
+                    <input id='pop-price' type='number' class='shield-input' style='flex:1; width:auto !important; border:none !important; background:transparent !important; font-size:1.3rem !important; text-align:left !important;' value='${apt ? apt.price || '' : ''}' placeholder='金額'>
                 </div>
-
-                <select id="pop-s" class="luxe-btn" style="width:100%; border-radius:25px; margin-bottom:15px;">
-                    ${store.stylists.map(s=>`<option value="${s.id}" ${String(s.id)===String(sId||1)?'selected':''}>${s.name}</option>`).join('')}
-                </select>
-                <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:20px; margin-bottom:15px; padding:15px;" placeholder="備註內容...">${apt?apt.note_full||apt.note:""}</textarea>
-<div class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:25px; justify-content:space-between; background:rgba(212,175,55,0.05);" onclick="openAetherTagPicker()">
-    <span id="display-tags-text" style="font-weight:900; color:var(--gold);">✂️ ${tempTags.join('+') || '選擇服務項目'}</span>
-    <i class="fas fa-th-large" style="opacity:0.5;"></i>
-</div>           
-                <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin: 10px 0 20px;">
-                    <input type="checkbox" id="pop-save-cli" style="width:20px; height:20px; accent-color:var(--gold);" ${editId?'disabled':'checked'}>
-                    <label for="pop-save-cli" style="font-weight:900; color:var(--gold); font-size:1rem;">同步存至顧客名冊</label>
-                </div>
-
-                <div style="display:flex; gap:10px;">
-                    <input id="pop-d" class="luxe-btn" type="date" style="flex:1.5; border-radius:25px;" value="${apt?apt.date:curD.toLocaleDateString('sv')}">
-                    <input id="pop-t" class="luxe-btn" type="time" style="flex:1; border-radius:25px;" value="${apt?apt.time:'12:00'}">
+                <div style='width:1px; height:25px; background:#ddd;'></div>
+                <div style='flex:1; display:flex; align-items:center; justify-content:flex-end;'>
+                    <span style='font-weight:900; color:#888; margin-right:8px;'>👤</span>
+                    <input id='pop-c' class='shield-input' style='width:50px !important; border:none !important; background:transparent !important; font-size:1.3rem !important;' type='text' value='${apt ? (apt.c || apt.count || '') : ''}' placeholder='1'>
                 </div>
             </div>
-             `,
-            preConfirm: () => ({ 
-                n: document.getElementById('pop-n').value, 
-                sex: document.getElementById('pop-sex').value, 
-                p: document.getElementById('pop-p').value, 
-                styId: document.getElementById('pop-s').value, 
-                price: document.getElementById('pop-price').value, // 確保這行有抓到金額
-                c: document.getElementById('pop-c').value, 
-                note: document.getElementById('pop-note').value, 
-                d: document.getElementById('pop-d').value, 
-                t: document.getElementById('pop-t').value, 
-                saveCli: document.getElementById('pop-save-cli').checked 
-            })
-        });
 
-        if (res && res.n) {
-             const data = { 
-    id: editId || String(Date.now()), 
-    n: res.n, 
-    sex: res.sex, 
-    p: res.p, 
-    styId: res.styId, 
-    c: res.c, 
-    price: res.price, // 這行是重點！注入金額
-    note_full: res.note, 
-    date: res.d, 
-    time: res.t, 
-    tags: [...tempTags], 
-    done: apt ? apt.done : false, 
-    payTags: apt ? apt.payTags : [] 
-};
-            if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
-            else { 
-                store.appointments.push(data); 
-                if(res.saveCli && !store.clients.find(c => (c.n||c.name) === res.n)) {
-                    store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm: '', bd: '', note: res.note }); 
-                }
+            <select id='pop-s' class='luxe-btn' style='width:100%; border-radius:25px; margin-bottom:15px;'>
+                ${store.stylists.map(s => `<option value='${s.id}' ${String(s.id) === String(sId || 1) ? 'selected' : ''}>${s.name}</option>`).join('')}
+            </select>
+            
+            <textarea id='pop-note' class='luxe-btn' style='width:100%; height:80px; border-radius:20px; margin-bottom:15px; padding:15px;' placeholder='備註內容...'>${apt ? (apt.note_full || apt.note || "") : ""}</textarea>
+
+            <div class='luxe-btn' style='width:100%; margin-bottom:15px; border-radius:25px; justify-content:space-between; background:rgba(212,175,55,0.05);' onclick='openAetherTagPicker()'>
+                <span id='display-tags-text' style='font-weight:900; color:var(--gold);'>✂️ ${tempTags.join('+') || '選擇服務項目'}</span>
+                <i class='fas fa-th-large' style='opacity:0.5;'></i>
+            </div>           
+
+            <div style='display:flex; align-items:center; justify-content:center; gap:12px; margin: 10px 0 20px;'>
+                <input type='checkbox' id='pop-save-cli' style='width:20px; height:20px; accent-color:var(--gold);' ${editId ? 'disabled' : 'checked'}>
+                <label for='pop-save-cli' style='font-weight:900; color:var(--gold); font-size:1rem;'>同步存至顧客名冊</label>
+            </div>
+
+            <div style='display:flex; gap:10px;'>
+                <input id='pop-d' class='luxe-btn' type='date' style='flex:1.5; border-radius:25px;' value='${apt ? apt.date : curD.toLocaleDateString('sv')}'>
+                <input id='pop-t' class='luxe-btn' type='time' style='flex:1; border-radius:25px;' value='${apt ? apt.time : '12:00'}'>
+            </div>
+        `,
+        preConfirm: () => ({
+            n: document.getElementById('pop-n').value,
+            sex: document.getElementById('pop-sex').value,
+            p: document.getElementById('pop-p').value,
+            styId: document.getElementById('pop-s').value,
+            price: document.getElementById('pop-price').value,
+            c: document.getElementById('pop-c').value,
+            note: document.getElementById('pop-note').value,
+            d: document.getElementById('pop-d').value,
+            t: document.getElementById('pop-t').value,
+            saveCli: document.getElementById('pop-save-cli').checked
+        })
+    });
+
+    if (res && res.n) {
+        const data = {
+            id: editId || String(Date.now()),
+            n: res.n,
+            sex: res.sex,
+            p: res.p,
+            styId: res.styId,
+            c: res.c,
+            price: res.price,
+            note_full: res.note,
+            date: res.d,
+            time: res.t,
+            tags: [...tempTags],
+            done: apt ? apt.done : false,
+            payTags: apt ? apt.payTags : []
+        };
+
+        if (editId) {
+            store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
+        } else {
+            store.appointments.push(data);
+            if (res.saveCli && !store.clients.find(c => (c.n || c.name) === res.n)) {
+                store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm: '', bd: '', note: res.note });
             }
-            saveS(); renderDay(res.d);
-            if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
         }
+        saveS();
+        renderDay(res.d);
+        if (document.getElementById('pg-cli').classList.contains('active')) renderCli();
     }
+}
 
     function togglePay(id, code, emoji, labelName, ds) {
         const a = store.appointments.find(x => String(x.id) === String(id));
@@ -2238,18 +2257,19 @@ function toggleCentralTag(tagName, el) {
     if(window.navigator.vibrate) window.navigator.vibrate(5);
 }
 
-// --- 【以太流：全域物理防禦攔截器 終極穩定版】 ---
+// --- 【以太流：全域物理防禦攔截器 終極解鎖版】 ---
 document.body.addEventListener('touchmove', function(e) {
-    // 檢查目前手指摸的地方是否屬於「可滾動白名單」
-    const isScrollable = e.target.closest('.swal2-container') || 
-                         e.target.closest('#central-tag-zone') || 
-                         e.target.closest('.content-scroll') || 
-                         e.target.closest('.lane-container') ||
-                         e.target.closest('.drawer-content');
+    // 檢查手指摸的地方是否屬於「彈窗內部的滾動容器」
+    const isScrollablePopup = e.target.closest('.swal2-html-container');
+    const isMainContent = e.target.closest('.content-scroll') || e.target.closest('.lane-container');
+    const isCentralTag = e.target.closest('#central-tag-zone');
     
-    if (isScrollable) return; // 放行
+    // 如果是在這些區域，絕對放行，讓手指可以上下滑動
+    if (isScrollablePopup || isMainContent || isCentralTag) {
+        return; 
+    }
     
-    // 攔截背景滾動，防止畫面亂跳
+    // 只有摸到背景、導航條等固定位置才攔截
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
