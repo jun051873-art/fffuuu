@@ -2191,12 +2191,15 @@ function setSexCli(s) {
     if(s === 'F') g.classList.add('active-girl');
 }
 
-// --- 【Aether Flow：中央項目選擇選單 - 旗艦聯動版】 ---
+// --- 【Aether Flow：中央項目選擇選單 - 強效迷霧版】 ---
 async function openAetherTagPicker() {
     const { value: selected } = await Swal.fire({
         title: '選擇服務項目',
         width: '90%',
-        // 統一採用以太玻璃質感，不重複寫 background 屬性
+        // --- 核心改動：這行就是你要的漂亮背景秘訣 ---
+        backdrop: `rgba(0,0,0,0.3) blur(15px)`, 
+        // ---------------------------------------
+        allowOutsideClick: false,
         html: `
             <div id="central-tag-zone" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:15px; max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
                 ${store.tags.map(t => `
@@ -2211,15 +2214,12 @@ async function openAetherTagPicker() {
         `,
         confirmButtonText: '確定',
         confirmButtonColor: '#1d1d1f',
-        allowOutsideClick: false,
         didOpen: () => {
             const zone = document.getElementById('central-tag-zone');
-            // 物理放行：這行確保選單可以絲滑滾動
             zone.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
         }
     });
 
-    // 只要視窗關閉，就同步更新主視窗的文字
     const btnText = document.getElementById('display-tags-text');
     if(btnText) btnText.innerText = '✂️ ' + (tempTags.join('+') || '選擇服務項目');
 }
