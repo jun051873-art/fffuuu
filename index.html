@@ -60,10 +60,61 @@ html, body {
     .nav { height: 75px !important; width: 94% !important; bottom: 20px !important; }
 }
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
-        .swal2-popup { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(25px) saturate(180%) !important; border-radius: 45px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important; }
-        .swal2-title { color: #1d1d1f !important; font-weight: 900 !important; }
-        .swal2-confirm { background: var(--gold) !important; border-radius: 30px !important; font-weight: 900 !important; padding: 12px 35px !important; }
-        .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
+        /* --- Aether Flow: 全域以太玻璃彈窗覆蓋 --- */
+.swal2-popup {
+    /* 核心：高通透毛玻璃 */
+    background: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(40px) saturate(210%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+    
+    /* 物理邊緣亮痕 (Rim Light) */
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    border-radius: 45px !important;
+    
+    /* 深邃立體投影 */
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15) !important;
+    padding: 30px 15px !important;
+}
+
+/* 彈窗內的標題 */
+.swal2-title {
+    color: #1d1d1f !important;
+    font-weight: 900 !important;
+    letter-spacing: -1px;
+}
+
+/* 彈窗內的輸入框：也要變成半透明以太感 */
+.swal2-input, .swal2-textarea {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+    border-radius: 20px !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+    color: #1d1d1f !important;
+    font-weight: 900 !important;
+}
+
+/* 彈窗按鈕：改為深色實體，增加重量感對比 */
+.swal2-confirm {
+    background: #1d1d1f !important;
+    border-radius: 25px !important;
+    padding: 12px 40px !important;
+    font-weight: 900 !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.swal2-cancel {
+    background: rgba(0,0,0,0.05) !important;
+    color: #888 !important;
+    border-radius: 25px !important;
+    font-weight: 900 !important;
+}
+
+/* 解鎖：確保彈窗內的 HTML 內容可以滑動 */
+.swal2-html-container {
+    overflow-y: auto !important;
+    max-height: 65vh !important;
+}
+         .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
@@ -148,8 +199,18 @@ html, body {
     -webkit-overflow-scrolling: touch; /* iOS 絲滑手感 */
 }
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
-        .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
-        .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
+        .tag-chip {
+    background: rgba(255,255,255,0.8);
+    border: 1.5px solid #eee;
+    color: #888;
+}
+.tag-chip.selected {
+    background: var(--gold) !important;
+    color: #fff !important;
+    border-color: var(--gold) !important;
+    box-shadow: 0 8px 15px rgba(212, 175, 55, 0.3);
+    transform: scale(1.05);
+}
         /* --- 【V318 全設備自適應大腦】 --- */
        @media (max-width: 768px) {
             /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
@@ -522,10 +583,12 @@ html: `
                 </select>
 
                 <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:20px; margin-bottom:15px; padding:15px;" placeholder="備註內容...">${apt?apt.note_full||apt.note:""}</textarea>
-                
-                <div class="drawer-btn" style="margin-bottom:15px;" onclick="const c=document.getElementById('pop-tg-dr'); c.style.display=c.style.display==='block'?'none':'block';">項目 <i class="fas fa-chevron-down"></i></div>
-                <div id="pop-tg-dr" class="drawer-content">${store.tags.map(t=>`<div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" onclick="this.classList.toggle('selected'); const i=tempTags.indexOf('${t.name}'); if(i>-1) tempTags.splice(i,1); else tempTags.push('${t.name}')">${t.name}</div>`).join('')}</div>
-
+                   /* --- 第 588 行開始替換 --- */
+<div class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:25px; justify-content:space-between; background:rgba(212,175,55,0.05);" onclick="openAetherTagPicker()">
+    <span id="display-tags-text" style="font-weight:900; color:var(--gold);">✂️ ${tempTags.join('+') || '選擇服務項目'}</span>
+    <i class="fas fa-th-large" style="opacity:0.5;"></i>
+</div>
+/* --- 替換結束，接續原本 593 行的 checkbox --- */             
                 <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin: 10px 0 20px;">
                     <input type="checkbox" id="pop-save-cli" style="width:20px; height:20px; accent-color:var(--gold);" ${editId?'disabled':'checked'}>
                     <label for="pop-save-cli" style="font-weight:900; color:var(--gold); font-size:1rem;">同步存至顧客名冊</label>
@@ -2131,18 +2194,65 @@ function setSexCli(s) {
     if(s === 'F') g.classList.add('active-girl');
 }
 
-// --- 【以太流：物理防禦攔截器 終極版】 ---
-// 這裡負責決定螢幕哪裡可以滑、哪裡要釘死
+// --- 【Aether Flow：中央項目選擇選單 - 旗艦聯動版】 ---
+async function openAetherTagPicker() {
+    const { value: selected } = await Swal.fire({
+        title: '選擇服務項目',
+        width: '90%',
+        // 統一採用以太玻璃質感，不重複寫 background 屬性
+        html: `
+            <div id="central-tag-zone" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:15px; max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+                ${store.tags.map(t => `
+                    <div class="tag-chip ${tempTags.includes(t.name) ? 'selected' : ''}" 
+                         id="tag-pick-${t.id}"
+                         style="padding:12px 20px; border-radius:20px; font-weight:900; cursor:pointer; transition:0.3s; border:1.5px solid rgba(0,0,0,0.05); background:rgba(255,255,255,0.6);"
+                         onclick="toggleCentralTag('${t.name}', this)">
+                        ${t.name}
+                    </div>
+                `).join('')}
+            </div>
+        `,
+        confirmButtonText: '確定',
+        confirmButtonColor: '#1d1d1f',
+        allowOutsideClick: false,
+        didOpen: () => {
+            const zone = document.getElementById('central-tag-zone');
+            // 物理放行：這行確保選單可以絲滑滾動
+            zone.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
+        }
+    });
+
+    // 只要視窗關閉，就同步更新主視窗的文字
+    const btnText = document.getElementById('display-tags-text');
+    if(btnText) btnText.innerText = '✂️ ' + (tempTags.join('+') || '選擇服務項目');
+}
+
+// 輔助：切換選中狀態
+function toggleCentralTag(tagName, el) {
+    const idx = tempTags.indexOf(tagName);
+    if (idx > -1) {
+        tempTags.splice(idx, 1);
+        el.classList.remove('selected');
+    } else {
+        tempTags.push(tagName);
+        el.classList.add('selected');
+    }
+    // 香皂滑動微震
+    if(window.navigator.vibrate) window.navigator.vibrate(5);
+}
+
+// --- 【以太流：全域物理防禦攔截器 終極穩定版】 ---
 document.body.addEventListener('touchmove', function(e) {
-    // 1. 特許權：如果是在「彈窗」或「項目抽屜」裡，絕對放行，讓你滑動選項目
-    if (e.target.closest('.swal2-container') || e.target.closest('.drawer-content')) {
-        return; 
-    }
-    // 2. 特許權：如果是顧客名冊 (.content-scroll) 或 預約跑道 (.lane-container)，也放行
-    if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
-        return;
-    }
-    // 3. 攔截：除了以上區域，摸到背景、標題、導航條一律鎖死，防止畫面亂飄
+    // 檢查目前手指摸的地方是否屬於「可滾動白名單」
+    const isScrollable = e.target.closest('.swal2-container') || 
+                         e.target.closest('#central-tag-zone') || 
+                         e.target.closest('.content-scroll') || 
+                         e.target.closest('.lane-container') ||
+                         e.target.closest('.drawer-content');
+    
+    if (isScrollable) return; // 放行
+    
+    // 攔截背景滾動，防止畫面亂跳
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
