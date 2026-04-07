@@ -460,40 +460,22 @@ html, body {
     touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
 }
   
-/* --- Aether Flow: 全景掌控視角 --- */
-/* 當觸發縮放模式時，強制壓縮跑道寬度，實現「一眼全覽」 */
-.lane-container.zoom-out .lane {
-    min-width: 140px !important; /* 原本 380px，縮小後讓 3 個人同時擠進螢幕 */
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+/* --- Aether Flow: 極致微縮視角補強 --- */
+.lane {
+    transition: min-width 0.1s ease-out; /* 讓縮放有肉感 */
 }
 
-.lane-container.zoom-out .apt-card {
-    padding: 12px !important; /* 縮小內距，讓卡片變瘦長 */
-    border-radius: 20px !important; /* 縮小圓角，對齊比例 */
+/* 當手指捏到很小時觸發 */
+.aether-nano .apt-card div, 
+.aether-nano .apt-card i, 
+.aether-nano .apt-card span {
+    opacity: 0 !important; /* 隱藏所有文字細節 */
 }
 
-.lane-container.zoom-out .apt-card div[style*="font-size:1.8rem"] {
-    font-size: 1.1rem !important; /* 名字縮小，防止在窄跑道裡折行 */
-}
-
-/* 讓全景切換鈕浮在右上角，像系統按鈕一樣高級 */
-#zoom-trigger {
-    position: fixed;
-    top: 125px; /* 避開標題區 */
-    right: 20px;
-    z-index: 9999;
-    width: 45px;
-    height: 45px;
-    background: rgba(255,255,255,0.7);
-    backdrop-filter: blur(15px); /* 以太流標配：毛玻璃 */
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    border: 1px solid rgba(255,255,255,0.5);
-    color: #1d1d1f;
-    cursor: pointer;
+.aether-nano .apt-card {
+    min-height: 40px !important; /* 卡片變扁 */
+    padding: 0 !important;
+    border-left-width: 100% !important; /* 讓整張卡片變成純色條 */
 }
 
   </style>
@@ -556,10 +538,7 @@ html, body {
     </div>
 
     <button class="fab" onclick="popBooking()"><i class="fas fa-plus"></i></button>
-    <div id="zoom-trigger" onclick="toggleAetherZoom()">
-    <i id="zoom-icon" class="fas fa-expand-alt"></i>
-</div>
-    <div class="nav">
+   <div class="nav">
         <div id="nav-aether-mover"></div>
 
         <div onclick="showP('pg-res', 0)" id="n-res" class="nav-item active">
@@ -1297,6 +1276,46 @@ async function confirmDelTag(id) {
     }
 }
 
+//服務項目管理按鈕//
+function popTagDrawer() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const isPro = auth && auth.id && auth.id !== "未綁定";
+    Swal.fire({
+        title: '<span style="color:#1d1d1f; font-weight:900; font-size:1.8rem;">服務項目管理</span>',
+        width: '90%',
+        backdrop: `rgba(0,0,0,0.3) blur(15px)`,
+        html: `
+            <div style="padding: 10px 5px;">
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+                    ${store.tags.map(t => `
+                        <div style="background:#fff; border-radius:20px; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                            <span style="font-weight:900; font-size:1.3rem; color:#1d1d1f;">${t.name}</span>
+                            <div style="display:flex; gap:18px; color:#bbb;">
+                                <i class="fas fa-edit tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="cursor:pointer; font-size:1.2rem;"></i>
+                                <i class="fas fa-trash tag-del-btn" data-id="${t.id}" style="cursor:pointer; font-size:1.2rem;"></i>
+                            </div>
+                        </div>`).join('')}
+                </div>
+<div style="margin-top: 30px; display: flex; justify-content: center;">
+    <button id="btn-add-tag-real" style="width: auto; min-width: 180px; height: 50px; background: #1d1d1f !important; color: #fff !important; border: none !important; border-radius: 30px !important; font-weight: 900 !important; font-size: 1.1rem !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; gap: 10px !important; padding: 0 30px !important; box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;">
+        <i class="fas fa-plus" style="font-size: 0.9rem;"></i> 新增服務項目
+    </button>
+</div>
+<div style="text-align: center; margin-top: 15px;">
+    <span onclick="Swal.close()" style="color: #ccc; font-weight: 900; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">取消返回</span>
+</div>
+            </div>`,
+        showConfirmButton: false,
+        didOpen: () => {
+            document.getElementById('btn-add-tag').onclick = () => {
+                if (!isPro && store.tags.length >= 2) { Swal.showValidationMessage('試用版上限 2 個項目'); return; }
+                addTagTrig();
+            };
+            document.querySelectorAll('.tag-edit-btn').forEach(btn => btn.onclick = () => editTagTrig(btn.dataset.id, btn.dataset.name));
+            document.querySelectorAll('.tag-del-btn').forEach(btn => btn.onclick = () => confirmDelTag(btn.dataset.id));
+        }
+    });
+}
 // 0. 營業時間抽屜
 function popTimeDrawer() {
     Swal.fire({
@@ -2352,26 +2371,6 @@ function toggleCentralTag(tagName, el) {
     if(window.navigator.vibrate) window.navigator.vibrate(5);
 }
 
-// --- 以太流：視角縮放引擎 ---
-function toggleAetherZoom() {
-    const container = document.getElementById('day-lanes');
-    const icon = document.getElementById('zoom-icon');
-    
-    // 切換縮放 Class
-    container.classList.toggle('zoom-out');
-    
-    // 切換圖示：縮小時顯示縮小圖標，放大時顯示放大圖標
-    if(container.classList.contains('zoom-out')) {
-        icon.className = 'fas fa-compress-alt';
-        // 輕微震動回饋
-        if(window.navigator.vibrate) window.navigator.vibrate(15);
-    } else {
-        icon.className = 'fas fa-expand-alt';
-        if(window.navigator.vibrate) window.navigator.vibrate(10);
-    }
-}
-
-
 // --- 【Aether Flow：物理防禦攔截器 智慧版】 ---
 document.body.addEventListener('touchmove', function(e) {
     // 1. 取得目前手指摸到的元素
@@ -2389,6 +2388,62 @@ document.body.addEventListener('touchmove', function(e) {
 
     // 3. 只有摸到最底層的「固定背板」時才攔截，防止整片背景彈跳
     if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
+// ==========================================================================
+// --- 【Aether Flow：手指感知縮放引擎】 ---
+// ==========================================================================
+let initialDist = 0;
+let baseWidth = 380; // 初始寬度
+const minW = 100;    // 極致縮小（只看得到顏色塊）
+const maxW = 500;    // 最大放大
+
+const laneContainer = document.getElementById('day-lanes');
+
+laneContainer.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+        // 當兩根手指摸到螢幕，計算初始距離
+        initialDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+        );
+    }
+}, { passive: false });
+
+laneContainer.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // 阻止瀏覽器預設縮放，由我們接管
+        
+        const currentDist = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+        );
+        
+        // 計算縮放倍率
+        const diff = currentDist - initialDist;
+        let newWidth = baseWidth + diff * 0.5; // 0.5 是感應靈敏度
+        
+        // 限制範圍
+        if (newWidth < minW) newWidth = minW;
+        if (newWidth > maxW) newWidth = maxW;
+        
+        // 強力注入所有跑道
+        document.querySelectorAll('.lane').forEach(lane => {
+            lane.style.minWidth = newWidth + 'px';
+            
+            // --- 自動美學校對 ---
+            // 當寬度縮到很小時，隱藏細節文字，只留色彩呼吸感
+            if (newWidth < 180) {
+                lane.classList.add('aether-nano');
+            } else {
+                lane.classList.remove('aether-nano');
+            }
+        });
+        
+        // 實時更新基準寬度，確保滑動順暢
+        baseWidth = newWidth;
+        initialDist = currentDist;
+    }
 }, { passive: false });
 
 </script>
