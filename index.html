@@ -61,9 +61,10 @@ html, body {
 }
 /* --- Aether Flow: 彈窗時自動鎖定與專注模式 --- */
 
-/* 1. 當彈窗出現時，隱藏下方導航條，防止它亂跳並進入專注模式 */
+/* 核心：當彈窗出現時，強制讓導航條靠後，不准擋路 */
 body.swal2-shown .nav {
-    display: none !important; 
+    z-index: 1 !important; 
+    opacity: 0.3; /* 讓它變透明一點，視覺更高級 */
 }
 
 /* 2. 強化導航條釘底邏輯：確保它永遠在螢幕最底部的物理邊界 */
@@ -75,35 +76,27 @@ body.swal2-shown .nav {
     z-index: 100 !important; /* 降低層級，讓它絕對不會蓋過彈窗 */
 }
 
-/* 3. 強化彈窗內部的滑動權限與高度感知 */
+/* 核心：確保彈窗本身的層級最高 */
 .swal2-container {
-    height: 100% !important;
-    position: fixed !important;
-    overflow-y: auto !important; /* 讓整個背景容器可以處理內容滾動 */
+    z-index: 10000 !important;
 }
 
+/* 核心：修正彈窗內容區的滑動物理 */
 .swal2-html-container {
     overflow-y: auto !important; 
-    max-height: 60vh !important; /* 限制高度，給鍵盤留出空間 */
-    -webkit-overflow-scrolling: touch !important; /* 開啟絲滑滾動 */
-}
-         body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
-        /* --- Aether Flow: 全域以太玻璃彈窗覆蓋 --- */
-.swal2-popup {
-    /* 核心：高通透毛玻璃 */
-    background: rgba(255, 255, 255, 0.4) !important;
-    backdrop-filter: blur(40px) saturate(210%) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
-    
-    /* 物理邊緣亮痕 (Rim Light) */
-    border: 1px solid rgba(255, 255, 255, 0.7) !important;
-    border-radius: 45px !important;
-    
-    /* 深邃立體投影 */
-    box-shadow: 0 25px 80px rgba(0,0,0,0.15) !important;
-    padding: 30px 15px !important;
+    max-height: 65vh !important; /* 限制高度，才會產生滾動感 */
+    padding: 15px 5px !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch !important; /* 絲滑滾動 */
 }
 
+         body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
+ 
+* 修正彈窗本體，確保它在手機上不會被截斷 */
+.swal2-popup {
+    margin-bottom: env(safe-area-inset-bottom) !important;
+    max-height: 90vh !important;
+}
 /* 彈窗內的標題 */
 .swal2-title {
     color: #1d1d1f !important;
