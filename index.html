@@ -81,13 +81,26 @@ body.swal2-shown .nav {
     z-index: 10000 !important;
 }
 
-/* 核心：修正彈窗內容區的滑動物理 */
+/* --- Aether Flow: 彈窗內容區空間解鎖版 --- */
 .swal2-html-container {
-    overflow-y: auto !important; 
-    max-height: 65vh !important; /* 限制高度，才會產生滾動感 */
-    padding: 15px 5px !important;
     display: block !important;
-    -webkit-overflow-scrolling: touch !important; /* 絲滑滾動 */
+    overflow-y: auto !important; 
+    /* 1. 關鍵高度判斷：維持 65vh 確保在手機上不會頂天立地 */
+    max-height: 65vh !important; 
+    
+    /* 2. 核心修正：增加底部內距 (原本 15px 增加到 40px) */
+    /* 這樣日期方塊底部就不會被切掉，會完整露出圓潤邊緣 */
+    padding: 15px 8px 40px 8px !important; 
+    
+    margin: 10px 0 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* 3. 強化日期/時間方塊的「浮出」視覺感 */
+div[style*="display:flex; gap:10px"] {
+    /* 增加一點物理陰影，讓它看起來是浮在灰色板塊上方的 */
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    margin-bottom: 20px !important;
 }
 
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
