@@ -91,12 +91,22 @@ body.swal2-shown .nav {
 }
 
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
- 
-* 修正彈窗本體，確保它在手機上不會被截斷 */
+        /* --- Aether Flow: 全域以太玻璃彈窗覆蓋 --- */
 .swal2-popup {
-    margin-bottom: env(safe-area-inset-bottom) !important;
-    max-height: 90vh !important;
+    /* 核心：高通透毛玻璃 */
+    background: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(40px) saturate(210%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+    
+    /* 物理邊緣亮痕 (Rim Light) */
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    border-radius: 45px !important;
+    
+    /* 深邃立體投影 */
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15) !important;
+    padding: 30px 15px !important;
 }
+
 /* 彈窗內的標題 */
 .swal2-title {
     color: #1d1d1f !important;
