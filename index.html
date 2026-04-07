@@ -102,18 +102,36 @@ body.swal2-shown .nav {
     border: 1px solid rgba(255, 255, 255, 0.7) !important;
     border-radius: 45px !important;
     
-/* --- 關鍵：削薄底部灰色板塊高度 --- */
+/* --- Aether Flow: 底部按鈕區極致柔化版 --- */
 .swal2-actions {
-    margin-top: 0 !important;
-    padding: 5px 0 12px !important; /* 縮減內距，灰色區域立刻變窄 */
-    background: rgba(0, 0, 0, 0.04) !important; 
-    width: 100% !important;
+    margin-top: 0px !important;
+    padding: 12px 0 20px !important; /* 增加底部留白，更有呼吸感 */
+    
+    /* 1. 徹底移除原本那條死板的灰色橫線 */
+    border-top: none !important; 
+    
+    /* 2. 改用超微量的漸層，營造物理深度的暗示，而不是一條線 */
+    background: linear-gradient(
+        to bottom, 
+        rgba(0, 0, 0, 0) 0%, 
+        rgba(0, 0, 0, 0.03) 100%
+    ) !important;
+    
+    /* 3. 確保這塊區域跟上面的玻璃是一體的 */
+    width: 100%;
+    border-radius: 0 0 45px 45px; /* 跟彈窗底部的圓角完美契合 */
 }
 
-/* 內容區底部留白歸零，讓零件下沉 */
+/* 額外補強：確保內容區底部不會被莫名截斷 */
 .swal2-html-container {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 0px !important;
+}
+
+/* 讓黑色的 OK 按鈕像漂浮在玻璃上，而不是被壓在線下面 */
+.swal2-confirm {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* 針對小手機：縮小 OK 按鈕本身的高度 */
