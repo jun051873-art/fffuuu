@@ -50,14 +50,31 @@ html, body {
 
 /* --- 針對小手機的極致壓縮 (自適應) --- */
 @media (max-width: 480px) {
-    .header { padding: 45px 20px 15px !important; }
-    .glow-title { font-size: 1.6rem !important; }
-    /* 縮小卡片內文字，防止頁面太大 */
-    .cli-luxe-card { padding: 18px !important; border-radius: 25px !important; }
-    .cli-luxe-card div[style*="font-size:2rem"] { font-size: 1.5rem !important; }
+    /* 1. 減少 Header 的內距，讓標題往上縮 */
+    .header { 
+        padding: 35px 20px 10px !important; 
+    }
     
-    /* 導航條稍微縮小比例 */
-    .nav { height: 75px !important; width: 94% !important; bottom: 20px !important; }
+    /* 2. 縮小標題字級與下方留白 */
+    .header div[style*="font-size: 2.6rem"],
+    .header div[style*="font-size: 2.2rem"] { 
+        font-size: 1.8rem !important; 
+        margin-bottom: 0px !important;
+    }
+    
+    /* 3. 強制內容區塊往上貼近 */
+    .content-scroll {
+        padding-top: 0px !important;
+    }
+    
+    /* 4. 針對卡片容器，減少跟頂部的距離並縮緊間距 */
+    .client-grid-container {
+        padding-top: 5px !important;
+        gap: 12px !important;
+    }
+
+    /* 5. 導航條縮小比例 (妳原本的 59-60 行) */
+    .nav { height: 70px !important; width: 94% !important; bottom: 20px !important; }
 }
 /* --- Aether Flow: 彈窗時自動鎖定與專注模式 --- */
 
@@ -104,57 +121,68 @@ div[style*="display:flex; gap:10px"] {
 }
 
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
-        /* --- Aether Flow: 全域以太玻璃彈窗覆蓋 --- */
+        /* --- Aether Flow: 全域以太玻璃彈窗 (護眼降噪版) --- */
 .swal2-popup {
-    /* 核心：高通透毛玻璃 */
-    background: rgba(255, 255, 255, 0.4) !important;
-    backdrop-filter: blur(40px) saturate(210%) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+    /* 1. 降低背景白度：從 0.4 降到 0.2，吸走刺眼光線，增加深邃感 */
+    background: rgba(255, 255, 255, 0.2) !important;
     
-    /* 物理邊緣亮痕 (Rim Light) */
-    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    /* 2. 核心修正：飽和度從 210% 大幅降至 125%，消除生硬的光暈 */
+    /* 增加模糊度到 45px，讓背景更像溫潤的迷霧 */
+    backdrop-filter: blur(45px) saturate(125%) !important;
+    -webkit-backdrop-filter: blur(45px) saturate(125%) !important;
+    
+    /* 3. 物理亮痕柔化：亮邊透明度調低，不再死白 */
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
     border-radius: 45px !important;
-    
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
 /* --- Aether Flow: 底部按鈕區極致柔化版 --- */
 .swal2-actions {
     margin-top: 0px !important;
-    padding: 12px 0 20px !important; /* 增加底部留白，更有呼吸感 */
-    
-    /* 1. 徹底移除原本那條死板的灰色橫線 */
+    padding: 12px 0 25px !important; /* 增加留白，更有呼吸感 */
     border-top: none !important; 
     
-    /* 2. 改用超微量的漸層，營造物理深度的暗示，而不是一條線 */
+    /* 改用更深邃的微量漸層，營造沉穩的底部重心 */
     background: linear-gradient(
         to bottom, 
         rgba(0, 0, 0, 0) 0%, 
-        rgba(0, 0, 0, 0.03) 100%
+        rgba(0, 0, 0, 0.05) 100%
     ) !important;
     
-    /* 3. 確保這塊區域跟上面的玻璃是一體的 */
     width: 100%;
-    border-radius: 0 0 45px 45px; /* 跟彈窗底部的圓角完美契合 */
+    border-radius: 0 0 45px 45px;
 }
 
-/* 額外補強：確保內容區底部不會被莫名截斷 */
+/* 內容區間距微調：防止文字頂到邊緣 */
 .swal2-html-container {
-    padding-bottom: 10px !important;
+    padding-top: 10px !important;
+    padding-bottom: 15px !important;
     margin-bottom: 0px !important;
+    color: #1d1d1f !important; /* 確保在變深背景下字體依舊清晰 */
 }
 
-/* 讓黑色的 OK 按鈕像漂浮在玻璃上，而不是被壓在線下面 */
+/* 讓黑膠囊按鈕更具懸浮感 */
 .swal2-confirm {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+    background: #1d1d1f !important;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: transform 0.2s ease !important;
 }
 
-/* 針對小手機：縮小 OK 按鈕本身的高度 */
+/* 點擊時的微物理反應 */
+.swal2-confirm:active {
+    transform: scale(0.96);
+}
+
+/* 針對小手機：優化比例 */
 @media (max-width: 480px) {
     .swal2-confirm {
-        height: 40px !important;
+        height: 50px !important; /* 稍微加高一點更好按，但維持膠囊感 */
+        min-width: 140px !important;
         margin: 5px 0 !important;
+        border-radius: 25px !important;
     }
-}
-
 }
 
 /* 彈窗內的標題 */
@@ -478,6 +506,24 @@ html, body {
     border-left-width: 100% !important; /* 讓整張卡片變成純色條 */
 }
 
+
+/* 移除所有可能干擾縮放的寬度限制 */
+.lane {
+    min-width: 380px !important; /* 固定物理寬度，縮放交給 Scale */
+}
+
+/* 確保縮放時不會產生捲軸混亂 */
+#day-lanes {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 20px;
+}
+
+/* 隱藏元素時的過渡感 */
+.apt-card .fa-pen, .apt-card .fa-trash-alt, .apt-card .tag-group {
+    transition: opacity 0.3s ease;
+}
+
   </style>
 </head>
 <body>
@@ -696,51 +742,64 @@ async function popBooking(n = "", p = "", sId = null, editId = null) {
         width: '90%',
         allowOutsideClick: false,
         html: `
-            <div style='display:flex; gap:10px; margin-bottom:15px;'>
-                <div style='flex:2; position:relative;'>
-                    <input id='pop-n' class='luxe-btn' style='width:100%; font-size:1.4rem; border-radius:25px;' value='${n}' placeholder='姓名' oninput="searchStored(this, 'pop-box')">
-                    <div id='pop-box' class='suggest-box'></div>
-                </div>
-                <div id='boy-btn' class='gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}' onclick="setSex('M')">♂ 男</div>
-                <div id='girl-btn' class='gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}' onclick="setSex('F')">♀ 女</div>
+    <div style="margin-top: 10px; padding: 0 5px; text-align: left;">
+        <div style="display:flex; gap:12px; margin-bottom:15px;">
+            <div style="flex:2.2; position:relative;">
+                <input id="pop-n" class="swal2-input" style="width:100%; margin:0; height:60px; border-radius:22px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.3rem; padding:0 25px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')">
+                <div id="pop-box" class="suggest-box" style="border-radius:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);"></div>
             </div>
-            <input type='hidden' id='pop-sex' value='${apt?.sex || ''}'>
-
-            <input id='pop-p' class='luxe-btn' style='width:100%; margin-bottom:15px; border-radius:25px;' value='${p}' placeholder='電話號碼'>
-
-            <div style='display:flex; gap:10px; margin-bottom:15px; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);'>
-                <div style='flex:1.2; display:flex; align-items:center;'>
-                    <span style='font-weight:900; color:var(--gold); margin-right:8px; font-size:1.1rem;'>$</span>
-                    <input id='pop-price' type='number' class='shield-input' style='flex:1; width:auto !important; border:none !important; background:transparent !important; font-size:1.3rem !important; text-align:left !important;' value='${apt ? apt.price || '' : ''}' placeholder='金額'>
-                </div>
-                <div style='width:1px; height:25px; background:#ddd;'></div>
-                <div style='flex:1; display:flex; align-items:center; justify-content:flex-end;'>
-                    <span style='font-weight:900; color:#888; margin-right:8px;'>👤</span>
-                    <input id='pop-c' class='shield-input' style='width:50px !important; border:none !important; background:transparent !important; font-size:1.3rem !important;' type='text' value='${apt ? (apt.c || apt.count || '') : ''}' placeholder='1'>
-                </div>
+            <div style="display:flex; gap:8px; flex:1;">
+                <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" style="border-radius:20px; flex:1; height:60px; font-size:1.2rem; display:flex; align-items:center; justify-content:center;" onclick="setSex('M')">♂</div>
+                <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" style="border-radius:20px; flex:1; height:60px; font-size:1.2rem; display:flex; align-items:center; justify-content:center;" onclick="setSex('F')">♀</div>
             </div>
+        </div>
+        <input type="hidden" id="pop-sex" value="${apt?.sex || ''}">
 
-            <select id='pop-s' class='luxe-btn' style='width:100%; border-radius:25px; margin-bottom:15px;'>
+        <div style="position:relative; margin-bottom:15px;">
+            <i class="fas fa-phone-alt" style="position:absolute; left:20px; top:22px; color:#d1d1d6; font-size:1rem; opacity:0.7;"></i>
+            <input id="pop-p" class="swal2-input" style="width:100%; margin:0; height:60px; border-radius:22px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.2rem; padding:0 20px 0 55px;" value="${p}" placeholder="電話號碼">
+        </div>
+
+        <div style="display:flex; gap:12px; margin-bottom:15px; align-items:center; background:rgba(255,255,255,0.3); padding:12px 25px; border-radius:22px; border:1px solid rgba(0,0,0,0.02); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div style="flex:1.2; display:flex; align-items:center;">
+                <span style="font-weight:900; color:var(--gold); margin-right:15px; font-size:1.3rem;">$</span>
+                <input id="pop-price" type="number" style="width:100%; border:none; background:transparent; font-weight:900; font-size:1.4rem; color:#1d1d1f;" value="${apt ? apt.price || '' : ''}" placeholder="金額">
+            </div>
+            <div style="width:1.5px; height:25px; background:rgba(0,0,0,0.06);"></div>
+            <div style="flex:1; display:flex; align-items:center; justify-content:flex-end;">
+                <i class="fas fa-user-friends" style="color:#d1d1d6; margin-right:12px; font-size:1rem; opacity:0.7;"></i>
+                <input id="pop-c" style="width:45px; border:none; background:transparent; font-weight:900; font-size:1.4rem; text-align:center; color:#1d1d1f;" type="text" value="${apt ? (apt.c || apt.count || '') : ''}" placeholder="1">
+            </div>
+        </div>
+
+        <div style="position:relative; margin-bottom:15px;">
+            <i class="fas fa-magic" style="position:absolute; left:20px; top:22px; color:#d1d1d6; font-size:1rem; z-index:10; opacity:0.7;"></i>
+            <select id="pop-s" class="swal2-select" style="width:100%; margin:0; height:60px; border-radius:22px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.1rem; padding-left:55px;">
                 ${store.stylists.map(s => `<option value='${s.id}' ${String(s.id) === String(sId || 1) ? 'selected' : ''}>${s.name}</option>`).join('')}
             </select>
-            
-            <textarea id='pop-note' class='luxe-btn' style='width:100%; height:80px; border-radius:20px; margin-bottom:15px; padding:15px;' placeholder='備註內容...'>${apt ? (apt.note_full || apt.note || "") : ""}</textarea>
+        </div>
+        
+        <textarea id="pop-note" class="swal2-textarea" style="width:100%; margin:0 0 15px; height:90px; border-radius:25px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.05rem; padding:20px 25px;" placeholder="有什麼需要特別備註的嗎？">${apt ? (apt.note_full || apt.note || "") : ""}</textarea>
 
-            <div class='luxe-btn' style='width:100%; margin-bottom:15px; border-radius:25px; justify-content:space-between; background:rgba(212,175,55,0.05);' onclick='openAetherTagPicker()'>
-                <span id='display-tags-text' style='font-weight:900; color:var(--gold);'>✂️ ${tempTags.join('+') || '選擇服務項目'}</span>
-                <i class='fas fa-th-large' style='opacity:0.5;'></i>
-            </div>           
-
-            <div style='display:flex; align-items:center; justify-content:center; gap:12px; margin: 10px 0 20px;'>
-                <input type='checkbox' id='pop-save-cli' style='width:20px; height:20px; accent-color:var(--gold);' ${editId ? 'disabled' : 'checked'}>
-                <label for='pop-save-cli' style='font-weight:900; color:var(--gold); font-size:1rem;'>同步存至顧客名冊</label>
+        <div class="aether-card-row" style="cursor:pointer; margin-bottom:20px !important; padding:18px 25px !important; background:rgba(255,255,255,0.5) !important; border-radius:25px !important;" onclick="openAetherTagPicker()">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <i class="fas fa-wand-magic-sparkles" style="color:var(--gold); font-size:1.2rem;"></i>
+                <span id="display-tags-text" style="font-weight:900; color:#1d1d1f; font-size:1.1rem;">${tempTags.join('+') || '選擇服務項目'}</span>
             </div>
+            <i class="fas fa-chevron-right" style="color:#d1d1d6; font-size:1rem;"></i>
+        </div>           
 
-            <div style='display:flex; gap:10px;'>
-                <input id='pop-d' class='luxe-btn' type='date' style='flex:1.5; border-radius:25px;' value='${apt ? apt.date : curD.toLocaleDateString('sv')}'>
-                <input id='pop-t' class='luxe-btn' type='time' style='flex:1; border-radius:25px;' value='${apt ? apt.time : '12:00'}'>
-            </div>
-        `,
+        <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:25px;">
+            <input type="checkbox" id="pop-save-cli" style="width:20px; height:20px; accent-color:#1d1d1f; cursor:pointer;" ${editId ? 'disabled' : 'checked'}>
+            <label for="pop-save-cli" style="font-weight:900; color:#1d1d1f; font-size:0.95rem; opacity:0.7;">同步存至顧客名冊</label>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+            <input id="pop-d" class="swal2-input" type="date" style="flex:1.4; margin:0; height:60px; border-radius:22px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.1rem;" value="${apt ? apt.date : curD.toLocaleDateString('sv')}">
+            <input id="pop-t" class="swal2-input" type="time" style="flex:1; margin:0; height:60px; border-radius:22px; background:rgba(255,255,255,0.4) !important; border:1px solid rgba(0,0,0,0.03) !important; font-weight:900; font-size:1.1rem;" value="${apt ? apt.time : '12:00'}">
+        </div>
+    </div>
+`,
         preConfirm: () => ({
             n: document.getElementById('pop-n').value,
             sex: document.getElementById('pop-sex').value,
@@ -2391,58 +2450,64 @@ document.body.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 // ==========================================================================
-// --- 【Aether Flow：手指感知縮放引擎】 ---
+// --- 【Aether Flow：賈伯斯式絲滑全景引擎】 ---
 // ==========================================================================
+let currentScale = 1;
 let initialDist = 0;
-let baseWidth = 380; // 初始寬度
-const minW = 100;    // 極致縮小（只看得到顏色塊）
-const maxW = 500;    // 最大放大
+let lastScale = 1;
 
 const laneContainer = document.getElementById('day-lanes');
 
+// 關鍵設定：鎖定縮放中心在頂部中央，並開啟硬體加速
+laneContainer.style.transformOrigin = "center top";
+laneContainer.style.transition = "transform 0.15s cubic-bezier(0.2, 0, 0.2, 1)"; 
+laneContainer.style.willChange = "transform";
+
 laneContainer.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
-        // 當兩根手指摸到螢幕，計算初始距離
+        // 抓取兩指初始距離
         initialDist = Math.hypot(
             e.touches[0].pageX - e.touches[1].pageX,
             e.touches[0].pageY - e.touches[1].pageY
         );
+        lastScale = currentScale;
     }
 }, { passive: false });
 
 laneContainer.addEventListener('touchmove', (e) => {
     if (e.touches.length === 2) {
-        e.preventDefault(); // 阻止瀏覽器預設縮放，由我們接管
+        e.preventDefault(); // 禁止瀏覽器生硬縮放
         
-        const currentDist = Math.hypot(
+        const dist = Math.hypot(
             e.touches[0].pageX - e.touches[1].pageX,
             e.touches[0].pageY - e.touches[1].pageY
         );
         
-        // 計算縮放倍率
-        const diff = currentDist - initialDist;
-        let newWidth = baseWidth + diff * 0.5; // 0.5 是感應靈敏度
+        // 計算縮放因子
+        const zoomFactor = dist / initialDist;
+        currentScale = lastScale * zoomFactor;
+
+        // 【範圍鎖定】：0.35倍(全景，可看整天) 到 1.2倍(大特寫)
+        currentScale = Math.min(Math.max(0.35, currentScale), 1.2);
+
+        // 物理注入
+        laneContainer.style.transform = `scale(${currentScale})`;
         
-        // 限制範圍
-        if (newWidth < minW) newWidth = minW;
-        if (newWidth > maxW) newWidth = maxW;
-        
-        // 強力注入所有跑道
-        document.querySelectorAll('.lane').forEach(lane => {
-            lane.style.minWidth = newWidth + 'px';
-            
-            // --- 自動美學校對 ---
-            // 當寬度縮到很小時，隱藏細節文字，只留色彩呼吸感
-            if (newWidth < 180) {
-                lane.classList.add('aether-nano');
-            } else {
-                lane.classList.remove('aether-nano');
-            }
-        });
-        
-        // 實時更新基準寬度，確保滑動順暢
-        baseWidth = newWidth;
-        initialDist = currentDist;
+        // --- 智慧視覺校對：縮到 0.6 以下自動切換為「靜謐全景模式」 ---
+        if (currentScale < 0.6) {
+            document.querySelectorAll('.apt-card').forEach(card => {
+                card.style.padding = "10px"; // 壓縮卡片內距
+                // 隱藏細碎圖示，只留姓名，確保全景時不雜亂
+                const icons = card.querySelectorAll('.fa-pen, .fa-trash-alt, .tag-group');
+                icons.forEach(i => i.style.opacity = "0");
+            });
+        } else {
+            document.querySelectorAll('.apt-card').forEach(card => {
+                card.style.padding = "30px"; // 恢復原本大器的內距
+                const icons = card.querySelectorAll('.fa-pen, .fa-trash-alt, .tag-group');
+                icons.forEach(i => i.style.opacity = "1");
+            });
+        }
     }
 }, { passive: false });
 
