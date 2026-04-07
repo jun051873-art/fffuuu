@@ -59,6 +59,34 @@ html, body {
     /* 導航條稍微縮小比例 */
     .nav { height: 75px !important; width: 94% !important; bottom: 20px !important; }
 }
+/* --- Aether Flow: 彈窗時自動鎖定與專注模式 --- */
+
+/* 1. 當彈窗出現時，隱藏下方導航條，防止它亂跳並進入專注模式 */
+body.swal2-shown .nav {
+    display: none !important; 
+}
+
+/* 2. 強化導航條釘底邏輯：確保它永遠在螢幕最底部的物理邊界 */
+.nav {
+    position: fixed !important;
+    bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 100 !important; /* 降低層級，讓它絕對不會蓋過彈窗 */
+}
+
+/* 3. 強化彈窗內部的滑動權限與高度感知 */
+.swal2-container {
+    height: 100% !important;
+    position: fixed !important;
+    overflow-y: auto !important; /* 讓整個背景容器可以處理內容滾動 */
+}
+
+.swal2-html-container {
+    overflow-y: auto !important; 
+    max-height: 60vh !important; /* 限制高度，給鍵盤留出空間 */
+    -webkit-overflow-scrolling: touch !important; /* 開啟絲滑滾動 */
+}
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
         /* --- Aether Flow: 全域以太玻璃彈窗覆蓋 --- */
 .swal2-popup {
@@ -111,13 +139,12 @@ html, body {
 
 /* 解鎖：強制讓彈窗內部可以滑動，並限制最大高度 */
 .swal2-html-container {
+    /* 必須開啟這個，手機才知道裡面可以滑 */
     overflow-y: auto !important; 
-    /* 這裡最重要：限制在手機上最高只顯示螢幕的 75%，剩下的用滑的 */
-    max-height: 70vh !important; 
-    padding: 10px 5px !important;
-    margin: 1.5em 0 0 !important;
-    /* 開啟 iOS 絲滑滾動 */
-    -webkit-overflow-scrolling: touch !important; 
+    max-height: 60vh !important; /* 稍微縮短一點，給鍵盤留空間 */
+    -webkit-overflow-scrolling: touch !important; /* iOS 絲滑滾動靈魂 */
+    padding: 10px !important;
+    display: block !important; /* 確保它是區塊顯示 */
 }
 
 /* 修正彈窗本體的位置，防止它往上飄移 */
@@ -2257,19 +2284,22 @@ function toggleCentralTag(tagName, el) {
     if(window.navigator.vibrate) window.navigator.vibrate(5);
 }
 
-// --- 【以太流：全域物理防禦攔截器 終極解鎖版】 ---
+// --- 【Aether Flow：物理防禦攔截器 智慧版】 ---
 document.body.addEventListener('touchmove', function(e) {
-    // 檢查手指摸的地方是否屬於「彈窗內部的滾動容器」
-    const isScrollablePopup = e.target.closest('.swal2-html-container');
-    const isMainContent = e.target.closest('.content-scroll') || e.target.closest('.lane-container');
-    const isCentralTag = e.target.closest('#central-tag-zone');
+    // 1. 取得目前手指摸到的元素
+    const target = e.target;
     
-    // 如果是在這些區域，絕對放行，讓手指可以上下滑動
-    if (isScrollablePopup || isMainContent || isCentralTag) {
-        return; 
+    // 2. 白名單：只要摸到的是彈窗內容、滾動容器、或是跑道，通通放行！
+    const allowScroll = target.closest('.swal2-html-container') || 
+                        target.closest('.content-scroll') || 
+                        target.closest('.lane-container') ||
+                        target.closest('#central-tag-zone');
+                        
+    if (allowScroll) {
+        return; // 放行，不做任何攔截
     }
-    
-    // 只有摸到背景、導航條等固定位置才攔截
+
+    // 3. 只有摸到最底層的「固定背板」時才攔截，防止整片背景彈跳
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
