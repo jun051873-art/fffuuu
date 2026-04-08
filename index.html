@@ -82,13 +82,27 @@ html, body {
     background: rgba(255, 255, 255, 0.98) !important; 
     backdrop-filter: blur(25px) !important;
     border: 1px solid rgba(212, 175, 55, 0.4) !important; 
-    border-radius: 25px !important; /* 妳最愛的圓角 */
+    border-radius: 30px !important; /* 讓它跟彈窗一樣圓潤 */
     z-index: 1000000 !important; 
-    max-height: 250px !important; 
+    
+    /* 🚀 【核心修正 1】加大高度到 320px，讓手指更好滑 */
+    max-height: 320px !important; 
+    
+    /* 🚀 【核心修正 2】上下增加留白，防止手指摸到邊緣就卡住 */
+    padding: 10px 0 !important; 
+    
     overflow-y: auto !important; 
-    -webkit-overflow-scrolling: touch !important; /* 解鎖 iOS 的滑動靈魂 */
+    -webkit-overflow-scrolling: touch !important; 
     display: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
+    box-shadow: 0 15px 45px rgba(0,0,0,0.15) !important; 
+}
+
+/* 🚀 【核心修正 3】把裡面的選項也撐大，讓點擊感更紮實 */
+.suggest-item {
+    padding: 20px 25px !important; /* 加大內距，更像 iOS 的列表 */
+    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
         .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
