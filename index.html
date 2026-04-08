@@ -76,22 +76,17 @@ html, body {
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
     .suggest-box { 
-    position: absolute; 
-    width: 100%; 
-    background: rgba(255, 255, 255, 0.98); 
-    backdrop-filter: blur(25px); 
-    border: 2px solid var(--gold); 
-    border-radius: 20px; 
-    z-index: 100000 !important; /* 數字再提高，保證絕對在最上層 */
-    display: none; 
+    position: fixed !important; /* 改成 fixed，讓它飄在彈窗最上層 */
+    background: white !important;
+    border: 2px solid var(--gold) !important;
+    z-index: 200000 !important; /* 確保它在全世界的最前面 */
     
-    /* 這裡把 200px 改為 280px，讓 10 位客人的名單露出的比例更好滑 */
-    max-height: 280px !important; 
-    
+    /* 強制開啟滑動 */
+    max-height: 250px !important;
     overflow-y: auto !important; 
     -webkit-overflow-scrolling: touch !important; 
-    margin-top: 5px; 
-    box-shadow: 0 15px 35px rgba(0,0,0,0.25); 
+    
+    display: none;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
         .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
@@ -513,9 +508,10 @@ const db = firebase.firestore();
 html: `
     <div style="max-height: 65vh; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch;">
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <div style="flex:2; position:relative;">
-                        <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
-                    </div>
+                   <div style="flex:2; position:relative;">
+    <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
+</div>
+<div id="pop-box" class="suggest-box" style="left:5%; width:90%;"></div>
                     <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" onclick="setSex('M')">♂ 男</div>
                     <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" onclick="setSex('F')">♀ 女</div>
                 </div>
