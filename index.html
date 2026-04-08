@@ -596,58 +596,67 @@ const db = firebase.firestore();
 // ==========================================================================
 // --- S5: 預約表核心功能 ---
 // ==========================================================================
-   async function popBooking(n="", p="", sId=null, editId=null) {
+async function popBooking(n="", p="", sId=null, editId=null) {
     const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
     tempTags = apt ? [...(apt.tags || [])] : [];
     
     const { value: res } = await Swal.fire({
         title: editId ? '修改預約' : '新增預約',
-        width: '90%',
+        width: '95%',
+        padding: '2rem 1.5rem',
         html: `
-            <div style="text-align:left; padding: 5px;">
-                <div style="position:relative; margin-bottom:15px;">
-                    <input id="pop-n" class="luxe-btn" style="width:100%; border-radius:25px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')">
+            <div style="text-align:left;">
+                <div style="position:relative; margin-bottom:18px;">
+                    <input id="pop-n" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem; height:65px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')">
                     <div id="pop-box" class="suggest-box"></div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <div id="pop-boy" class="gender-btn ${apt?.sex==='M'?'active-boy':''}" onclick="setSexPop('M')">♂ 男</div>
-                    <div id="pop-girl" class="gender-btn ${(!apt || apt?.sex==='F')?'active-girl':''}" onclick="setSexPop('F')">♀ 女</div>
+                <div style="display:flex; gap:12px; margin-bottom:18px;">
+                    <div id="pop-boy" class="gender-btn ${apt?.sex==='M'?'active-boy':''}" style="height:55px; font-size:1.1rem;" onclick="setSexPop('M')">♂ 男</div>
+                    <div id="pop-girl" class="gender-btn ${(!apt || apt?.sex==='F')?'active-girl':''}" style="height:55px; font-size:1.1rem;" onclick="setSexPop('F')">♀ 女</div>
                 </div>
                 <input type="hidden" id="pop-sex" value="${apt?.sex || 'F'}">
 
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <input id="pop-p" class="luxe-btn" style="flex:2; border-radius:25px;" value="${p}" placeholder="電話">
-                    <input id="pop-c" type="number" class="luxe-btn" style="flex:1; border-radius:25px; text-align:center;" value="${apt?.c || 1}" placeholder="人數">
+                <div style="display:flex; gap:12px; margin-bottom:18px;">
+                    <input id="pop-p" class="luxe-btn" style="flex:2; border-radius:25px; height:60px; font-size:1.2rem;" value="${p}" placeholder="電話號碼">
+                    <div style="flex:1; position:relative;">
+                        <input id="pop-c" type="number" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; text-align:center; font-size:1.2rem;" value="${apt?.c || 1}">
+                        <div style="position:absolute; top:-10px; left:15px; background:#fff; padding:0 5px; font-size:0.7rem; color:#aaa; font-weight:900;">人數</div>
+                    </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <select id="pop-s" class="luxe-btn" style="flex:1.5; border-radius:25px;">
+                <div style="display:flex; gap:12px; margin-bottom:18px;">
+                    <select id="pop-s" class="luxe-btn" style="flex:1.5; border-radius:25px; height:60px; font-size:1.2rem;">
                         ${store.stylists.map(s => `<option value="${s.id}" ${String(sId||apt?.styId)===String(s.id)?'selected':''}>${s.name}</option>`).join('')}
                     </select>
-                    <input id="pop-price" type="number" class="luxe-btn" style="flex:1; border-radius:25px; text-align:center;" value="${apt?.price || ''}" placeholder="金額 $">
+                    <input id="pop-price" type="number" class="luxe-btn" style="flex:1; border-radius:25px; height:60px; text-align:center; font-size:1.2rem;" value="${apt?.price || ''}" placeholder="金額 $">
                 </div>
 
-                <div style="margin-bottom:15px;">
-                    <div style="font-weight:900; color:#888; font-size:0.8rem; margin-bottom:8px;">✂️ 服務項目 (可多選)</div>
-                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:30px; margin-bottom:18px;">
+                    <div style="font-weight:900; color:var(--gold); font-size:0.85rem; margin-bottom:10px; display:flex; justify-content:space-between;">
+                        <span>✂️ 服務項目選擇</span>
+                        <span style="color:#aaa; font-weight:400;">可上下滑動挑選</span>
+                    </div>
+                    <div style="max-height:160px; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-wrap:wrap; gap:10px; padding:5px;">
                         ${store.tags.map(t => `
-                            <div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" onclick="this.classList.toggle('selected'); toggleTempTag('${t.name}')">${t.name}</div>
+                            <div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" 
+                                 style="padding:12px 22px; font-size:1rem;" 
+                                 onclick="this.classList.toggle('selected'); toggleTempTag('${t.name}')">${t.name}</div>
                         `).join('')}
                     </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <input id="pop-d" type="date" class="luxe-btn" style="flex:1.2; border-radius:25px;" value="${apt?.date || curD.toLocaleDateString('sv')}">
-                    <input id="pop-t" type="time" class="luxe-btn" style="flex:1; border-radius:25px;" value="${apt?.time || '11:00'}">
+                <div style="display:flex; gap:12px; margin-bottom:18px;">
+                    <input id="pop-d" type="date" class="luxe-btn" style="flex:1.2; border-radius:25px; height:60px;" value="${apt?.date || curD.toLocaleDateString('sv')}">
+                    <input id="pop-t" type="time" class="luxe-btn" style="flex:1; border-radius:25px; height:60px;" value="${apt?.time || '11:00'}">
                 </div>
 
-                <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:20px; padding:15px; font-size:1rem;" placeholder="詳細備註...">${apt?.note_full || ""}</textarea>
+                <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:25px; padding:18px; font-size:1.1rem;" placeholder="輸入詳細備註...">${apt?.note_full || ""}</textarea>
                 
-                <div style="margin-top:15px; display:flex; align-items:center; gap:10px; font-weight:900; color:#1d1d1f;">
-                    <input type="checkbox" id="pop-save-cli" checked style="width:20px; height:20px;"> 
-                    <label for="pop-save-cli">自動更新至顧客名冊</label>
-                </div>
+                <label style="margin-top:18px; display:flex; align-items:center; gap:12px; font-weight:900; color:#1d1d1f; cursor:pointer; padding:10px;">
+                    <input type="checkbox" id="pop-save-cli" checked style="width:22px; height:22px; accent-color:var(--gold);"> 
+                    <span style="font-size:1rem;">自動更新至顧客名冊</span>
+                </label>
             </div>`,
         showCancelButton: true,
         confirmButtonText: '確認預約',
@@ -693,7 +702,6 @@ const db = firebase.firestore();
         if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
     }
 }
-
 // 輔助：預約彈窗專用性別切換
 function setSexPop(s) {
     document.getElementById('pop-sex').value = s;
