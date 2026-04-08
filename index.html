@@ -17,6 +17,42 @@
 
     
     <style>
+
+/* --- 【Aether Flow: 圓形清單項目恢復】 --- */
+.sty-item, .tag-pill-item {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-radius: 35px !important; /* 妳要的圓形感 */
+    padding: 15px 25px !important;
+    margin-bottom: 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+/* 名字旁邊的圓形符號盒子 */
+.sty-color-dot {
+    width: 35px; height: 35px;
+    border-radius: 50% !important; /* 絕對圓形 */
+    border: 3px solid #fff !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1) !important;
+}
+
+/* 🚀 妳要的「底部圓形黑色返回鈕」樣式 */
+.aether-back-btn {
+    width: 60px; height: 60px;
+    background: #1d1d1f !important; /* 黑色框 */
+    border-radius: 50% !important;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.2rem;
+    cursor: pointer; margin: 20px auto 0;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+
+
+
     :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
@@ -52,10 +88,48 @@ html, body {
 
 
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
-        .swal2-popup { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(25px) saturate(180%) !important; border-radius: 45px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important; }
-        .swal2-title { color: #1d1d1f !important; font-weight: 900 !important; }
-        .swal2-confirm { background: var(--gold) !important; border-radius: 30px !important; font-weight: 900 !important; padding: 12px 35px !important; }
-        .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
+         /* --- 【Aether Flow: 旗艦毛玻璃深黑體】 --- */
+.swal2-popup { 
+    background: rgba(255, 255, 255, 0.75) !important; 
+    backdrop-filter: blur(40px) saturate(210%) !important; 
+    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+    border-radius: 40px !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.12) !important;
+    font-family: 'Noto Sans TC', sans-serif !important;
+}
+
+.swal2-title { 
+    color: #1d1d1f !important; /* 妳要的深色字 */
+    font-weight: 900 !important; /* 粗體字體 */
+    font-size: 1.8rem !important;
+    letter-spacing: -1.5px !important;
+}
+
+/* 🚀 妳要的圓形卡片樣式 */
+.sty-item {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-radius: 30px !important;
+    padding: 18px 25px !important;
+    margin-bottom: 12px !important;
+    border: 1px solid rgba(0,0,0,0.03) !important;
+}
+
+/* 🚀 底部按鈕：黑與灰的質感搭配 */
+.swal2-confirm { 
+    background: #1d1d1f !important; /* 黑色區塊確認 */
+    border-radius: 30px !important; 
+    font-weight: 900 !important; 
+    padding: 15px 40px !important;
+}
+
+.swal2-cancel { 
+    background: #e5e5ea !important; /* 灰色返回 */
+    color: #3a3a3c !important;
+    border-radius: 30px !important; 
+    font-weight: 900 !important; 
+}
+         .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
@@ -187,28 +261,41 @@ html, body {
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
         }
-    /* --- 【V318 專屬空間：設定頁面奢華改造樣式】 --- */
-        .set-drawer-trigger {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(212, 175, 55, 0.1);
-            border-radius: 20px; padding: 25px; margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-        .set-drawer-trigger:hover {
-            transform: translateY(-3px); background: #fff;
-            border-color: rgba(212, 175, 55, 0.5);
-            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.1);
-        }
-        .set-drawer-trigger i { font-size: 1.8rem; color: #ccc; transition: color 0.3s; }
-        .set-drawer-trigger:hover i { color: var(--gold); }
-        .add-luxe-btn {
-            width: 100%; height: 60px; background: transparent; border: 2px dashed rgba(212, 175, 55, 0.4);
-            color: var(--gold); border-radius: 15px; font-weight: 900; font-size: 1.1rem;
-            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s;
-        }
+    /* --- 【V318 專屬：以太美學設定鈕】 --- */
+.set-drawer-trigger {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1.5px solid rgba(212, 175, 55, 0.15) !important;
+    border-radius: 30px !important; /* 妳最愛的圓潤感 */
+    padding: 25px 30px !important; 
+    margin-bottom: 20px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
+}
+
+/* 觸摸壓下去的回饋感 */
+.set-drawer-trigger:active {
+    transform: scale(0.96) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 按鈕內的小圖示盒子 */
+.set-icon-box {
+    width: 50px; height: 50px; 
+    background: var(--gold); 
+    border-radius: 15px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #fff; 
+    box-shadow: 0 8px 20px rgba(212,175,55,0.25);
+    margin-right: 18px;
+}
         .add-luxe-btn:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); border-style: solid; }
         .luxe-trash-btn { color: #ccc !important; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; padding: 5px; }
         .luxe-trash-btn:hover { color: #ffcccc !important; transform: scale(1.2); }
@@ -509,116 +596,116 @@ const db = firebase.firestore();
 // ==========================================================================
 // --- S5: 預約表核心功能 ---
 // ==========================================================================
-    async function popBooking(n="", p="", sId=null, editId=null) {
-        const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
-        tempTags = apt ? [...(apt.tags || [])] : [];
-        const { value: res } = await Swal.fire({
-          title: editId ? '修改預約' : '新增預約', width: '90%',
-html: `
-            <div style="position:relative; text-align:left; padding: 5px; overflow: visible !important;">
-                
-                <div style="position:relative; overflow: visible !important;">
-                    <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem;" 
-                           placeholder="輸入姓名或電話..." 
-                           oninput="searchStored(this, 'sw-box')">
-                    
-                    <div id="sw-box" class="suggest-box" 
-                         style="
-                            position: absolute !important;
-                            top: 105% !important;
-                            left: 0 !important;
-                            width: 100% !important;
-                            border-radius: 25px !important;
-                            max-height: 500px !important; /* 🚀 這裡拉長到 500 */
-                            display: none;
-                            z-index: 999999 !important;
-                            overflow-y: auto !important;
-                            -webkit-overflow-scrolling: touch !important;
-                            box-shadow: 0 15px 45px rgba(0,0,0,0.3) !important;
-                         " 
-                         ontouchmove="event.stopPropagation()"></div>
+   async function popBooking(n="", p="", sId=null, editId=null) {
+    const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
+    tempTags = apt ? [...(apt.tags || [])] : [];
+    
+    const { value: res } = await Swal.fire({
+        title: editId ? '修改預約' : '新增預約',
+        width: '90%',
+        html: `
+            <div style="text-align:left; padding: 5px;">
+                <div style="position:relative; margin-bottom:15px;">
+                    <input id="pop-n" class="luxe-btn" style="width:100%; border-radius:25px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')">
+                    <div id="pop-box" class="suggest-box"></div>
                 </div>
-            </div>
-        `,
-            preConfirm: () => ({ 
-                n: document.getElementById('pop-n').value, 
-                sex: document.getElementById('pop-sex').value, 
-                p: document.getElementById('pop-p').value, 
-                styId: document.getElementById('pop-s').value, 
-                price: document.getElementById('pop-price').value, // 確保這行有抓到金額
-                c: document.getElementById('pop-c').value, 
-                note: document.getElementById('pop-note').value, 
-                d: document.getElementById('pop-d').value, 
-                t: document.getElementById('pop-t').value, 
-                saveCli: document.getElementById('pop-save-cli').checked 
-            })
-        });
 
-        if (res && res.n) {
-             const data = { 
-    id: editId || String(Date.now()), 
-    n: res.n, 
-    sex: res.sex, 
-    p: res.p, 
-    styId: res.styId, 
-    c: res.c, 
-    price: res.price, // 這行是重點！注入金額
-    note_full: res.note, 
-    date: res.d, 
-    time: res.t, 
-    tags: [...tempTags], 
-    done: apt ? apt.done : false, 
-    payTags: apt ? apt.payTags : [] 
-};
-            if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
-            else { 
-                store.appointments.push(data); 
-                if(res.saveCli && !store.clients.find(c => (c.n||c.name) === res.n)) {
-                    store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm: '', bd: '', note: res.note }); 
-                }
-            }
-            saveS(); renderDay(res.d);
-            if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
-        }
-    }
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div id="pop-boy" class="gender-btn ${apt?.sex==='M'?'active-boy':''}" onclick="setSexPop('M')">♂ 男</div>
+                    <div id="pop-girl" class="gender-btn ${(!apt || apt?.sex==='F')?'active-girl':''}" onclick="setSexPop('F')">♀ 女</div>
+                </div>
+                <input type="hidden" id="pop-sex" value="${apt?.sex || 'F'}">
 
-    function togglePay(id, code, emoji, labelName, ds) {
-        const a = store.appointments.find(x => String(x.id) === String(id));
-        if(!a) return;
-        if(!a.payTags) a.payTags = [];
-        const idx = a.payTags.indexOf(code);
-        let note = a.note_full || "";
-        const tagText = `${emoji}${labelName}`;
-        if(idx > -1) { a.payTags.splice(idx, 1); note = note.replace(tagText, "").trim(); } 
-        else { a.payTags.push(code); note = (note + " " + tagText).trim(); }
-        a.note_full = note; saveS(); renderDay(ds);
-    }
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <input id="pop-p" class="luxe-btn" style="flex:2; border-radius:25px;" value="${p}" placeholder="電話">
+                    <input id="pop-c" type="number" class="luxe-btn" style="flex:1; border-radius:25px; text-align:center;" value="${apt?.c || 1}" placeholder="人數">
+                </div>
 
-    function toggleVIP(id, ds) {
-        const a = store.appointments.find(x => String(x.id) === String(id));
-        if(!a) return;
-        a.isVIP = !a.isVIP;
-        saveS(); renderDay(ds);
-    }
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <select id="pop-s" class="luxe-btn" style="flex:1.5; border-radius:25px;">
+                        ${store.stylists.map(s => `<option value="${s.id}" ${String(sId||apt?.styId)===String(s.id)?'selected':''}>${s.name}</option>`).join('')}
+                    </select>
+                    <input id="pop-price" type="number" class="luxe-btn" style="flex:1; border-radius:25px; text-align:center;" value="${apt?.price || ''}" placeholder="金額 $">
+                </div>
 
-    async function popNoteEdit(aptId, ds) {
-        const a = store.appointments.find(x => String(x.id) === String(aptId));
-        if(!a) return;
-        const { value: text } = await Swal.fire({ title: '詳細備註', input: 'textarea', inputValue: a.note_full || "", inputPlaceholder: '在此輸入內容...', showCancelButton: true, confirmButtonText: '存檔', cancelButtonText: '取消' });
-        if (text !== undefined) { a.note_full = text; saveS(); renderDay(ds); }
-    }
+                <div style="margin-bottom:15px;">
+                    <div style="font-weight:900; color:#888; font-size:0.8rem; margin-bottom:8px;">✂️ 服務項目 (可多選)</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                        ${store.tags.map(t => `
+                            <div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" onclick="this.classList.toggle('selected'); toggleTempTag('${t.name}')">${t.name}</div>
+                        `).join('')}
+                    </div>
+                </div>
 
-    // --- 服務項目修改引擎 (手動補強版) ---
-async function editTagTrig(id, old) {
-    const { value: n } = await Swal.fire({ 
-        title: '修改服務項目', input: 'text', inputValue: old, showCancelButton: true, confirmButtonColor: '#1d1d1f' 
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <input id="pop-d" type="date" class="luxe-btn" style="flex:1.2; border-radius:25px;" value="${apt?.date || curD.toLocaleDateString('sv')}">
+                    <input id="pop-t" type="time" class="luxe-btn" style="flex:1; border-radius:25px;" value="${apt?.time || '11:00'}">
+                </div>
+
+                <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:20px; padding:15px; font-size:1rem;" placeholder="詳細備註...">${apt?.note_full || ""}</textarea>
+                
+                <div style="margin-top:15px; display:flex; align-items:center; gap:10px; font-weight:900; color:#1d1d1f;">
+                    <input type="checkbox" id="pop-save-cli" checked style="width:20px; height:20px;"> 
+                    <label for="pop-save-cli">自動更新至顧客名冊</label>
+                </div>
+            </div>`,
+        showCancelButton: true,
+        confirmButtonText: '確認預約',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonColor: '#e5e5ea',
+        reverseButtons: true,
+        preConfirm: () => ({
+            n: document.getElementById('pop-n').value,
+            sex: document.getElementById('pop-sex').value,
+            p: document.getElementById('pop-p').value,
+            c: document.getElementById('pop-c').value,
+            styId: document.getElementById('pop-s').value,
+            price: document.getElementById('pop-price').value,
+            note: document.getElementById('pop-note').value,
+            d: document.getElementById('pop-d').value,
+            t: document.getElementById('pop-t').value,
+            saveCli: document.getElementById('pop-save-cli').checked
+        })
     });
-    if (n) {
-        const target = store.tags.find(t => String(t.id) === String(id));
-        if(target) { target.name = n; await saveS(); renderSet(); popTagDrawer(); }
-    } else { popTagDrawer(); }
+
+    if (res && res.n) {
+        const data = {
+            id: editId || String(Date.now()),
+            n: res.n, sex: res.sex, p: res.p, c: res.c,
+            styId: res.styId, price: res.price, note_full: res.note,
+            date: res.d, time: res.t,
+            tags: [...tempTags],
+            done: apt ? apt.done : false,
+            payTags: apt ? apt.payTags : [],
+            isVIP: apt ? apt.isVIP : false
+        };
+        if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
+        else {
+            store.appointments.push(data);
+            if(res.saveCli) {
+                const exist = store.clients.find(c => c.n === res.n);
+                if(exist) { exist.p = res.p; exist.sex = res.sex; exist.lastSty = res.styId; }
+                else { store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm:'', bd:'', note:'' }); }
+            }
+        }
+        await saveS(); renderDay(res.d);
+        if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
+    }
 }
 
+// 輔助：預約彈窗專用性別切換
+function setSexPop(s) {
+    document.getElementById('pop-sex').value = s;
+    document.getElementById('pop-boy').classList.toggle('active-boy', s === 'M');
+    document.getElementById('pop-girl').classList.toggle('active-girl', s === 'F');
+}
+
+// 輔助：服務項目暫存切換
+function toggleTempTag(tagName) {
+    const idx = tempTags.indexOf(tagName);
+    if(idx > -1) tempTags.splice(idx, 1); else tempTags.push(tagName);
+}
 // ==========================================================================
 // --- S6: 跑道渲染與顧客名冊 ---
 // ==========================================================================
@@ -799,48 +886,70 @@ const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap
 // ==========================================================================
 // --- 【V318 專屬空間：設定頁面奢華大腦 - 終極整合版】 ---
 // ==========================================================================
-// --- 【Aether Flow: renderSet 物理防干擾修正版】 ---
+// --- 【Aether Flow: renderSet 旗艦美化版】 ---
 function renderSet() {
     const container = document.getElementById('set-content-container');
     if(!container) return;
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
-    // 這裡我們把 onclick 徹底拿掉，改用 data-action 識別，並確保 4 個按鈕都在清單內
     container.innerHTML = `
         <div style="padding-top:20px;" id="set-main-list">
+           
             <div class="set-drawer-trigger" data-action="rename">
-                <div style="display:flex; align-items:center; gap:15px; pointer-events:none;">
-                    <i class="fas fa-store"></i><div style="font-weight:900;"># 品牌名稱設定</div>
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box"><i class="fas fa-signature"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">品牌識別設定</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">BRAND IDENTITY</div>
+                    </div>
                 </div>
-                <div style="color:var(--gold); font-weight:900; pointer-events:none;">${store.storeName || '專屬空間'}</div>
+                <div style="text-align:right; pointer-events:none;">
+                    <div style="color:var(--gold); font-weight:900; font-size:1.3rem;">${store.storeName || '專屬空間'}</div>
+                </div>
             </div>
 
             <div class="set-drawer-trigger" data-action="offday">
-                <div style="display:flex; align-items:center; gap:15px; pointer-events:none;">
-                    <i class="fas fa-calendar-times"></i><div style="font-weight:900;">1. 店舖排休與配色</div>
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box"><i class="fas fa-calendar-times"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">店舖排休與配色</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">STORE SCHEDULE</div>
+                    </div>
                 </div>
-                <div style="color:#aaa; font-weight:700; pointer-events:none;">${(store.offDays || []).length} 天</div>
+                <div style="color:#aaa; font-weight:700;">${(store.offDays || []).length} 天</div>
             </div>
 
             <div class="set-drawer-trigger" data-action="sty">
-                <div style="display:flex; align-items:center; gap:15px; pointer-events:none;">
-                    <i class="fas fa-user-tie"></i><div style="font-weight:900;">2. 設計師團隊管理</div>
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box"><i class="fas fa-user-tie"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">設計師團隊管理</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">STYLIST TEAM</div>
+                    </div>
                 </div>
-                <div style="color:#aaa; font-weight:700; pointer-events:none;">${store.stylists.length} 位</div>
+                <div style="color:#aaa; font-weight:700;">${store.stylists.length} 位</div>
             </div>
 
             <div class="set-drawer-trigger" data-action="tag">
-                <div style="display:flex; align-items:center; gap:15px; pointer-events:none;">
-                    <i class="fas fa-concierge-bell"></i><div style="font-weight:900;">3. 服務項目管理</div>
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box"><i class="fas fa-concierge-bell"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">服務項目管理</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">SERVICE MENU</div>
+                    </div>
                 </div>
-                <div style="color:#aaa; font-weight:700; pointer-events:none;">${store.tags.length} 個</div>
+                <div style="color:#aaa; font-weight:700;">${store.tags.length} 個</div>
             </div>
 
             <div class="set-drawer-trigger" data-action="paytag">
-                <div style="display:flex; align-items:center; gap:15px; pointer-events:none;">
-                    <i class="fas fa-wallet"></i><div style="font-weight:900;">4. 自定義支付標籤</div>
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box"><i class="fas fa-wallet"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">自定義支付標籤</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">PAYMENT TAGS</div>
+                    </div>
                 </div>
-                <div style="color:#aaa; font-weight:700; pointer-events:none;">${(store.payTagsDef || []).length} 種</div>
+                <div style="color:#aaa; font-weight:700;">${(store.payTagsDef || []).length} 種</div>
             </div>
             
             <div style="margin-top:60px; padding-top:30px; border-top:1px dashed #eee;">
@@ -856,34 +965,28 @@ function renderSet() {
         </div>
     `;
 
-    // 核心：使用「事件委派」監聽，這是最穩定的方式
     const list = document.getElementById('set-main-list');
     list.onclick = (e) => {
         const item = e.target.closest('.set-drawer-trigger');
         if(!item) return;
         const action = item.dataset.action;
-        
-        // 阻止冒泡
-        e.preventDefault();
-        e.stopPropagation();
-
+        e.preventDefault(); e.stopPropagation();
         if(action === 'rename') popRenameStore();
         if(action === 'offday') popOffDayDrawer();
         if(action === 'sty') popStyDrawer();
         if(action === 'tag') popTagDrawer();
-        if(action === 'paytag') popPayTagDrawer(); // <--- 這裡通電了！
+        if(action === 'paytag') popPayTagDrawer();
     };
     
-    // 重新激活按鈕也要通電
     const reBtn = document.getElementById('btn-reauth-real');
     if(reBtn) reBtn.onclick = (e) => { e.stopPropagation(); reAuth(); };
 }
+
 // --- 【Aether Flow：排休抽屜大腦 - 穩定觸發版】 ---
 function popOffDayDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 1. 商業鎖：試用版僅支援 2 天
     if (!isPro && (store.offDays || []).length >= 2) {
         Swal.fire({ 
             icon: 'lock', title: '✨ 升級 Aether Pro', 
@@ -893,7 +996,6 @@ function popOffDayDrawer() {
         return;
     }
 
-    // 2. 打開視窗 (改用 didOpen 綁定監聽，防止點擊跳掉)
     Swal.fire({
         title: '店舖排休設定',
         html: `
@@ -920,101 +1022,57 @@ function popOffDayDrawer() {
         }
     });
 }
-function popStyDrawer() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
-
-    Swal.fire({
-        title: '設計師團隊管理',
-        width: '90%',
-        html: `<div style="padding:10px;" id="swal-sty-list">
-                ${store.stylists.map(s => `
-                    <div class="sty-item" style="display:flex; align-items:center; justify-content:space-between; padding:18px; background:#f9f9fb; border-radius:20px; margin-bottom:12px; border:1px solid #eee;">
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <div class="sty-color-dot-trigger" data-id="${s.id}" style="width:45px; height:45px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
-                                <div style="width:30px; height:30px; border-radius:50%; background:${s.color}; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1); pointer-events:none;"></div>
-                            </div>
-                            <span style="font-weight:900; font-size:1.1rem;">${s.name}</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="fas fa-edit sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.3rem; color:#ccc; cursor:pointer;"></i>
-                            <i class="fas fa-trash sty-del-btn" data-id="${s.id}" style="font-size:1.3rem; color:#ffcccc; cursor:pointer;"></i>
-                        </div>
-                    </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:15px; width:100%;" id="btn-add-sty-real">+ 新增團隊成員</button>
-            </div>`,
-        showConfirmButton: false,
-        didOpen: () => {
-            const container = document.getElementById('swal-sty-list');
-
-            // 1. 【選色氣復活】監聽彩色圓點
-            container.querySelectorAll('.sty-color-dot-trigger').forEach(dot => {
-                dot.onclick = (e) => {
-                    e.stopPropagation();
-                    const id = dot.dataset.id;
-                    pickLuxeColor('sty', id); // 呼叫選色引擎
-                };
-            });
-
-            // 2. 監聽修改
-            container.querySelectorAll('.sty-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    editStyTrig(btn.dataset.id, btn.dataset.name);
-                };
-            });
-
-            // 3. 監聽刪除
-            container.querySelectorAll('.sty-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    confirmDelSty(btn.dataset.id);
-                };
-            });
-
-            // 4. 監聽新增
-            document.getElementById('btn-add-sty-real').onclick = (e) => {
-                e.stopPropagation();
-                if (!isPro && store.stylists.length >= 2) {
-                    Swal.showValidationMessage('試用版上限 2 人');
-                    return;
-                }
-                addStyTrig();
-            };
-        }
-    });
-}
-// --- 【Aether Flow：排休抽屜大腦 - 穩定觸發版】 ---
+// --- 【Aether Flow：排休抽屜旗艦版 - 恢復黑灰按鈕美學】 ---
 function popOffDayDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
-    // 1. 商業鎖：試用版僅支援 2 天
+    // 商業鎖：試用版僅支援 2 天
     if (!isPro && (store.offDays || []).length >= 2) {
         Swal.fire({ 
-            icon: 'lock', title: '✨ 升級 Aether Pro', 
+            icon: 'lock', 
+            title: '✨ 升級 Aether Pro', 
             html: `<p style="font-weight:700; color:#888;">試用版僅支援 2 天排休設定。<br>解鎖旗艦版以享有無限排班功能。</p>`, 
-            confirmButtonColor: '#D4AF37', confirmButtonText: '立即解鎖'
+            confirmButtonColor: '#1d1d1f', // 黑色
+            confirmButtonText: '立即解鎖'
         }).then((result) => { if (result.isConfirmed) checkLicense(); });
         return;
     }
 
-    // 2. 打開視窗 (改用 didOpen 綁定監聽，防止點擊跳掉)
     Swal.fire({
         title: '店舖排休設定',
+        width: '85%',
         html: `
-            <div style="padding:20px;">
-                <div class="add-luxe-btn" style="margin-bottom:20px; border-style:solid; cursor:pointer;" id="btn-pick-off">
-                    <i class="fas fa-calendar-plus"></i> 選擇月份與日期
+            <div style="padding:15px;" id="swal-offday-list">
+                <div class="off-item" id="btn-pick-off" style="display:flex; align-items:center; justify-content:space-between; padding:20px 25px; background:rgba(255,255,255,0.6); border-radius:30px; margin-bottom:15px; border:1px solid rgba(0,0,0,0.03); box-shadow:0 4px 15px rgba(0,0,0,0.03); cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="width:40px; height:40px; background:var(--gold); border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff;">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span style="font-weight:900; font-size:1.1rem; color:#1d1d1f;">選擇月份與日期</span>
+                    </div>
+                    <i class="fas fa-pen" style="color:#ccc; font-size:1rem;"></i>
                 </div>
-                <div class="add-luxe-btn" style="border-style:solid; cursor:pointer;" id="btn-pick-color">
-                    <i class="fas fa-palette"></i> 修改休假格顏色
+
+                <div class="off-item" id="btn-pick-color" style="display:flex; align-items:center; justify-content:space-between; padding:20px 25px; background:rgba(255,255,255,0.6); border-radius:30px; margin-bottom:15px; border:1px solid rgba(0,0,0,0.03); box-shadow:0 4px 15px rgba(0,0,0,0.03); cursor:pointer;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="width:40px; height:40px; background:${store.offColor || '#e5e5ea'}; border-radius:50%; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1);"></div>
+                        <span style="font-weight:900; font-size:1.1rem; color:#1d1d1f;">修改休假格顏色</span>
+                    </div>
+                    <i class="fas fa-pen" style="color:#ccc; font-size:1rem;"></i>
                 </div>
-                <p style="margin-top:15px; color:#aaa; font-size:0.8rem;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
+
+                <p style="margin-top:15px; color:#aaa; font-size:0.85rem; font-weight:700;">( 目前已設定 ${(store.offDays || []).length} 天休假 )</p>
             </div>
         `,
-        showConfirmButton: false,
+        showCancelButton: true,
+        confirmButtonText: '確認',
+        cancelButtonText: '取消返回',
+        confirmButtonColor: '#1d1d1f', // 黑色
+        cancelButtonColor: '#e5e5ea',  // 灰色
+        reverseButtons: true, // 讓取消在左，確認在右
         didOpen: () => {
+            // 監聽按鈕點擊
             document.getElementById('btn-pick-off').onclick = () => {
                 Swal.close();
                 setTimeout(() => pickOffMulti(), 300);
@@ -1035,54 +1093,56 @@ function popStyDrawer() {
         title: '設計師團隊管理',
         width: '90%',
         html: `
-            <div style="padding:10px;">
+            <div style="padding:10px;" id="swal-sty-list">
                 ${store.stylists.map(s => `
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px; background:#f9f9fb; border-radius:20px; margin-bottom:12px; border:1px solid #eee;">
+                    <div class="sty-item" style="display:flex; align-items:center; justify-content:space-between; padding:18px 25px; background:rgba(255,255,255,0.6); border-radius:30px; margin-bottom:12px; border:1px solid rgba(0,0,0,0.03); box-shadow:0 4px 15px rgba(0,0,0,0.03);">
                         <div style="display:flex; align-items:center; gap:15px;">
-                            <div class="sty-color-dot" data-id="${s.id}" style="width:35px; height:35px; border-radius:50%; background:${s.color}; cursor:pointer; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900; font-size:1.1rem;">${s.name}</span>
+                            <div class="sty-color-dot-trigger" data-id="${s.id}" style="width:38px; height:38px; border-radius:50%; background:${s.color}; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1); cursor:pointer;"></div>
+                            <span style="font-weight:900; font-size:1.2rem; color:#1d1d1f; letter-spacing:-1px;">${s.name}</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:15px;">
-                            <i class="fas fa-ruler-combined luxe-edit-icon sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.3rem; color:#ccc; cursor:pointer;"></i>
-                            <i class="far fa-trash-alt luxe-trash-btn sty-del-btn" data-id="${s.id}" style="font-size:1.3rem; color:#ffcccc; cursor:pointer;"></i>
+                        <div style="display:flex; align-items:center; gap:22px;">
+                            <i class="fas fa-pen sty-edit-btn" data-id="${s.id}" data-name="${s.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
+                            <i class="fas fa-trash-alt sty-del-btn" data-id="${s.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
                         </div>
                     </div>`).join('')}
-                <button class="add-luxe-btn" style="margin-top:15px;" id="btn-add-sty">
+                
+                <button class="add-luxe-btn" style="width:100%; margin-top:15px; border-radius:25px;" id="btn-add-sty-real">
                     <i class="fas fa-user-plus"></i> 新增團隊成員
                 </button>
             </div>`,
-        showConfirmButton: false,
+        showCancelButton: true,
+        confirmButtonText: '確認',
+        cancelButtonText: '取消返回',
+        confirmButtonColor: '#1d1d1f', // 黑色確認
+        cancelButtonColor: '#e5e5ea',  // 灰色取消
+        reverseButtons: true, // 讓取消在左，確認在右
         didOpen: () => {
-            document.getElementById('btn-add-sty').onclick = () => {
+            const container = document.getElementById('swal-sty-list');
+            
+            // 監聽代表色點擊
+            container.querySelectorAll('.sty-color-dot-trigger').forEach(dot => {
+                dot.onclick = (e) => { e.stopPropagation(); pickLuxeColor('sty', dot.dataset.id); };
+            });
+
+            // 監聽筆形修改按鈕
+            container.querySelectorAll('.sty-edit-btn').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); editStyTrig(btn.dataset.id, btn.dataset.name); };
+            });
+
+            // 監聽垃圾桶刪除按鈕
+            container.querySelectorAll('.sty-del-btn').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); confirmDelSty(btn.dataset.id); };
+            });
+
+            // 監聽新增按鈕
+            document.getElementById('btn-add-sty-real').onclick = (e) => {
+                e.stopPropagation();
                 if (!isPro && store.stylists.length >= 2) {
                     Swal.showValidationMessage('試用版上限 2 人');
                     return;
                 }
-                Swal.close();
-                setTimeout(() => addStyTrig(), 300);
+                addStyTrig();
             };
-            document.querySelectorAll('.sty-edit-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.sty-edit-btn').dataset.id;
-                    const oldName = e.target.closest('.sty-edit-btn').dataset.name;
-                    Swal.close();
-                    setTimeout(() => editStyTrig(id, oldName), 300);
-                };
-            });
-            document.querySelectorAll('.sty-del-btn').forEach(btn => {
-                btn.onclick = (e) => {
-                    const id = e.target.closest('.sty-del-btn').dataset.id;
-                    Swal.close();
-                    setTimeout(() => confirmDelSty(id), 300);
-                };
-            });
-            document.querySelectorAll('.sty-color-dot').forEach(dot => {
-                dot.onclick = (e) => {
-                    const id = e.target.dataset.id;
-                    Swal.close();
-                    setTimeout(() => pickLuxeColor('sty', id), 300);
-                };
-            });
         }
     });
 }
@@ -1095,23 +1155,31 @@ function popTagDrawer() {
         title: '服務項目管理',
         width: '90%',
         html: `
-            <div style="padding:15px;">
-                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:25px;">
+            <div style="padding:10px;" id="swal-tag-list">
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
                     ${store.tags.map(t => `
-                        <div class="aether-tag-pill" style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:12px 20px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);">
-                            <span style="font-weight:900; margin-right:15px; color:#1d1d1f;">${t.name}</span>
-                            <div style="display:flex; gap:12px;">
-                                <i class="fas fa-ruler-combined luxe-edit-icon tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
-                                <i class="far fa-trash-alt luxe-trash-btn tag-del-btn" data-id="${t.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
+                        <div class="tag-item" style="display:flex; align-items:center; justify-content:space-between; padding:18px 25px; background:rgba(255,255,255,0.6); border-radius:30px; border:1px solid rgba(0,0,0,0.03); box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="color:var(--gold); font-size:1.1rem;">✂️</div>
+                                <span style="font-weight:900; font-size:1.2rem; color:#1d1d1f; letter-spacing:-1px;">${t.name}</span>
+                            </div>
+                            <div style="display:flex; gap:22px; align-items:center;">
+                                <i class="fas fa-pen tag-edit-btn" data-id="${t.id}" data-name="${t.name}" style="font-size:1.1rem; color:#ccc; cursor:pointer;"></i>
+                                <i class="fas fa-trash-alt tag-del-btn" data-id="${t.id}" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;"></i>
                             </div>
                         </div>`).join('')}
                 </div>
-                <button class="add-luxe-btn" id="btn-add-tag">
+                <button class="add-luxe-btn" id="btn-add-tag" style="width:100%; border-radius:25px;">
                     <i class="fas fa-plus-circle"></i> 新增服務項目
                 </button>
             </div>`,
-        showConfirmButton: false,
-   didOpen: () => {
+        showCancelButton: true,
+        confirmButtonText: '確認',
+        cancelButtonText: '取消返回',
+        confirmButtonColor: '#1d1d1f', // 黑色
+        cancelButtonColor: '#e5e5ea',  // 灰色
+        reverseButtons: true, // 取消在左，確認在右
+        didOpen: () => {
             // 1. 新增按鈕通電
             document.getElementById('btn-add-tag').onclick = () => {
                 if (!isPro && store.tags.length >= 2) {
@@ -1122,7 +1190,7 @@ function popTagDrawer() {
                 setTimeout(() => addTagTrig(), 300);
             };
 
-            // 2. 修改按鈕通電 (妳原本漏掉這段)
+            // 2. 筆形修改按鈕通電
             document.querySelectorAll('.tag-edit-btn').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.id;
@@ -1132,7 +1200,7 @@ function popTagDrawer() {
                 };
             });
 
-            // 3. 刪除按鈕通電 (這就是為什麼妳之前刪不掉的原因)
+            // 3. 垃圾桶刪除按鈕通電
             document.querySelectorAll('.tag-del-btn').forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.id;
@@ -1142,7 +1210,7 @@ function popTagDrawer() {
             });
         }
     });
-}     
+}
 // 0. 營業時間抽屜
 function popTimeDrawer() {
     Swal.fire({
@@ -1827,21 +1895,29 @@ function popPayTagDrawer() {
         width: '90%',
         html: `
             <div style="padding:10px;">
-                <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;">
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
                     ${(store.payTagsDef || []).map(pt => `
-                        <div style="display:flex; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 2px 5px rgba(0,0,0,0.02);">
-                            <div onclick="pickTagColor('${pt.id}')" style="width:22px; height:22px; border-radius:50%; background:${pt.color}; cursor:pointer; margin-right:10px; border:2px solid #fff; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>
-                            <span style="font-weight:900; margin-right:12px;">${pt.name}</span>
-                            <div style="display:flex; gap:8px;">
-                                <i class="fas fa-edit" style="color:#ccc; cursor:pointer;" onclick="editPayTag('${pt.id}', '${pt.name}')"></i>
-                                <i class="fas fa-trash" style="color:#ffcccc; cursor:pointer;" onclick="delPayTag('${pt.id}')"></i>
+                        <div class="tag-item" style="display:flex; align-items:center; justify-content:space-between; padding:18px 25px; background:rgba(255,255,255,0.6); border-radius:30px; border:1px solid rgba(0,0,0,0.03); box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <div onclick="pickTagColor('${pt.id}')" style="width:32px; height:32px; border-radius:50%; background:${pt.color}; border:3px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.1); cursor:pointer;"></div>
+                                <span style="font-weight:900; font-size:1.2rem; color:#1d1d1f; letter-spacing:-1px;">${pt.name}</span>
                             </div>
-                        </div>
-                    `).join('')}
+                            <div style="display:flex; gap:22px; align-items:center;">
+                                <i class="fas fa-pen" style="font-size:1.1rem; color:#ccc; cursor:pointer;" onclick="editPayTag('${pt.id}', '${pt.name}')"></i>
+                                <i class="fas fa-trash-alt" style="font-size:1.1rem; color:#ffcccc; cursor:pointer;" onclick="delPayTag('${pt.id}')"></i>
+                            </div>
+                        </div>`).join('')}
                 </div>
-                <button class="add-luxe-btn" onclick="addPayTag()">+ 新增支付方式</button>
+                <button class="add-luxe-btn" onclick="addPayTag()" style="width:100%; border-radius:25px;">
+                    <i class="fas fa-plus-circle"></i> 新增支付方式
+                </button>
             </div>`,
-        showConfirmButton: false
+        showCancelButton: true,
+        confirmButtonText: '確認',
+        cancelButtonText: '取消返回',
+        confirmButtonColor: '#1d1d1f', // 黑色
+        cancelButtonColor: '#e5e5ea',  // 灰色
+        reverseButtons: true
     });
 }
 // --- 【中文導航：標籤選取彈窗大腦 - 支援動態同步、統計紀錄】 ---
