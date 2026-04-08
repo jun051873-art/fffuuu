@@ -174,86 +174,62 @@ html, body {
       
         /* --- 【Aether Flow 美學語言：比例優化版】 --- */
         /* --- Aether Flow: 核心導航整合 --- */
-      /* --- 🚀 導航條本體：守住妳的 95px 高度與懸浮感 --- */
-.nav {
-
-     /* 🚀 這是妳要的「物理滑動」保險 */
-.suggest-box {
-    display: none;
-    position: absolute !important;
-    z-index: 999999 !important; /* 數字最大，誰都擋不住妳滑動 */
-    background: #fff !important;
-    border: 1.5px solid var(--gold) !important;
-    border-radius: 20px !important;
-    max-height: 280px !important;
-    overflow-y: auto !important; /* 開啟垂直捲軸 */
-    -webkit-overflow-scrolling: touch !important; /* 🚀 核心：iPhone 絲滑物理感 */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
-}
-
-/* 🚀 彈窗容器：確保它比導航條更高 */
-.swal2-container {
-    z-index: 100000 !important; 
-}
-
-    position: fixed !important; 
-    bottom: calc(20px + env(safe-area-inset-bottom)) !important; 
-    left: 50% !important; 
+       .nav {
+    position: fixed !important;
+    /* 🚀 強制釘死在螢幕最下方，不准被任何東西擠動 */
+    bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 92% !important; 
-    max-width: 500px !important; 
-    height: 95px !important; /* 🚀 維持妳原本的大氣高度 */
+    width: 92% !important;
+    max-width: 500px !important;
+    height: 95px !important;
     
-    background: rgba(255, 255, 255, 0.8) !important; 
+    background: rgba(255, 255, 255, 0.9) !important;
     backdrop-filter: blur(30px) saturate(210%) !important;
     -webkit-backdrop-filter: blur(30px) saturate(210%) !important;
-    border-radius: 45px !important; 
-    display: flex !important; 
-    align-items: center !important; 
-    position: relative !important;
-    padding: 8px !important; 
-    border: 1.5px solid rgba(212, 175, 55, 0.3) !important; 
+    border-radius: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 8px !important;
+    border: 1.5px solid rgba(212, 175, 55, 0.3) !important;
     box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
     
-    /* 🚀 關鍵修正：設為 5000，保證在頁面之上，但絕對低於彈窗(100000) */
+    /* 🚀 關鍵層級：設為 5000。
+       它必須高於顧客卡片，但低於 SweetAlert 彈窗(約 10000) */
     z-index: 5000 !important;
 }
 
-/* --- 🚀 以太滑塊：妳最愛的動態香皂效果 --- */
-#nav-aether-mover {
-    position: absolute !important; 
-    left: 6px !important; 
-    width: calc(25% - 12px) !important; 
-    height: calc(100% - 12px) !important;
-    background: rgba(255, 255, 255, 0.45) !important;
-    backdrop-filter: blur(30px) saturate(210%) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(210%) !important;
-    border-radius: 35px !important; 
-    z-index: 1 !important;
-    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.9) !important;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.06), inset 0 2px 5px rgba(255,255,255,1) !important;
+/* 🚀 這是解決「導航跑進彈窗」的終極保險 */
+.swal2-container {
+    z-index: 100000 !important;
 }
 
-/* --- 🚀 導航項目與圖示字體 --- */
-.nav-item {
-    flex: 1 !important; 
-    text-align: center !important; 
-    color: #999 !important; 
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    position: relative !important; 
-    height: 100% !important; 
-    display: flex !important; 
-    flex-direction: column !important;
-    justify-content: center !important; 
-    align-items: center !important; 
-    z-index: 2 !important;
-}
+        #nav-aether-mover {
+            position: absolute; 
+            left: 6px; 
+            width: calc(25% - 12px); 
+            height: calc(100% - 12px);
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(30px) saturate(210%);
+            -webkit-backdrop-filter: blur(30px) saturate(210%);
+            border-radius: 35px; 
+            z-index: 1;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06), inset 0 2px 5px rgba(255,255,255,1);
+        }
 
-.nav-item.active { color: #1d1d1f !important; }
-.nav-item i { font-size: 1.4rem !important; margin-bottom: 2px !important; } 
-.nav-item span { font-size: 0.75rem !important; font-weight: 900 !important; letter-spacing: 0.5px !important; }
+        .nav-item {
+            flex: 1; text-align: center; color: #999; cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative; height: 100%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2;
+        }
+
+        .nav-item.active { color: #1d1d1f; }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; } /* 圖示縮小一點點 */
+        .nav-item span { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.5px; }
+
         /* 內容區塊的間距調整，確保不被導航條遮住 */
         .content-scroll { padding-bottom: 150px !important; }
 
@@ -715,22 +691,6 @@ async function popBooking(n="", p="", sId=null, editId=null) {
     });
 
     if (res && res.n) {
-       const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        const isPro = auth && auth.id && auth.id !== "未綁定";
-
-        if (!isPro && store.appointments.length >= 2 && !editId) {
-            Swal.fire('試用限制', '試用版預約單上限為 2 筆，請聯繫老婆領取金鑰', 'warning');
-            return;
-        }
-        
-        if (res.saveCli && !isPro && store.clients.length >= 2) {
-            const exist = store.clients.find(c => (c.n || c.name) === res.n);
-            if(!exist) {
-                Swal.fire('試用限制', '試用版顧客名冊上限為 2 位', 'warning');
-                return;
-            }
-        }
-
         const data = { id: editId || String(Date.now()), n: res.n, sex: res.sex, p: res.p, c: res.c, styId: res.styId, price: res.price, note_full: res.note, date: res.d, time: res.t, tags: [...tempTags], done: apt ? apt.done : false, payTags: apt ? apt.payTags : [], isVIP: apt ? apt.isVIP : false };
         if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
         else {
