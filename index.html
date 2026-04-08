@@ -2155,30 +2155,6 @@ function setSexCli(s) {
     if(s === 'F') g.classList.add('active-girl');
 }
 
-// --- 【以太流：物理防禦攔截器 終極解鎖版】 ---
-document.body.addEventListener('touchmove', function(e) {
-    const target = e.target;
-
-    // 1. 如果摸到的是「姓名建議項目」，絕對不攔截，並停止事件傳遞，讓它滑！
-    if (target.classList.contains('suggest-item') || target.closest('.suggest-box')) {
-        e.stopPropagation(); // <-- 加上這一行，力量就不會被警衛收走
-        return; 
-    }
-    
-    // 2. 原本的彈窗與捲軸通行證
-    if (target.closest('.swal2-container') || target.closest('.drawer-content')) {
-        return; 
-    }
-    
-    // 3. 跑道與內容區通行證
-    if (target.closest('.content-scroll') || target.closest('.lane-container')) {
-        return;
-    }
-    
-    // 只有在摸背景時才鎖死
-    if (e.cancelable) e.preventDefault();
-}, { passive: false });
-
 </script>
 </body>
 </html>
