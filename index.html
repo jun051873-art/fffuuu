@@ -60,32 +60,29 @@ html, body {
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
         .header { padding: 65px 45px 25px; display: flex; justify-content: space-between; align-items: flex-end; background: rgba(255,255,255,0.85); backdrop-filter: blur(35px); z-index: 1000; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
-        .content-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 150px; }
+        .content-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 280px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
-    .suggest-box { 
-    position: absolute !important; 
-    width: 100% !important; 
-    left: 0 !important;
-    background: rgba(255, 255, 255, 0.98) !important; 
-    backdrop-filter: blur(25px) !important;
-    border: 1px solid rgba(212, 175, 55, 0.4) !important; 
-    border-radius: 30px !important; /* 讓它跟彈窗一樣圓潤 */
-    z-index: 1000000 !important; 
     
-    /* 🚀 【核心修正 1】加大高度到 320px，讓手指更好滑 */
-    max-height: 320px !important; 
-    
-    /* 🚀 【核心修正 2】上下增加留白，防止手指摸到邊緣就卡住 */
-    padding: 10px 0 !important; 
-    
-    overflow-y: auto !important; 
-    -webkit-overflow-scrolling: touch !important; 
-    display: none;
-    box-shadow: 0 15px 45px rgba(0,0,0,0.15) !important; 
-}
+        .suggest-box { 
+        position: absolute !important; 
+        width: 100% !important; 
+        left: 0 !important;
+        background: rgba(255, 255, 255, 0.98) !important; 
+        backdrop-filter: blur(25px) !important;
+        border: 1px solid rgba(212, 175, 55, 0.4) !important; 
+        border-radius: 30px !important;
+        z-index: 1000000 !important; 
+        /* 🚀 這裡維持 450px，確保名單夠長 */
+        max-height: 450px !important; 
+        padding: 10px 0 !important; 
+        overflow-y: auto !important; 
+        -webkit-overflow-scrolling: touch !important; 
+        display: none;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important; 
+    }
 
 /* 🚀 【核心修正 3】把裡面的選項也撐大，讓點擊感更紮實 */
 .suggest-item {
@@ -518,56 +515,31 @@ const db = firebase.firestore();
         const { value: res } = await Swal.fire({
           title: editId ? '修改預約' : '新增預約', width: '90%',
 html: `
-    <div style="max-height: 65vh; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch; text-align: left;">
-        
-        <div style="display:flex; gap:10px; margin-bottom:15px; position:relative;">
-            <div style="flex:2; position:relative;">
-                <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
+            <div style="position:relative; text-align:left; padding: 5px; overflow: visible !important;">
                 
-                <div id="pop-box" class="suggest-box" 
-                     style="border-radius:25px !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important;" 
-                     ontouchmove="event.stopPropagation()"></div>
+                <div style="position:relative; overflow: visible !important;">
+                    <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem;" 
+                           placeholder="輸入姓名或電話..." 
+                           oninput="searchStored(this, 'sw-box')">
+                    
+                    <div id="sw-box" class="suggest-box" 
+                         style="
+                            position: absolute !important;
+                            top: 105% !important;
+                            left: 0 !important;
+                            width: 100% !important;
+                            border-radius: 25px !important;
+                            max-height: 500px !important; /* 🚀 這裡拉長到 500 */
+                            display: none;
+                            z-index: 999999 !important;
+                            overflow-y: auto !important;
+                            -webkit-overflow-scrolling: touch !important;
+                            box-shadow: 0 15px 45px rgba(0,0,0,0.3) !important;
+                         " 
+                         ontouchmove="event.stopPropagation()"></div>
+                </div>
             </div>
-            <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" style="flex:0.6;" onclick="setSex('M')">♂ 男</div>
-            <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" style="flex:0.6;" onclick="setSex('F')">♀ 女</div>
-        </div>
-
-        <input type="hidden" id="pop-sex" value="${apt?.sex || ''}">
-
-        <input id="pop-p" class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:25px;" value="${p}" placeholder="電話號碼">
-
-        <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center; background:rgba(0,0,0,0.03); padding:10px 18px; border-radius:25px; border:1px solid rgba(0,0,0,0.05);">
-            <div style="flex:1.2; display:flex; align-items:center;">
-                <span style="font-weight:900; color:var(--gold); margin-right:8px; font-size:1.1rem;">$</span>
-                <input id="pop-price" type="number" class="shield-input" style="flex:1; width:auto !important; border:none !important; background:transparent !important; font-size:1.3rem !important; text-align:left !important;" value="${apt?apt.price||'':''}" placeholder="金額">
-            </div>
-            <div style="width:1px; height:25px; background:#ddd;"></div>
-            <div style="flex:1; display:flex; align-items:center; justify-content:flex-end;">
-                <span style="font-weight:900; color:#888; margin-right:8px;">👤</span>
-                <input id="pop-c" class="shield-input" style="width:50px !important; border:none !important; background:transparent !important; font-size:1.3rem !important;" type="text" value="${apt?apt.c||apt.count:''}" placeholder="1">
-            </div>
-        </div>
-
-        <select id="pop-s" class="luxe-btn" style="width:100%; border-radius:25px; margin-bottom:15px;">
-            ${store.stylists.map(s=>`<option value="${s.id}" ${String(s.id)===String(sId||1)?'selected':''}>${s.name}</option>`).join('')}
-        </select>
-
-        <textarea id="pop-note" class="luxe-btn" style="width:100%; height:80px; border-radius:20px; margin-bottom:15px; padding:15px;" placeholder="備註內容...">${apt?apt.note_full||apt.note:""}</textarea>
-        
-        <div class="drawer-btn" style="margin-bottom:15px;" onclick="const c=document.getElementById('pop-tg-dr'); c.style.display=c.style.display==='block'?'none':'block';">項目 <i class="fas fa-chevron-down"></i></div>
-        <div id="pop-tg-dr" class="drawer-content">${store.tags.map(t=>`<div class="tag-chip ${tempTags.includes(t.name)?'selected':''}" onclick="this.classList.toggle('selected'); const i=tempTags.indexOf('${t.name}'); if(i>-1) tempTags.splice(i,1); else tempTags.push('${t.name}')">${t.name}</div>`).join('')}</div>
-
-        <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin: 10px 0 20px;">
-            <input type="checkbox" id="pop-save-cli" style="width:20px; height:20px; accent-color:var(--gold);" ${editId?'disabled':'checked'}>
-            <label for="pop-save-cli" style="font-weight:900; color:var(--gold); font-size:1rem;">同步存至顧客名冊</label>
-        </div>
-
-        <div style="display:flex; gap:10px;">
-            <input id="pop-d" class="luxe-btn" type="date" style="flex:1.5; border-radius:25px;" value="${apt?apt.date:curD.toLocaleDateString('sv')}">
-            <input id="pop-t" class="luxe-btn" type="time" style="flex:1; border-radius:25px;" value="${apt?apt.time:'12:00'}">
-        </div>
-    </div>
-`,
+        `,
             preConfirm: () => ({ 
                 n: document.getElementById('pop-n').value, 
                 sex: document.getElementById('pop-sex').value, 
@@ -1359,37 +1331,35 @@ async function popCliSearch() {
     await Swal.fire({ 
         title: '搜尋顧客資料', 
         width: '90%', 
-        // 🚀 核心修正 1：拿掉原本的 min-height，讓灰色外框恢復小巧精緻
         html: `
-            <div style="position:relative; text-align:left; padding: 5px;">
-                
-                <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem;" 
-                       placeholder="輸入姓名或電話..." 
-                       oninput="searchStored(this, 'sw-box')">
-                
-                <div id="sw-box" class="suggest-box" 
-                     style="
-                        border-radius:25px !important; 
-                        width: 100% !important; 
-                        left: 0 !important;
-                        /* 🚀 長度一樣維持 400px，讓妳看個夠，但它現在會飄在空中 */
-                        max-height: 400px !important; 
-                        display:none; 
-                        overflow-y: auto !important; 
-                        -webkit-overflow-scrolling: touch !important;
-                        box-shadow: 0 20px 60px rgba(0,0,0,0.25) !important;
-                        position: absolute !important;
-                        z-index: 999999 !important;
-                        background: #fff !important;
-                        margin-top: 10px !important;
-                     " 
-                     ontouchmove="event.stopPropagation()"></div>
+            <div style="position:relative; text-align:left; padding: 5px; min-height:100px;">
+                <div style="position:relative;">
+                    <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem;" 
+                           placeholder="輸入姓名或電話..." 
+                           oninput="searchStored(this, 'sw-box')">
+                    
+                    <div id="sw-box" class="suggest-box" 
+                         style="
+                            position: fixed !important;
+                            top: 40% !important;
+                            left: 5% !important;
+                            width: 90% !important;
+                            background: #fff !important;
+                            border: 2px solid var(--gold) !important;
+                            border-radius: 25px !important;
+                            max-height: 450px !important; 
+                            display: none;
+                            z-index: 9999999 !important;
+                            box-shadow: 0 20px 60px rgba(0,0,0,0.4) !important;
+                            overflow-y: auto !important;
+                            -webkit-overflow-scrolling: touch !important;
+                         " 
+                         ontouchmove="event.stopPropagation()"></div>
+                </div>
             </div>
         `, 
         showConfirmButton: false,
-        didOpen: () => {
-            document.getElementById('sw-search').focus();
-        }
+        didOpen: () => { document.getElementById('sw-search').focus(); }
     }); 
 }
     async function addCliTrig() {
