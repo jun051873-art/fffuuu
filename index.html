@@ -15,155 +15,288 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 
-
+    
     <style>
-    :root { 
-        --primary: #1d1d1f; 
-        --gold: #D4AF37; 
-        --luxe-border: rgba(212, 175, 55, 0.3); 
-        --glass: rgba(255, 255, 255, 0.7); 
-        --round-pill: 40px; 
-        --aether-blur: blur(35px) saturate(200%);
-    }
-
+    :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    
+    /* --- Aether Flow: 物理釘子修正版 --- */
+html, body { 
+    height: 100%; width: 100%; margin: 0; padding: 0; 
+    /* 這裡要保留，防止整片背景彈跳 */
+    overflow: hidden !important; 
+    position: fixed !important; 
+    background: #fff; 
+}
 
-    /* --- [1. 以太流：全設備物理錨定] --- */
-    html, body { 
-        height: 100%; width: 100%; margin: 0; padding: 0; 
-        overflow: hidden !important; 
-        position: fixed !important; 
-        background: #fbfbfd; /* 蘋果官網的那種通透灰白 */
-        font-family: -apple-system, "Noto Sans TC", sans-serif;
-        color: var(--primary);
-        display: flex;
-        flex-direction: column;
-    }
+/* --- 內容捲軸區：核心解鎖 --- */
+.content-scroll {
+    /* 必須明確給予高度，否則手機不知道滑動範圍 */
+    height: 100vh; 
+    flex: 1;
+    overflow-y: auto !important; 
+    /* 關鍵：開啟 iOS 原生絲滑滾動 */
+    -webkit-overflow-scrolling: touch !important; 
+    /* 給予底部空間，避開導航條 */
+    padding-bottom: 220px !important; 
+}
 
-    /* --- [2. 內容核心：自動比例捲軸區] --- */
-    .content-scroll {
-        flex: 1;
-        height: 100%;
-        overflow-y: auto !important; 
-        -webkit-overflow-scrolling: touch !important; 
-        overscroll-behavior-y: contain;
-        /* 底部空間：動態避讓導航條 */
-        padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important; 
-    }
+/* --- 顧客頁面比例修正：讓卡片在手機上縮小 --- */
+.client-grid-container {
+    display: grid;
+    /* 修正：將 350px 降到 280px，卡片才不會撐破手機寬度 */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 15px;
+    padding: 15px;
+}
 
-    /* --- [3. 姓名建議框：解鎖滾動與層級] --- */
+/* --- 針對小手機的極致壓縮 (自適應) --- */
+@media (max-width: 480px) {
+    .header { padding: 45px 20px 15px !important; }
+    .glow-title { font-size: 1.6rem !important; }
+    /* 縮小卡片內文字，防止頁面太大 */
+    .cli-luxe-card { padding: 18px !important; border-radius: 25px !important; }
+    .cli-luxe-card div[style*="font-size:2rem"] { font-size: 1.5rem !important; }
+    
+    /* 導航條稍微縮小比例 */
+    .nav { height: 75px !important; width: 94% !important; bottom: 20px !important; }
+}
+         body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
+        .swal2-popup { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(25px) saturate(180%) !important; border-radius: 45px !important; box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important; }
+        .swal2-title { color: #1d1d1f !important; font-weight: 900 !important; }
+        .swal2-confirm { background: var(--gold) !important; border-radius: 30px !important; font-weight: 900 !important; padding: 12px 35px !important; }
+        .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
+        @keyframes shine { to { background-position: 200% center; } }
+        .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
+        .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
+        .header { padding: 65px 45px 25px; display: flex; justify-content: space-between; align-items: flex-end; background: rgba(255,255,255,0.85); backdrop-filter: blur(35px); z-index: 1000; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
+        .content-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 150px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
+        .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
+        .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
+        .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
     .suggest-box { 
-        position: absolute; 
-        width: 100%; 
-        background: rgba(255, 255, 255, 0.95); 
-        backdrop-filter: var(--aether-blur);
-        -webkit-backdrop-filter: var(--aether-blur);
-        border: 1.5px solid var(--gold); 
-        border-radius: 25px; 
-        z-index: 100000 !important; 
-        display: none; 
-        max-height: 250px !important; 
-        overflow-y: auto !important; /* 強制開啟內部滑動 */
-        margin-top: 5px; 
-        box-shadow: 0 15px 40px rgba(0,0,0,0.12); 
-    }
+    position: absolute; 
+    width: 100%; 
+    background: rgba(255, 255, 255, 0.98); 
+    backdrop-filter: blur(25px); 
+    border: 2px solid var(--gold); 
+    border-radius: 20px; 
+    z-index: 100000 !important; /* 數字再提高，保證絕對在最上層 */
+    display: none; 
+    
+    /* 這裡把 200px 改為 280px，讓 10 位客人的名單露出的比例更好滑 */
+    max-height: 280px !important; 
+    
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch !important; 
+    margin-top: 5px; 
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25); 
+}
+        .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
+        .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
+        .lane { flex: 1; min-width: 380px; display: flex; flex-direction: column; gap: 20px; }
+        .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
+        .apt-card { padding: 30px; background: #fff; border-radius: 40px; border: 1px solid var(--luxe-border); border-left: 15px solid var(--c); position: relative; flex: 1; display: flex; flex-direction: column; justify-content: space-between; transition: 0.4s; }
+        .apt-card.completed { opacity: 0.3 !important; background: #f9f9fb !important; filter: grayscale(1); }
+      
+        /* --- 【Aether Flow 美學語言：比例優化版】 --- */
+        /* --- Aether Flow: 核心導航整合 --- */
+        .nav {
+            position: fixed; 
+            bottom: 30px; /* 基礎高度，會被下方的自適應代碼優化 */
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 92%; 
+            max-width: 500px; 
+            height: 80px; /* 統一精緻高度 */
+            background: rgba(0, 0, 0, 0.03); 
+            border-radius: 40px; 
+            display: flex; 
+            align-items: center; 
+            position: relative;
+            padding: 6px; 
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+            z-index: 9000;
+        }
 
-    .suggest-item { 
-        padding: 18px 25px; 
-        border-bottom: 0.5px solid rgba(0,0,0,0.05); 
-        font-weight: 700; 
-        font-size: 1.1rem; 
-        cursor: pointer; 
-        transition: 0.2s;
-    }
+        #nav-aether-mover {
+            position: absolute; 
+            left: 6px; 
+            width: calc(25% - 12px); 
+            height: calc(100% - 12px);
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(30px) saturate(210%);
+            -webkit-backdrop-filter: blur(30px) saturate(210%);
+            border-radius: 35px; 
+            z-index: 1;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06), inset 0 2px 5px rgba(255,255,255,1);
+        }
 
-    /* --- [4. 導航條：平板與手機自適應平衡] --- */
-    .nav {
-        position: fixed; 
-        bottom: calc(20px + env(safe-area-inset-bottom)); 
-        left: 50%; 
-        transform: translateX(-50%);
-        width: 92%; 
-        max-width: 500px; 
-        height: 75px; 
-        background: rgba(255, 255, 255, 0.55); 
-        backdrop-filter: var(--aether-blur);
-        -webkit-backdrop-filter: var(--aether-blur);
-        border-radius: 38px; 
-        border: 1px solid rgba(255,255,255,0.8);
-        display: flex; 
-        align-items: center; 
-        z-index: 9000;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-        padding: 0 8px;
-    }
+        .nav-item {
+            flex: 1; text-align: center; color: #999; cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative; height: 100%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2;
+        }
 
-    /* --- [5. 以太玻璃彈窗：直擊人心的通透] --- */
-    .swal2-popup { 
-        background: rgba(255, 255, 255, 0.4) !important; 
-        backdrop-filter: blur(45px) saturate(180%) !important; 
-        -webkit-backdrop-filter: blur(45px) saturate(180%) !important;
-        border-radius: 45px !important; 
-        border: 1px solid rgba(255,255,255,0.7) !important;
-        box-shadow: 0 30px 60px rgba(0,0,0,0.12) !important;
-        padding-bottom: 25px !important;
-    }
+        .nav-item.active { color: #1d1d1f; }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; } /* 圖示縮小一點點 */
+        .nav-item span { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.5px; }
 
-    .swal2-html-container {
-        max-height: 60vh !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding: 10px 5px !important;
-    }
+        /* 內容區塊的間距調整，確保不被導航條遮住 */
+        .content-scroll { padding-bottom: 150px !important; }
 
-    /* 當彈窗出現時，隱藏干擾按鈕 */
-    body.swal2-shown .nav, body.swal2-shown .fab { display: none !important; }
+        .page { display: none; width: 100%; height: 100%; }
+        .page.active { display: flex; flex-direction: column; }
+        .tag-pill { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 12px; background: #f0f0f0; color: #aaa; cursor: pointer; border: 1px solid #eee; transition: 0.2s; }
+        .active-L { background: #06C755 !important; color: #fff !important; border-color: #06C755 !important; }
+        .active-J { background: #ED1C24 !important; color: #fff !important; border-color: #ED1C24 !important; }
+        .active-C { background: #8B4513 !important; color: #fff !important; border-color: #8B4513 !important; }
+        .active-P { background: #007AFF !important; color: #fff !important; border-color: #007AFF !important; }
+        .active-S { background: #6f42c1 !important; color: #fff !important; border-color: #6f42c1 !important; }
+        .drawer-btn { width: 100%; padding: 20px; background: #f9f9fb; border: 1px solid var(--gold); border-radius: 30px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 900; margin-bottom: 15px; }
+        .drawer-content {display: none;padding: 15px;background: rgba(0,0,0,0.02);border-radius: 0 0 30px 30px;border: 1px solid var(--gold);border-top: none;margin-top: -15px;margin-bottom: 15px;text-align: left;
+    
+    /* --- 空間彈性核心 --- */
+    max-height: 300px; /* 超過這個高度就開啟捲軸 */
+    overflow-y: auto !important; /* 強制開啟垂直滑動 */
+    -webkit-overflow-scrolling: touch; /* iOS 絲滑手感 */
+}
+        .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
+        .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
+        .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
+        /* --- 【V318 全設備自適應大腦】 --- */
+       @media (max-width: 768px) {
+            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
+            .content-scroll { padding-bottom: 200px !important; }
+            
+            /* 縮小導航條高度以適應手機比例 */
+            .nav { height: 75px; bottom: 25px; }
+            .cal-day { min-height: 95px; font-size: 1.1rem; }
+        }
 
-    /* --- [6. 其他 UI 元件補全] --- */
-    .glow-title { 
-        font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; 
-        background: linear-gradient(135deg, #1d1d1f, #D4AF37, #1d1d1f);
-        background-size: 200% auto; background-clip: text; 
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-        animation: shine 5s linear infinite; 
-    }
-    @keyframes shine { to { background-position: 200% center; } }
+        /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
+        }
+    /* --- 【V318 專屬空間：設定頁面奢華改造樣式】 --- */
+        .set-drawer-trigger {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            border-radius: 20px; padding: 25px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .set-drawer-trigger:hover {
+            transform: translateY(-3px); background: #fff;
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.1);
+        }
+        .set-drawer-trigger i { font-size: 1.8rem; color: #ccc; transition: color 0.3s; }
+        .set-drawer-trigger:hover i { color: var(--gold); }
+        .add-luxe-btn {
+            width: 100%; height: 60px; background: transparent; border: 2px dashed rgba(212, 175, 55, 0.4);
+            color: var(--gold); border-radius: 15px; font-weight: 900; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .add-luxe-btn:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--gold); border-style: solid; }
+        .luxe-trash-btn { color: #ccc !important; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; padding: 5px; }
+        .luxe-trash-btn:hover { color: #ffcccc !important; transform: scale(1.2); }
+        .luxe-edit-icon { color: #ccc; font-size: 1.2rem; transition: color 0.2s; margin-right: 15px; cursor: pointer; }
+        .luxe-edit-icon:hover { color: var(--gold); }
+        /* --- 【V318 顧客頁面奢華樣式】 --- */
+        .cli-luxe-card {
+            background: #fff; border-radius: 35px;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            padding: 30px; margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+        }
+        .cli-luxe-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(212,175,55,0.1); }
+        .cli-tag-pill {
+            background: rgba(212,175,55,0.08); color: var(--gold);
+            padding: 6px 15px; border-radius: 12px;
+            font-weight: 900; font-size: 0.9rem;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .cli-history-box {
+            background: #f9f9fb; border-radius: 20px;
+            padding: 20px; margin-top: 15px; border: 1px solid #f0f0f0;
+        }
+       /* --- 【V318 數據儀表板：旗艦大比例版】 --- */
+        .stats-card {
+            background: #fff; border-radius: 40px;
+            padding: 35px; margin-bottom: 30px;
+            border: 1.5px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.04);
+            width: 100%; /* 強制填滿 */
+        }
+        .stats-bar-container { 
+            display: flex; align-items: flex-end; gap: 12px; 
+            height: 200px; /* 拉高圖表 */
+            padding: 20px 0; 
+            border-bottom: 2px solid #f2f2f7;
+        }
+        .stats-bar {
+            flex: 1; background: #f2f2f7; border-radius: 12px 12px 6px 6px;
+            position: relative; height: 100%;
+        }
+        .stats-bar-fill {
+            position: absolute; bottom: 0; width: 100%;
+            background: linear-gradient(to top, var(--gold), #f9e39d);
+            border-radius: 12px 12px 6px 6px; height: 0; transition: height 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+        .stats-val-top {
+            position: absolute; top: -35px; width: 100%; text-align: center;
+            font-weight: 900; color: var(--gold); font-size: 1.1rem;
+        }
+        .stats-label { font-size: 1rem; color: #888; text-align: center; margin-top: 15px; font-weight: 900; }
+        .month-selector {
+            width: 100%; background: #f2f2f7; border: none; border-radius: 20px;
+            padding: 15px 25px; font-weight: 900; font-size: 1.2rem; color: var(--primary);
+            margin-bottom: 30px; appearance: none; text-align: center;
+        }
+   /* --- 【V318 開單頁面性別切換鈕】 --- */
+        .gender-btn {
+            flex: 1; height: 50px; border-radius: 20px;
+            border: 2px solid #f2f2f7; background: #f2f2f7;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; color: #ccc; cursor: pointer; transition: 0.3s;
+        }
+        .gender-btn.active-boy { background: #fff; border-color: #007AFF; color: #007AFF; box-shadow: 0 4px 10px rgba(0,122,255,0.1); }
+        .gender-btn.active-girl { background: #fff; border-color: #FF2D55; color: #FF2D55; box-shadow: 0 4px 10px rgba(255,45,85,0.1); }
 
-    .fab { 
-        position: fixed; bottom: 130px; right: 30px; 
-        width: 75px; height: 75px; 
-        background: #fff; border: 2px solid var(--gold); border-radius: 50%; 
-        display: flex; align-items: center; justify-content: center; 
-        color: var(--gold); font-size: 2rem; z-index: 3000; 
-        box-shadow: 0 10px 30px rgba(212,175,55,0.2); 
-    }
+  /* --- 【Aether Flow：物理錨定，防止整塊頁面亂滑】 --- */
+html, body {
+    /* 核心：禁止整個網頁層級的彈跳滾動 */
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    -webkit-overflow-scrolling: touch;
+}
 
-    .luxe-btn { 
-        background: var(--glass); backdrop-filter: blur(20px); 
-        border: 1px solid var(--luxe-border); border-radius: var(--round-pill); 
-        padding: 15px 28px; font-weight: 800; font-size: 1.1rem; 
-        color: var(--primary); display: inline-flex; align-items: center; justify-content: center; 
-    }
+/* 確保只有每一頁內部的滾動區可以滑動 */
+.content-scroll {
+    overflow-y: auto;
+    /* 這是關鍵：允許內部滾動，但不觸發外部回彈 */
+    overscroll-behavior-y: contain; 
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+}
 
-    .header { 
-        padding: calc(45px + env(safe-area-inset-top)) 35px 20px; 
-        display: flex; justify-content: space-between; align-items: flex-end; 
-        background: rgba(255,255,255,0.8); backdrop-filter: blur(25px); 
-        border-bottom: 0.5px solid rgba(0,0,0,0.05); 
-    }
-
-    .apt-card { 
-        padding: 25px; background: #fff; border-radius: 35px; 
-        border: 1px solid var(--luxe-border); position: relative; 
-        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
-    }
-
-    /* 平板與寬螢幕適應 */
-    @media (min-width: 769px) {
-        .nav { width: 450px; bottom: 40px; }
-        .client-grid-container { grid-template-columns: repeat(2, 1fr); }
-    }
-</style>
+/* 針對顧客頁面特別強化 */
+#pg-cli .content-scroll {
+    touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
+}
+  
+  </style>
 </head>
 <body>
 
