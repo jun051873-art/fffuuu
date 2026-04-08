@@ -1349,14 +1349,18 @@ async function togglePay(aptId, tagId, ds) {
     await Swal.fire({ 
         title: '搜尋顧客資料', 
         html: `
-            <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px;" 
-                   placeholder="請輸入姓名或電話..." 
-                   oninput="searchStored(this, 'sw-box')">
-            <div id="sw-box" class="suggest-box"></div>
+            <div style="position:relative; text-align:left;">
+                <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px;" 
+                       placeholder="請輸入姓名或電話..." 
+                       oninput="searchStored(this, 'sw-box')">
+                
+                <div id="sw-box" class="suggest-box" 
+                     style="border-radius:25px !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important;" 
+                     ontouchmove="event.stopPropagation()"></div>
+            </div>
         `, 
         showConfirmButton: false,
         didOpen: () => {
-            // 自動聚焦輸入框，手機一打開就能直接打字，不用再點一下
             document.getElementById('sw-search').focus();
         }
     }); 
