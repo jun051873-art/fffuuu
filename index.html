@@ -38,7 +38,7 @@ html, body {
     /* 關鍵：開啟 iOS 原生絲滑滾動 */
     -webkit-overflow-scrolling: touch !important; 
     /* 給予底部空間，避開導航條 */
-    padding-bottom: 250px !important; 
+    padding-bottom: 220px !important; 
 }
 
 /* --- 顧客頁面比例修正：讓卡片在手機上縮小 --- */
@@ -1355,18 +1355,34 @@ async function togglePay(aptId, tagId, ds) {
 }
 
     // --- 工具函數 ---
-    async function popCliSearch() { 
+async function popCliSearch() { 
     await Swal.fire({ 
         title: '搜尋顧客資料', 
-        width: '90%', // 寬度拉大一點，視覺才大器
+        width: '90%', 
+        // 🚀 核心修正 1：拿掉原本的 min-height，讓灰色外框恢復小巧精緻
         html: `
-            <div style="position:relative; text-align:left; min-height: 400px; padding: 5px;">
+            <div style="position:relative; text-align:left; padding: 5px;">
+                
                 <input id="sw-search" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem;" 
                        placeholder="輸入姓名或電話..." 
                        oninput="searchStored(this, 'sw-box')">
                 
                 <div id="sw-box" class="suggest-box" 
-                     style="border-radius:25px !important; max-height: 380px !important; display:none; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important;" 
+                     style="
+                        border-radius:25px !important; 
+                        width: 100% !important; 
+                        left: 0 !important;
+                        /* 🚀 長度一樣維持 400px，讓妳看個夠，但它現在會飄在空中 */
+                        max-height: 400px !important; 
+                        display:none; 
+                        overflow-y: auto !important; 
+                        -webkit-overflow-scrolling: touch !important;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.25) !important;
+                        position: absolute !important;
+                        z-index: 999999 !important;
+                        background: #fff !important;
+                        margin-top: 10px !important;
+                     " 
                      ontouchmove="event.stopPropagation()"></div>
             </div>
         `, 
