@@ -515,11 +515,11 @@ html: `
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <div style="flex:2; position:relative;">
                         <input id="pop-n" class="luxe-btn" style="width:100%; font-size:1.4rem; border-radius:25px;" value="${n}" placeholder="姓名" oninput="searchStored(this, 'pop-box')">
-                        <div id="pop-box" class="suggest-box"></div>
                     </div>
                     <div id="boy-btn" class="gender-btn ${apt?.sex === 'M' ? 'active-boy' : ''}" onclick="setSex('M')">♂ 男</div>
                     <div id="girl-btn" class="gender-btn ${apt?.sex === 'F' ? 'active-girl' : ''}" onclick="setSex('F')">♀ 女</div>
                 </div>
+                    <div id="pop-box" class="suggest-box"></div>
                 <input type="hidden" id="pop-sex" value="${apt?.sex || ''}">
 
                 <input id="pop-p" class="luxe-btn" style="width:100%; margin-bottom:15px; border-radius:25px;" value="${p}" placeholder="電話號碼">
@@ -765,13 +765,27 @@ const tagHtml = `<div class="tag-group" style="display:flex; flex-wrap:wrap; gap
             </div>`;
     }).join('');
 }
-    function searchStored(el, boxId) {
-        const val = el.value.trim(); const box = document.getElementById(boxId);
+   function searchStored(el, boxId) {
+        const val = el.value.trim(); 
+        const box = document.getElementById(boxId);
         if(!val) { box.style.display='none'; return; }
+        
+        // 抓取符合的顧客
         const ms = store.clients.filter(c => (c.n||c.name||"").includes(val) || (c.p||c.phone||"").includes(val));
-        if(ms.length) { box.style.display='block'; box.innerHTML = ms.map(m => `<div class="suggest-item" onclick="pickSug('${m.n||m.name}', '${m.p||m.phone}', '${m.lastSty}', '${boxId}')">${m.n||m.name} (${m.p||m.phone})</div>`).join(''); } else box.style.display='none';
+        
+        if(ms.length) { 
+            box.style.display='block'; 
+            // 修改這裡：確保對準 c.n(姓名) 和 c.p(電話)，並加入一鍵抓取
+            box.innerHTML = ms.map(m => {
+                const name = m.n || m.name || "";
+                const phone = m.p || m.phone || "無電話";
+                const sty = m.lastSty || "";
+                return `<div class="suggest-item" onclick="pickSug('${name}', '${phone}', '${sty}', '${boxId}')">${name} (${phone})</div>`;
+            }).join(''); 
+        } else {
+            box.style.display='none';
+        }
     }
-
     function pickSug(n, p, s, boxId) {
     // 情況 A：如果是從「顧客名冊的搜尋放大鏡」點擊結果
     if(boxId === 'sw-box' || boxId === 'cli-sw-box') { 
@@ -2141,21 +2155,27 @@ function setSexCli(s) {
     if(s === 'F') g.classList.add('active-girl');
 }
 
-// --- 【以太流：物理防禦攔截器 修正版】 ---
+// --- 【以太流：物理防禦攔截器 終極解鎖版】 ---
 document.body.addEventListener('touchmove', function(e) {
-    // 這裡加入了 .suggest-box，讓姓名建議名單恢復滑動
-    if (e.target.closest('.swal2-container') || 
-        e.target.closest('.drawer-content') || 
-        e.target.closest('.suggest-box')) { 
-        return; // 放行，准許滑動
+    // 1. 如果摸到的是「姓名建議項目」，絕對不攔截，讓它滑！
+    if (e.target.classList.contains('suggest-item') || e.target.closest('.suggest-box')) {
+        return; 
     }
-    // 准許原本的捲軸區滾動
+    
+    // 2. 原本的彈窗與捲軸通行證
+    if (e.target.closest('.swal2-container') || e.target.closest('.drawer-content')) {
+        return; 
+    }
+    
+    // 3. 跑道與內容區通行證
     if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
         return;
     }
-    // 摸到背景、標題、導航條一律鎖死，防止畫面亂飄
+    
+    // 只有在摸背景時才鎖死
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
+
 </script>
 </body>
 </html>
