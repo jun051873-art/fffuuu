@@ -73,23 +73,23 @@ html, body {
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
-        .suggest-box { 
+    .suggest-box { 
     position: absolute; 
     width: 100%; 
-    background: rgba(255,255,255,0.98); 
-    backdrop-filter: blur(20px); 
+    background: rgba(255, 255, 255, 0.98); 
+    backdrop-filter: blur(25px); 
     border: 2px solid var(--gold); 
     border-radius: 20px; 
-    z-index: 99999 !important; /* 確保它在最前面 */
+    z-index: 100000 !important; /* 數字再提高，保證絕對在最上層 */
     display: none; 
-    max-height: 200px; /* 限制高度 */
     
-    /* --- 關鍵解鎖：開啟垂直滾動 --- */
-    overflow-y: scroll !important; 
-    -webkit-overflow-scrolling: touch !important; /* 讓手機滑起來有彈性 */
+    /* 這裡把 200px 改為 280px，讓 10 位客人的名單露出的比例更好滑 */
+    max-height: 280px !important; 
     
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch !important; 
     margin-top: 5px; 
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25); 
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
         .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
@@ -2139,22 +2139,21 @@ function setSexCli(s) {
     if(s === 'F') g.classList.add('active-girl');
 }
 
-// --- 【以太流：物理防禦攔截器 終極版 - 修正姓名選單滾動】 ---
+// --- 【以太流：物理防禦攔截器 修正版】 ---
 document.body.addEventListener('touchmove', function(e) {
-    // 這裡加入 .suggest-box，讓姓名建議名單可以滑動
+    // 這裡加入了 .suggest-box，讓姓名建議名單恢復滑動
     if (e.target.closest('.swal2-container') || 
         e.target.closest('.drawer-content') || 
-        e.target.closest('.suggest-box')) { // <-- 這是妳缺的通行證
-        return; 
+        e.target.closest('.suggest-box')) { 
+        return; // 放行，准許滑動
     }
     // 准許原本的捲軸區滾動
     if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
         return;
     }
-    // 其他地方（如背景、導航條）摸到一律鎖死
+    // 摸到背景、標題、導航條一律鎖死，防止畫面亂飄
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
-
 </script>
 </body>
 </html>
