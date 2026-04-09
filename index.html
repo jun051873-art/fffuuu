@@ -1644,16 +1644,18 @@ window.addEventListener('load', () => {
     pullFromCloud();
     checkLicense(); 
 
-    // --- 【以太流：精準防禦攔截器】 ---
-document.body.addEventListener('touchmove', function(e) {
-    // 如果手指摸的地方「在」滾動區或跑道區，就放行，讓你正常滑動
-    if (e.target.closest('.content-scroll') || e.target.closest('.lane-container')) {
-        return; // 直接放行，不攔截
-    }
-    // 只有摸到標題、導航條等「背景」時才攔截，防止整片背景彈跳
-    e.preventDefault();
-}, { passive: false });
-});
+    // --- 【以太流：精準防禦攔截器 - 彈窗解鎖版】 ---
+    document.body.addEventListener('touchmove', function(e) {
+        // 🚀 關鍵解鎖：如果手指摸的地方是 SweetAlert 彈窗內部，直接放行不攔截！
+        if (e.target.closest('.swal2-html-container') || 
+            e.target.closest('.swal2-popup') || 
+            e.target.closest('.content-scroll') || 
+            e.target.closest('.lane-container')) {
+            return; 
+        }
+        // 只有摸到背景標題、導航條等地方才攔截
+        e.preventDefault();
+    }, { passive: false });
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
 // ==========================================================================
