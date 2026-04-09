@@ -364,9 +364,9 @@ background: #f9f9fb !important;
             margin-top: 15px; 
             border: 1px solid rgba(0, 0, 0, 0.05) !important;
         }
-       /* --- 【V318 數據儀表板：旗艦大比例版】 --- */
-        .stats-card {
-    background: rgba(255, 255, 255, 0.6) !important; /* 數據卡片稍厚一點點 */
+     /* --- 【V318 數據儀表板：旗艦流動版】 --- */
+.stats-card {
+    background: rgba(255, 255, 255, 0.6) !important; 
     backdrop-filter: blur(40px) saturate(200%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
     border-radius: 40px;
@@ -375,31 +375,82 @@ background: #f9f9fb !important;
     border: 1.5px solid rgba(212, 175, 55, 0.15);
     box-shadow: 0 15px 45px rgba(0,0,0,0.04);
 }
-        .stats-bar-container { 
-            display: flex; align-items: flex-end; gap: 12px; 
-            height: 200px; /* 拉高圖表 */
-            padding: 20px 0; 
-            border-bottom: 2px solid #f2f2f7;
-        }
-        .stats-bar {
-            flex: 1; background: #f2f2f7; border-radius: 12px 12px 6px 6px;
-            position: relative; height: 100%;
-        }
-        .stats-bar-fill {
-            position: absolute; bottom: 0; width: 100%;
-            background: linear-gradient(to top, var(--gold), #f9e39d);
-            border-radius: 12px 12px 6px 6px; height: 0; transition: height 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-        .stats-val-top {
-            position: absolute; top: -35px; width: 100%; text-align: center;
-            font-weight: 900; color: var(--gold); font-size: 1.1rem;
-        }
-        .stats-label { font-size: 1rem; color: #888; text-align: center; margin-top: 15px; font-weight: 900; }
-        .month-selector {
-            width: 100%; background: #f2f2f7; border: none; border-radius: 20px;
-            padding: 15px 25px; font-weight: 900; font-size: 1.2rem; color: var(--primary);
-            margin-bottom: 30px; appearance: none; text-align: center;
-        }
+
+.stats-bar-container { 
+    display: flex; 
+    align-items: flex-end; 
+    gap: 18px;             /* 加大間距，更有呼吸感 */
+    height: 220px;         /* 稍微拉高，讓數據顯示更清楚 */
+    padding: 30px 10px 10px; 
+    border-bottom: 2px solid rgba(0,0,0,0.03);
+    
+    /* 🚀 核心通電：開啟左右滑動功能 */
+    overflow-x: auto !important; 
+    -webkit-overflow-scrolling: touch; /* 讓 iOS 擁有流體滾動感 */
+}
+
+/* 🚀 隱藏醜醜的捲軸，維持以太流的純淨感 */
+.stats-bar-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* 🚀 確保每個能量條在手機上不會被擠扁 */
+.stats-bar-container > div {
+    min-width: 65px;       /* 每個條柱最小寬度，保證能撐開滑動區 */
+    flex-shrink: 0;        /* 禁止壓縮，這是滑動成功的關鍵 */
+}
+
+.stats-bar {
+    width: 100%; 
+    background: rgba(0,0,0,0.03); 
+    border-radius: 15px;
+    position: relative; 
+    height: 100%;
+}
+
+.stats-bar-fill {
+    position: absolute; 
+    bottom: 0; 
+    width: 100%;
+    background: linear-gradient(to top, var(--gold), #f9e39d);
+    border-radius: 15px; 
+    height: 0; 
+    transition: height 1s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.stats-val-top {
+    position: absolute; 
+    top: -35px; 
+    width: 100%; 
+    text-align: center;
+    font-weight: 900; 
+    color: var(--primary); 
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+.stats-label { 
+    font-size: 0.85rem; 
+    color: #888; 
+    text-align: center; 
+    margin-top: 15px; 
+    font-weight: 900;
+    white-space: nowrap;  /* 防止標籤文字換行擠在一起 */
+}
+
+.month-selector {
+    width: 100%; 
+    background: rgba(0,0,0,0.03); 
+    border: 1px solid rgba(212,175,55,0.2); 
+    border-radius: 25px;
+    padding: 15px 25px; 
+    font-weight: 900; 
+    font-size: 1.2rem; 
+    color: var(--primary);
+    margin-bottom: 30px; 
+    appearance: none; 
+    text-align: center;
+}
    /* --- 【V318 開單頁面性別切換鈕】 --- */
         .gender-btn {
             flex: 1; height: 50px; border-radius: 20px;
