@@ -636,32 +636,36 @@ async function saveS() {
     }
 }
 
-// --- 🚀 V318 雲端抓取引擎：具備自動踢人偵測 ---
+// --- 🚀 V318 雲端抓取引擎：主副金鑰相容版 ---
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.id) return;
     try {
+        // 1. 先抓取該店家的數據
         const doc = await db.collection("Salons").doc(auth.id).get();
         if (doc.exists) {
             const cloudData = doc.data();
             
-            // 🚀 防盜門禁：如果雲端的 syncCode 變了，代表店長重置了授權
-            if (cloudData.syncCode && cloudData.syncCode !== auth.key) {
+            // 🚀 關鍵安全檢查：去金鑰庫確認這把鑰匙是否還「活著」
+            // 這樣就算妳換了店號的 syncCode，只要這把鑰匙沒被妳手動刪除或停用，員工就進得來
+            const keyCheck = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
+            
+            if (!keyCheck.exists || keyCheck.data().status !== "used") {
                 Swal.fire({
                     icon: 'error',
                     title: '授權已失效',
-                    text: '您的登入憑證已被店長重置，請聯繫管理員。',
+                    text: '您的授權已被撤銷，請聯繫店長重新獲取金鑰。',
                     confirmButtonColor: '#1d1d1f',
                     confirmButtonText: '確定',
                     allowOutsideClick: false
                 }).then(() => {
                     localStorage.removeItem('v318_booking_auth');
-                    location.reload(); // 強制踢回登入激活頁面
+                    location.reload(); 
                 });
                 return;
             }
 
-            // 若驗證通過，刷入資料
+            // 驗證通過，將雲端數據刷入手機
             store = cloudData;
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
             updateStoreUI();
