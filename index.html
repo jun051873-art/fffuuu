@@ -1022,11 +1022,35 @@ function renderSet() {
                     <div style="color:var(--gold); font-weight:900; font-size:1.3rem;">${store.storeName || '專屬空間'}</div>
                 </div>
             </div>
+<div class="set-drawer-trigger" data-action="time">
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box" style="background:var(--gold);"><i class="fas fa-clock"></i></div>
+                    <div>
+                    
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">營業時間設定</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">BUSINESS HOURS</div>
+                    </div>
+                </div>
+                <div style="color:var(--gold); font-weight:900; font-size:1.3rem;">${store.startH || '11:00'} - ${store.endH || '19:00'}</div>
+            </div>
+
+            <div class="set-drawer-trigger" data-action="style">
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box" style="background:var(--gold);"><i class="fas fa-paint-brush"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">介面樣式主題</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">UI STYLE</div>
+                    </div>
+                </div>
+                <div style="color:#aaa; font-weight:700;">旗艦毛玻璃</div>
+            </div>
 
             <div class="set-drawer-trigger" data-action="offday">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-calendar-times"></i></div>
                     <div>
+
+
                         <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">店舖排休與配色</div>
                         <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">STORE SCHEDULE</div>
                     </div>
@@ -1100,7 +1124,9 @@ function renderSet() {
         if(!item) return;
         const action = item.dataset.action;
         e.preventDefault(); e.stopPropagation();
-        if(action === 'rename') popRenameStore();
+       if(action === 'rename') popRenameStore();
+        if(action === 'time') popTimeDrawer();   // 🚀 補這行：讓營業時間按鈕能點開
+        if(action === 'style') popStyleDrawer(); // 🚀 補這行：讓樣式主題按鈕能點開
         if(action === 'offday') popOffDayDrawer();
         if(action === 'sty') popStyDrawer();
         if(action === 'tag') popTagDrawer();
@@ -2696,6 +2722,25 @@ async function addTagTrig() {
         // 如果沒輸入，就直接回抽屜
         popTagDrawer();
     }
+}
+
+// --- 🚀 介面樣式主題彈窗 (讓按鈕動起來) ---
+function popStyleDrawer() {
+    Swal.fire({
+        title: '介面樣式配置',
+        html: `
+            <div style="text-align:left; line-height:1.8; color:#1d1d1f; padding:10px; font-weight:700;">
+                <p><b>💎 當前樣式：</b>旗艦毛玻璃</p>
+                <p><b>✨ 設計語彙：</b> 簡單、直觀、直擊人心。</p>
+                <div style="margin-top:15px; padding:15px; background:rgba(212,175,55,0.1); border-radius:20px; border:1px solid var(--luxe-border);">
+                    <span style="color:var(--gold); font-size:0.85rem;">
+                        <i class="fas fa-info-circle"></i> 妳目前使用的是 Aether Flow 頂級配置，包含 40px 超圓潤倒角與 Quantum Gold 稀稀金石邊框。
+                    </span>
+                </div>
+            </div>`,
+        confirmButtonText: '我知道了',
+        confirmButtonColor: '#1d1d1f'
+    });
 }
 
 </script>
