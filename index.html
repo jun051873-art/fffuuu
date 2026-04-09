@@ -1659,71 +1659,39 @@ document.body.addEventListener('touchmove', function(e) {
 // ==========================================================================
 let statsMonth = new Date().toISOString().slice(0,7); // 預設當月
 
-    // ==========================================================================
-// --- 🚀 補回：V318 顧客名冊全功能奢華渲染與搜尋大腦 ---
+// ==========================================================================
+// --- 🚀 重新補回：消失的顧客名冊渲染與搜尋大腦 ---
 // ==========================================================================
 function renderCli() {
     const area = document.getElementById('cli-list');
     if (!area) return;
     const filterSty = document.getElementById('cli-f-sty').value;
     
-    // 1. 過濾邏輯
+    // 過濾邏輯
     const filteredClients = store.clients.filter(c => 
         ((c.n || "").includes(cliKw) || (c.p || "").includes(cliKw)) && 
         (!filterSty || String(c.lastSty) === String(filterSty))
     );
 
-    // 2. 畫出全功能奢華名片
+    // 畫出卡片
     area.innerHTML = filteredClients.map(c => {
         const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
-        
-        // 抓取該顧客最後 3 次成交紀錄
-        const history = store.appointments
-            .filter(a => (a.n === c.n || a.name === c.n) && a.done)
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 3);
-
         return `
-            <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color || '#eee'}; background:#fff; padding:30px; border-radius:35px; margin-bottom:25px; box-shadow:0 10px 30px rgba(0,0,0,0.04);">
+            <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color || '#eee'}; background:#fff; padding:25px; border-radius:30px; margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div>
-                        <div style="font-weight:900; font-size:2.2rem; margin-bottom:12px; letter-spacing:-1.5px; display:flex; align-items:center; gap:12px;">
-                            ${c.n}
-                            <span style="font-size:1.4rem;">
-                                ${c.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (c.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
-                            </span>
+                        <div style="font-weight:900; font-size:1.8rem; margin-bottom:8px;">
+                            ${c.n} ${c.sex === 'M' ? '♂️' : '♀️'}
                         </div>
-                        
-                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:15px;">
-                            <a href="tel:${c.p}" class="cli-tag-pill" style="text-decoration:none; background:rgba(6,199,85,0.1); color:#06C755; padding:6px 15px; border-radius:12px; font-weight:900;">
-                                <i class="fas fa-phone-alt"></i> ${c.p || "未留電話"}
-                            </a>
-                            <a href="sms:${c.p}?body=親愛的 ${c.n} 祝您生日快樂！" class="cli-tag-pill" style="text-decoration:none; background:rgba(212,175,55,0.1); color:var(--gold); padding:6px 15px; border-radius:12px; font-weight:900;">
-                                <i class="fas fa-birthday-cake"></i> ${c.bm || "01"}/${c.bd || "01"}
-                            </a>
-                        </div>
+                        <div style="color:#888; font-weight:700;">📞 ${c.p || "未留電話"} | 🎂 ${c.bm || "01"}/${c.bd || "01"}</div>
                     </div>
-                    
-                    <div style="background:${sty?.color || '#eee'}; color:#fff; padding:8px 18px; border-radius:15px; font-weight:900; font-size:1rem;">
-                       👤 ${sty?.name || "未指定"}
+                    <div style="background:${sty?.color || '#eee'}; color:#fff; padding:6px 12px; border-radius:12px; font-weight:900; font-size:0.8rem;">
+                       ${sty?.name || "未指定"}
                     </div>
                 </div>
-
-                <div style="background:#f9f9fb; border-radius:25px; padding:20px; margin-top:20px; border:1px solid #f0f0f0;">
-                    <div style="font-size:0.8rem; font-weight:900; color:#bbb; margin-bottom:15px; letter-spacing:1px; text-transform:uppercase;">Recent History</div>
-                    ${history.length ? history.map(h => `
-                        <div style="border-bottom:1px dashed #eee; padding:12px 0; display:flex; justify-content:space-between; align-items:center;">
-                            <div style="flex:1;">
-                                <div style="font-weight:900; font-size:1.1rem; color:#1d1d1f;">📅 ${h.date}</div>
-                                <div style="font-size:0.9rem; color:#666; margin-top:4px;">💬 ${h.note_full || "無備註"}</div>
-                            </div>
-                            <div style="color:var(--gold); font-weight:900; font-size:1rem;">✂️ ${(h.tags || []).join('+')}</div>
-                        </div>`).join('') : '<div style="color:#ccc; font-weight:700; padding:10px 0; text-align:center;">尚無成交紀錄</div>'}
-                </div>
-
-                <div style="display:flex; justify-content:flex-end; gap:25px; margin-top:25px; padding-top:15px; border-top:1px solid #f2f2f7;">
-                    <i class="fas fa-pen-nib" style="color:#ccc; font-size:1.3rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
-                    <i class="far fa-trash-alt" style="color:#ffcccc; font-size:1.3rem; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
+                <div style="display:flex; justify-content:flex-end; gap:20px; margin-top:15px;">
+                    <i class="fas fa-pen" style="color:#ccc; cursor:pointer;" onclick="editCli('${c.n}')"></i>
+                    <i class="fas fa-trash" style="color:#ffcccc; cursor:pointer;" onclick="confirmDelCli('${c.n}')"></i>
                 </div>
             </div>`;
     }).join('');
@@ -1735,7 +1703,7 @@ function searchStored(el, boxId) {
     const ms = store.clients.filter(c => (c.n||"").includes(val) || (c.p||"").includes(val));
     if(ms.length) { 
         box.style.display='block'; 
-        box.innerHTML = ms.map(m => `<div class="suggest-item" style="padding:18px 25px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">${m.n} (${m.p})</div>`).join(''); 
+        box.innerHTML = ms.map(m => `<div class="suggest-item" style="padding:15px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">${m.n} (${m.p})</div>`).join(''); 
     } else box.style.display='none';
 }
 
@@ -1752,9 +1720,11 @@ function pickSug(n, p, s, boxId) {
 
 function renderStats() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    const isPro = auth && auth.id && auth.id !== "未綁定";
+  const isPro = auth && auth.id && auth.id !== "未綁定";
+
     const area = document.getElementById('pg-stat').querySelector('.content-scroll');
     const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
+    
     // 1. 初始化經營數據大腦
     let totalRevenue = 0; // 總營收
     // 原有的營收統計
@@ -2064,6 +2034,44 @@ function toggleSwalTag(id, color) {
         el.style.boxShadow = '0 8px 15px ' + color + '44';
     }
 }
+
+// --- 🚀 補回：備註快速修改引擎 ---
+async function popNoteEdit(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    const { value: note } = await Swal.fire({
+        title: '修改預約備註',
+        input: 'textarea',
+        inputValue: a.note_full || "",
+        inputPlaceholder: '請輸入備註內容...',
+        confirmButtonColor: '#1d1d1f',
+        showCancelButton: true,
+        cancelButtonText: '取消'
+    });
+    if (note !== undefined) {
+        a.note_full = note;
+        await saveS();
+        renderDay(ds);
+    }
+}
+
+// --- 🚀 補回：指定/不指定切換引擎 ---
+async function toggleVIP(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    
+    // 直接切換布林值
+    a.isVIP = !a.isVIP;
+    
+    // 立即存檔並刷新
+    await saveS();
+    renderDay(ds);
+    
+    // 增加一個精緻的微震動回饋 (如果手機支援)
+    if(window.navigator.vibrate) window.navigator.vibrate(15);
+}
+
+
 
 // --- Aether Flow: 補填金額大腦 ---
 async function popPriceEdit(aptId, ds) {
