@@ -572,18 +572,19 @@ const db = firebase.firestore();
     }
 
     // 從雲端抓回資料 (開機用)
-    async function pullFromCloud() {
-        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        if (!auth || !auth.id) return;
-        try {
-            const doc = await db.collection("Salons").doc(auth.id).get();
-            if (doc.exists) {
-                store = doc.data();
-                localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-                initAll();
-            }
-        } catch (e) { console.error("抓取雲端資料失敗", e); }
-    }
+   async function pullFromCloud() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id) return;
+    try {
+        const doc = await db.collection("Salons").doc(auth.id).get();
+        if (doc.exists) {
+            store = doc.data();
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+            updateStoreUI(); // 🚀 補上這行，店名才會立刻從載入中變回妳的名字
+            initAll();
+        }
+    } catch (e) { console.error("抓取雲端資料失敗", e); }
+}
 // ==========================================================================
 // --- S4: 頁面顯示與分頁切換控制 ---
 // ==========================================================================
@@ -733,17 +734,35 @@ async function popBooking(n="", p="", sId=null, editId=null) {
     });
 
     if (res && res.n) {
+        // 🚀 關鍵：金鑰門禁判定
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        const isPro = auth && auth.id && auth.id !== "未綁定";
+
+        // 如果不是 Pro 且預約已達 2 筆，攔截！
+        if (!isPro && store.appointments.length >= 2 && !editId) {
+            Swal.fire({ icon: 'lock', title: 'Aether Pro 專屬', text: '試用版預約上限為 2 筆，請聯繫管理員激活系統。', confirmButtonColor: '#1d1d1f' });
+            return;
+        }
+
         const data = { id: editId || String(Date.now()), n: res.n, sex: res.sex, p: res.p, c: res.c, styId: res.styId, price: res.price, note_full: res.note, date: res.d, time: res.t, tags: [...tempTags], done: apt ? apt.done : false, payTags: apt ? apt.payTags : [], isVIP: apt ? apt.isVIP : false };
-        if (editId) store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
-        else {
+        
+        if (editId) {
+            store.appointments = store.appointments.map(a => String(a.id) === String(editId) ? data : a);
+        } else {
             store.appointments.push(data);
             if(res.saveCli) {
-                const exist = store.clients.find(c => c.n === res.n);
-                if(exist) { exist.p = res.p; exist.sex = res.sex; exist.lastSty = res.styId; }
-                else { store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm:'', bd:'', note:'' }); }
+                // 🚀 如果不是 Pro 且顧客已達 2 位，不准自動加入名冊
+                if (!isPro && store.clients.length >= 2 && !store.clients.find(c => c.n === res.n)) {
+                    console.log("試用版顧客上限，跳過名冊更新");
+                } else {
+                    const exist = store.clients.find(c => c.n === res.n);
+                    if(exist) { exist.p = res.p; exist.sex = res.sex; exist.lastSty = res.styId; }
+                    else { store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm:'', bd:'', note:'' }); }
+                }
             }
         }
-        await saveS(); renderDay(res.d);
+        await saveS(); 
+        renderDay(res.d);
         if(document.getElementById('pg-cli').classList.contains('active')) renderCli();
     }
 }
@@ -1676,15 +1695,24 @@ function copyKey(text) {
 }
 
 // 開機程序：啟動時自動去雲端搬資料回來
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+    // 1. 先刷出本地資料 (即使沒網路也要能看)
+    updateStoreUI(); 
+    initMonth();
+    renderCli();
+    
     const mPicker = document.getElementById('m-picker');
     if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
     
-    fixStoreStructure(); 
-    initAll();
-    updateStoreUI(); 
-    pullFromCloud();
-    checkLicense(); 
+    // 2. 背景去雲端搬最新資料
+    await pullFromCloud(); 
+    
+    // 3. 搬完資料後，再刷一次 UI 確保最新
+    updateStoreUI();
+    initMonth();
+    
+    // 4. 最後檢查金鑰，沒金鑰就跳強制登入
+    checkLicense();
 
    // --- 【以太流：精準防禦攔截器 - 彈窗解鎖版】 ---
     document.body.addEventListener('touchmove', function(e) {
