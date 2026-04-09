@@ -485,6 +485,30 @@ html, body {
     touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
 }
   
+/* --- 🚀 V318: 預約卡片完成後的變暗效果 --- */
+.apt-card.completed {
+    /* 1. 全體降亮度、增加透明度 */
+    filter: grayscale(0.8) opacity(0.5); 
+    /* 2. 毛玻璃效果加深，產生「壓在後方」的視覺感 */
+    backdrop-filter: blur(40px) saturate(50%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(50%) !important;
+    /* 3. 微微縮小，增加深淺層次 */
+    transform: scale(0.98);
+}
+
+/* 如果妳想要勾勾點下去後，整張卡片變成灰色背景，可以再加這一條 */
+.apt-card.completed::after {
+    content: "FINISHED";
+    position: absolute;
+    bottom: 20px;
+    right: 60px;
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: var(--primary);
+    opacity: 0.3;
+    letter-spacing: 2px;
+}
+
   </style>
 </head>
 <body>
@@ -885,6 +909,10 @@ function toggleTempTag(tagName) {
 // --- S6: 跑道渲染與顧客搜尋 (以太精緻版 + 老婆門禁 + 功能全開) ---
 // ==========================================================================
 function renderDay(ds) {
+    // 🚀 記憶空間：重畫前記住現在橫向滑動到哪裡
+    const scrollContainer = document.getElementById('day-lanes');
+    const scrollPos = scrollContainer ? scrollContainer.scrollLeft : 0; 
+
     const days = ['日','一','二','三','四','五','六'];
     const dayTitleEl = document.getElementById('day-title');
     if(dayTitleEl) dayTitleEl.innerText = `${ds} (週${days[new Date(ds).getDay()]})`; 
@@ -943,6 +971,12 @@ function renderDay(ds) {
             lane.appendChild(row);
         }); area.appendChild(lane);
     });
+    // 🚀 空間還原：重畫完後，瞬間閃回原本滑動的位置
+    if (scrollContainer) {
+        requestAnimationFrame(() => {
+            scrollContainer.scrollLeft = scrollPos;
+        });
+    }
 }
 
 function searchStored(el, boxId) {
@@ -2424,19 +2458,31 @@ async function pickLuxeColor(type, id = null) {
     }
 }
 
-// 2. 設計師新增引擎
+// --- 🚀 設計師新增：保證同步與回饋版 ---
 async function addStyTrig() {
     const { value: n } = await Swal.fire({
         title: '新增團隊成員',
         input: 'text',
         inputPlaceholder: '請輸入設計師姓名',
         showCancelButton: true,
-        confirmButtonColor: 'var(--gold)'
+        confirmButtonText: '確認新增',
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonText: '取消'
     });
-    if (n) {
-        store.stylists.push({ id: Date.now(), name: n, color: '#D4AF37' });
-        await saveS();
-        popStyDrawer(); // 存完刷回名單
+    
+    if (n && n.trim() !== "") {
+        // 1. 寫入本地數據
+        store.stylists.push({ 
+            id: Date.now(), 
+            name: n.trim(), 
+            color: '#D4AF37' 
+        });
+        
+        // 2. 🚀 核心：等待雲端存檔完成，這會觸發 saveS 裡的綠色 Toast
+        await saveS(); 
+        
+        // 3. 刷回名單
+        popStyDrawer(); 
     } else {
         popStyDrawer();
     }
@@ -2612,6 +2658,43 @@ async function reAuthMaster() {
         // 刪除本地授權，讓 pullFromCloud 偵測到代碼不符，強迫重新登入
         localStorage.removeItem('v318_booking_auth');
         location.reload(); 
+    }
+}
+
+// ==========================================================================
+// --- 🚀 [旗艦補丁] 服務項目新增引擎：保證通電 + 強制同步 ---
+// ==========================================================================
+async function addTagTrig() { 
+    const { value: n } = await Swal.fire({
+        title: '新增服務項目', 
+        input: 'text',
+        inputPlaceholder: '例如：極致奢華護理',
+        showCancelButton: true,
+        confirmButtonText: '確認新增',
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonText: '取消',
+        reverseButtons: true
+    }); 
+    
+    if (n && n.trim() !== "") {
+        // 1. 檢查資料籃子
+        if (!store.tags) store.tags = [];
+        
+        // 2. 塞入新項目
+        store.tags.push({ 
+            id: Date.now(), 
+            name: n.trim() 
+        }); 
+        
+        // 3. 🚀 核心通電：執行存檔並強制噴出綠色同步提示
+        await saveS(); 
+        
+        // 4. 刷新介面
+        renderSet(); 
+        popTagDrawer(); 
+    } else {
+        // 如果沒輸入，就直接回抽屜
+        popTagDrawer();
     }
 }
 
