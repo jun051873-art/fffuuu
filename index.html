@@ -571,6 +571,22 @@ const db = firebase.firestore();
         }
     }
 
+async function saveS() {
+    localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (auth && auth.id && auth.id !== "未綁定") {
+        try {
+            // 🚀 多存一個 syncCode，這就是剔除離職人員的「隱形鎖」
+            await db.collection("Salons").doc(auth.id).set({
+                ...store,
+                syncCode: auth.key // 綁定當初激活的金鑰
+            });
+            console.log("雲端同步成功");
+        } catch (e) { console.error("同步失敗", e); }
+    }
+}
+
+
     // 從雲端抓回資料 (開機用)
    async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -578,12 +594,29 @@ const db = firebase.firestore();
     try {
         const doc = await db.collection("Salons").doc(auth.id).get();
         if (doc.exists) {
-            store = doc.data();
+            const cloudData = doc.data();
+            
+            // 🚀 防盜檢查：如果雲端的碼跟手機存的不一樣，表示店長換碼了
+            if (cloudData.syncCode && cloudData.syncCode !== auth.key) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '授權已失效',
+                    text: '您的登入憑證已被店長重置，請重新獲取金鑰。',
+                    confirmButtonText: '確定',
+                    allowOutsideClick: false
+                }).then(() => {
+                    localStorage.removeItem('v318_booking_auth');
+                    location.reload(); // 強制跳回登入頁
+                });
+                return;
+            }
+
+            store = cloudData;
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-            updateStoreUI(); // 🚀 補上這行，店名才會立刻從載入中變回妳的名字
+            updateStoreUI();
             initAll();
         }
-    } catch (e) { console.error("抓取雲端資料失敗", e); }
+    } catch (e) { console.error("抓取失敗", e); }
 }
 // ==========================================================================
 // --- S4: 頁面顯示與分頁切換控制 ---
@@ -883,9 +916,9 @@ function renderSet() {
     if(!container) return;
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
+    // 1. 先畫出基礎設定清單
     container.innerHTML = `
         <div style="padding-top:20px;" id="set-main-list">
-           
             <div class="set-drawer-trigger" data-action="rename">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-signature"></i></div>
@@ -952,10 +985,24 @@ function renderSet() {
                     </div>
                     <button class="luxe-btn" style="width:100%; height:50px; background:#ffefef; color:#ff4d4d; border:none; margin-top:10px;" id="btn-reauth-real">重新激活系統</button>
                 </div>
+                <div id="master-admin-zone"></div>
             </div>
-        </div>
-    `;
+        </div>`;
 
+    // 2. 🚀 [關鍵門禁] 只有 admin 才能解鎖最高權限按鈕
+    const authLocal = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (authLocal && authLocal.role === 'admin') {
+        const adminZone = document.getElementById('master-admin-zone');
+        if (adminZone) {
+            adminZone.innerHTML = `
+                <div style="margin-top:20px;">
+                    <button class="luxe-btn" style="width:100%; height:60px; background:#1d1d1f; color:#ff4d4d; border:2px solid #ff4d4d; border-radius:30px; font-weight:900;" onclick="reAuthMaster()">
+                        <i class="fas fa-user-shield"></i> 撤銷全店授權 (踢除所有員工)
+                    </button>
+                    <p style="font-size:0.8rem; color:#ff4d4d; text-align:center; margin-top:10px; font-weight:700;">※ 此操作將重置雲端同步碼，員工副金鑰將立即失效</p>
+                </div>`;
+        }
+    }
     const list = document.getElementById('set-main-list');
     list.onclick = (e) => {
         const item = e.target.closest('.set-drawer-trigger');
@@ -1579,6 +1626,7 @@ function initAll() {
 // --- S8: 鋼鐵門禁與金鑰生成 ---
 // ==========================================================================
 
+// --- 🚀 V318 鋼鐵門禁：區分主副權限通電版 ---
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth) {
@@ -1595,25 +1643,44 @@ async function checkLicense() {
             try {
                 const doc = await db.collection("LicenseKeys_Booking").doc(res.key).get();
                 if (doc.exists && doc.data().status === "unused") {
+                    
+                    // 🚀 關鍵：從雲端抓取該金鑰的身分 (若無設定則預設為 staff)
+                    const cloudRole = doc.data().role || 'staff';
+
                     await db.collection("LicenseKeys_Booking").doc(res.key).update({
                         status: "used",
                         salonId: res.id,
                         activatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    localStorage.setItem('v318_booking_auth', JSON.stringify(res));
-                    Swal.fire('激活成功', `店號：${res.id}`, 'success').then(() => location.reload());
+
+                    // 🚀 關鍵：把身分 (role) 跟著店號一起存進手機
+                    const finalAuth = { 
+                        key: res.key, 
+                        id: res.id, 
+                        role: cloudRole 
+                    };
+                    localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '激活成功',
+                        text: `權限級別：${cloudRole === 'admin' ? '主控店長' : '團隊成員'}`,
+                        confirmButtonColor: '#1d1d1f'
+                    }).then(() => location.reload());
+
                 } else {
                     Swal.fire('驗證失敗', '金鑰無效或已被佔用', 'error').then(() => checkLicense());
                 }
             } catch(e) {
+                console.error(e);
                 Swal.fire('連線錯誤', '請確認 Firebase 已設定正確', 'error');
             }
         }
     } else {
-        pullFromGSheet();
+        // 如果已經激活過，照常抓資料
+        pullFromCloud(); 
     }
 }
-
 // 支援手機觸控、平板、電腦滑鼠長按 3 秒生成金鑰
 let pressTimer;
 const adminTrigger = document.getElementById('admin-trigger');
@@ -1628,26 +1695,51 @@ if(adminTrigger) {
                 confirmButtonColor: '#D4AF37'
             });
             if (pw === '518') {
-                const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-                await db.collection("LicenseKeys_Booking").doc(newKey).set({
-                    status: "unused",
-                    type: "Booking_V318",
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                // 🚀 第一步：互動式選單，決定金鑰權限等級
+                const { value: role } = await Swal.fire({
+                    title: '請選擇金鑰授權等級',
+                    icon: 'question',
+                    input: 'radio',
+                    inputOptions: {
+                        'admin': '👑 主金鑰 (店長管理員)',
+                        'staff': '👥 副金鑰 (設計師團隊)'
+                    },
+                    inputValue: 'staff', // 預設為副金鑰，防止手誤生出過多管理者
+                    confirmButtonText: '確定生成',
+                    confirmButtonColor: '#1d1d1f',
+                    background: 'rgba(255,255,255,0.95)',
+                    backdrop: `blur(15px)`
                 });
-                
-                // 這裡加入直覺的「一鍵複製」功能
-                Swal.fire({
-                    title: '成功生成預約金鑰',
-                    html: `
-                        <h2 id="copy-target" style="color:var(--gold); font-weight:900; margin: 20px 0;">${newKey}</h2>
-                        <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:50px; background:var(--gold); color:#fff; border:none;">
-                            <i class="fas fa-copy"></i> 點我直接複製
-                        </button>
-                    `,
-                    showConfirmButton: false
-                });
+
+                // 如果妳有點選等級才繼續
+                if (role) {
+                    const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+                    
+                    // 🚀 第二步：正式寫入 Firebase，新增 role 欄位！
+                    await db.collection("LicenseKeys_Booking").doc(newKey).set({
+                        status: "unused",
+                        type: "Booking_V318",
+                        role: role, // 👈 關鍵通電：這裡就是區分主從的身分標籤
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // 🚀 第三步：精緻的成功提示與一鍵複製
+                    Swal.fire({
+                        title: '成功生成預約金鑰',
+                        html: `
+                            <div style="background:rgba(212,175,55,0.1); padding:12px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold); font-size:1.1rem;">
+                                等級：${role === 'admin' ? '👑 主控店長' : '👥 團隊成員'}
+                            </div>
+                            <h2 id="copy-target" style="color:#1d1d1f; font-weight:900; margin: 25px 0; letter-spacing:2px; font-size:2rem;">${newKey}</h2>
+                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px; font-size:1.2rem; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                                <i class="fas fa-copy"></i> 點我直接複製
+                            </button>
+                        `,
+                        showConfirmButton: false
+                    });
+                }
             } else if(pw) {
-                Swal.fire('密碼錯誤', '', 'error');
+                Swal.fire('驗證碼錯誤', '請重新輸入管理代碼', 'error');
             }
         }, 3000);
     };
