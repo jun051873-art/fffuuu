@@ -624,42 +624,41 @@ const db = firebase.firestore();
         appointments: [], clients: [], offDays: []
     };
 // ==========================================================================
-// --- 🚀 V318 鋼鐵核心：Pro級存檔 + 隱形防盜鎖 + 物理同步提示 ---
+// --- 🚀 V318 鋼鐵核心：視覺統一 Toast 版 ---
 // ==========================================================================
 async function saveS() { 
-    // 1. 本機備份 (保證沒網路也能暫存)
+    // 1. 本機備份
     localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
-    // 2. 抓取授權並同步到 Firebase
+    // 2. 雲端同步
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (auth && auth.id && auth.id !== "未綁定") {
         try {
-            // 🚀 關鍵通電：將資料推上雲端，並附帶 syncCode (踢人用的隱形鎖)
             await db.collection("Salons").doc(auth.id).set({
                 ...store,
-                syncCode: auth.key // 綁定當初激活的金鑰
+                syncCode: auth.key 
             });
             console.log("雲端同步成功:", auth.id);
 
-            // 🚀 視覺回饋：噴出綠色「雲端已同步」提示 (這就是妳要的體感)
-            const Toast = Swal.mixin({ 
-                toast: true, 
-                position: 'top-end', 
-                showConfirmButton: false, 
-                timer: 1000,
-                timerProgressBar: true
+            // 🚀 視覺回饋：全站統一使用妳最愛的右上角 Toast 樣式
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                timerProgressBar: true,
+                background: '#fff',
+                color: '#1d1d1f'
             });
             Toast.fire({ icon: 'success', title: '雲端同步成功' });
 
         } catch (e) {
             console.error("雲端同步失敗", e);
-            // 網路不穩時的溫馨提醒
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             Toast.fire({ icon: 'error', title: '同步失敗，請檢查網路' });
         }
     }
 }
-
 // --- 🚀 V318 雲端抓取引擎：主副金鑰相容版 ---
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -1766,6 +1765,33 @@ function initAll() {
     initMonth(); renderCli(); fillStySelect(); renderSet(); 
 }
 
+// --- Aether Flow: 補填金額大腦 (大師修正：保證能打字＋跳數字鍵盤) ---
+async function popPriceEdit(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    const { value: price } = await Swal.fire({
+        title: '補填消費金額', 
+        input: 'tel',             // 🚀 跳數字鍵盤
+        inputValue: a.price || "", 
+        confirmButtonColor: '#1d1d1f', 
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        confirmButtonText: '確定儲存',
+        didOpen: () => {
+            const input = Swal.getInput();
+            if (input) {
+                input.setAttribute('inputmode', 'numeric');
+                input.focus(); 
+            }
+        }
+    });
+    if (price !== undefined) {
+        a.price = price; 
+        await saveS(); 
+        renderDay(ds);
+    }
+}
+
 // ==========================================================================
 // --- S8: 鋼鐵門禁與金鑰生成 ---
 // ==========================================================================
@@ -1957,16 +1983,17 @@ window.addEventListener('load', async () => {
     // 4. 最後檢查金鑰，沒金鑰就跳強制登入
     checkLicense();
 
-   // --- 【以太流：精準防禦攔截器 - 彈窗解鎖版】 ---
+   // --- 【以太流：精準防禦攔截器 - 彈窗輸入徹底解鎖版】 ---
     document.body.addEventListener('touchmove', function(e) {
-        // 🚀 關鍵解鎖：如果手指摸的地方是 SweetAlert 彈窗內部，直接放行不攔截！
-        if (e.target.closest('.swal2-html-container') || 
-            e.target.closest('.swal2-popup') || 
+        // 🚀 核心解鎖：如果摸到的是彈窗內容、輸入框 (INPUT/TEXTAREA)，絕對不准攔截！
+        if (e.target.closest('.swal2-container') || 
             e.target.closest('.content-scroll') || 
-            e.target.closest('.lane-container')) {
+            e.target.closest('.lane-container') ||
+            e.target.tagName === 'INPUT' || 
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'SELECT') {
             return; 
         }
-        // 只有摸到背景標題、導航條等地方才攔截
         e.preventDefault();
     }, { passive: false });
 });
@@ -2434,24 +2461,7 @@ async function toggleVIP(aptId, ds) {
 
 
 
-// --- Aether Flow: 補填金額大腦 ---
-async function popPriceEdit(aptId, ds) {
-    const a = store.appointments.find(x => String(x.id) === String(aptId));
-    if(!a) return;
-    const { value: price } = await Swal.fire({
-        title: '補填消費金額', 
-        input: 'number', 
-        inputValue: a.price || "", 
-        confirmButtonColor: '#D4AF37'
-    });
-    if (price !== undefined) {
-        a.price = price; 
-        await saveS(); 
-        renderDay(ds);
-        // 如果人在數據頁面，順便刷一下營收圖
-        if(document.getElementById('pg-stat').classList.contains('active')) renderStats();
-    }
-}
+
 
 // --- 【Aether Flow 穩定修正：人員與項目修改邏輯】 ---
 
@@ -2462,17 +2472,16 @@ async function editStyTrig(id, old) {
         input: 'text', 
         inputValue: old,
         showCancelButton: true,
-        confirmButtonColor: 'var(--gold)'
+        confirmButtonColor: '#1d1d1f'
     });
     if (n) {
         const target = store.stylists.find(s => String(s.id) === String(id));
         if(target) {
             target.name = n;
-            await saveS();
-            popStyDrawer(); // 關鍵：存完檔立刻跳回清單，防止閃退
+            await saveS(); // 🚀 先噴訊息
         }
     } else {
-        popStyDrawer(); // 取消也跳回清單，維持連貫感
+       
     }
 }
 
@@ -2490,10 +2499,8 @@ async function editTagTrig(id, old) {
         if(target) {
             target.name = n;
             await saveS();
-            popTagDrawer(); // 關鍵：存完檔立刻跳回清單
         }
     } else {
-        popTagDrawer(); // 取消也跳回清單
     }
 }
 // ==========================================================================
@@ -2535,23 +2542,17 @@ async function addStyTrig() {
         inputPlaceholder: '請輸入設計師姓名',
         showCancelButton: true,
         confirmButtonText: '確認新增',
-        confirmButtonColor: '#1d1d1f',
-        cancelButtonText: '取消'
+        confirmButtonColor: '#1d1d1f'
     });
     
     if (n && n.trim() !== "") {
-        // 1. 寫入本地數據
-        store.stylists.push({ 
-            id: Date.now(), 
-            name: n.trim(), 
-            color: '#D4AF37' 
-        });
+        store.stylists.push({ id: Date.now(), name: n.trim(), color: '#D4AF37' });
         
-        // 2. 🚀 核心：等待雲端存檔完成，這會觸發 saveS 裡的綠色 Toast
+        // 🚀 關鍵微調：先執行同步並「徹底等待」提示噴完
         await saveS(); 
         
-        // 3. 刷回名單
-        popStyDrawer(); 
+        // 延遲一下下再開列表，不然綠色訊息會被蓋掉
+        setTimeout(() => { popStyDrawer(); }, 500); 
     } else {
         popStyDrawer();
     }
