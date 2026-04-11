@@ -2631,22 +2631,32 @@ async function pickOffMulti() {
         }
     });
 }
-// 4. 刪除設計師的配套邏輯 (防止原本 confirmDelSty 沒寫完)
-function confirmDelSty(id) {
-    Swal.fire({
+// 4. 刪除設計師的配套邏輯 (修正版：保證跳出同步訊息)
+async function confirmDelSty(id) {
+    const result = await Swal.fire({
         title: '確定移除此成員？',
         text: "相關預約將保留，但不再顯示代表色",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff4d4d',
-        confirmButtonText: '確定移除'
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
-            await saveS();
-            popStyDrawer();
-        }
+        cancelButtonColor: '#aaa',
+        confirmButtonText: '確定移除',
+        cancelButtonText: '取消'
     });
+
+    if (result.isConfirmed) {
+        // 1. 先過濾掉該成員
+        store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
+        
+        // 2. 執行存檔並強制等待 (這步會噴出綠色訊息)
+        await saveS(); 
+        
+        // 3. 關閉抽屜回到設定頁
+        popStyDrawer();
+        
+        // 4. 重新刷一下設定頁面的顯示
+        if(typeof renderSet === 'function') renderSet();
+    }
 }
 // --- 【以太流：顧客資料修改引擎】 ---
 async function editCli(oldName) {
