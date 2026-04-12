@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>專屬空間 V318</title>
+    <title> Aether V318</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="專屬空間">
+    <meta name="apple-mobile-web-app-title" content="預約系統">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1439,14 +1439,27 @@ async function popRenameStore() {
     }
 }
 
-// 刷新全站店名圖標與網頁標題的工具
+// --- 🚀 品牌動態同步引擎：讓每一家店都有自己的名字 ---
 function updateStoreUI() {
     const name = store.storeName || '專屬空間';
+    
+    // 1. 更新頁面標題 (左上角那個字)
     const el = document.getElementById('main-store-name');
     if (el) el.innerText = name;
     
-    // 🚀 關鍵：讓網頁標題、分頁標題、甚至加入主畫面的預設字都同步！
-    document.title = name + " - V318 專屬預約"; 
+    // 2. 更新網頁標籤名稱
+    document.title = name; 
+
+    // 3. 🚀 核心黑科技：動態修改 iOS 桌面圖標名稱
+    // 這樣客戶在「加入主畫面」時，下方預設字就會是他們改好的店名！
+    let metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (!metaTitle) {
+        // 如果找不到標籤就補一個
+        metaTitle = document.createElement('meta');
+        metaTitle.name = "apple-mobile-web-app-title";
+        document.head.appendChild(metaTitle);
+    }
+    metaTitle.setAttribute('content', name);
 }
     // --- 各項功能的靈魂 (包含重新激活、導入、導出、標籤管理) ---
 
