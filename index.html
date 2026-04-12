@@ -1795,32 +1795,44 @@ function initAll() {
     initMonth(); renderCli(); fillStySelect(); renderSet(); 
 }
 
-
 // ==========================================================================
-// --- 🚀 V318 鋼鐵補丁大集合 (紀錄 + 金額 + 安全鎖) ---
+// --- 🚀 V318 預約紀錄大腦進階版 (支援清單直接修改/刪除) ---
 // ==========================================================================
-
-// 1. 預約紀錄查詢 (主月曆按鈕點開的功能)
 async function popHistoryLog(targetDate = null) {
     const ds = targetDate || curD.toLocaleDateString('sv');
+    // 取得該日預約並排序
     const matched = store.appointments.filter(a => a.date === ds).sort((a,b) => a.time.localeCompare(b.time));
+
     let listHtml = matched.length ? matched.map(a => {
         const sty = store.stylists.find(s => String(s.id) === String(a.styId));
         return `
-        <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:12px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'};">
-            <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px;">
-                <span style="font-size:1.1rem;">${a.time} - ${a.n}</span>
+        <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'}; position:relative;">
+            <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px; padding-right:60px;">
+                <span style="font-size:1.1rem; color:#1d1d1f;">${a.time} - ${a.n}</span>
                 <span style="color:var(--gold);">$${a.price || 0}</span>
             </div>
-            <div style="font-size:0.85rem; color:#888; font-weight:700;">✂️ ${(a.tags || []).join('+')} | 👤 ${sty?.name || '未指定'}</div>
+            <div style="font-size:0.85rem; color:#888; font-weight:700;">
+                <i class="fas fa-cut"></i> ${(a.tags || []).join('+') || '無項目'} | 👤 ${sty?.name || '未指定'}
+            </div>
+            
+            <div style="position:absolute; right:15px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
+                <button onclick="Swal.close(); setTimeout(()=>popBooking('${ds}','${a.id}'), 300)" style="border:none; background:#1d1d1f; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-edit"></i></button>
+                <button onclick="confirmDeleteFromLog('${a.id}', '${ds}')" style="border:none; background:#ff3b30; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-trash"></i></button>
+            </div>
         </div>`;
-    }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900;">📅 此日期尚無預約紀錄</div>';
+    }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900; text-align:center;">📅 此日期尚無預約紀錄</div>';
 
     Swal.fire({
         title: '<span style="font-weight:900;">預約紀錄查詢</span>',
-        width: '90%',
-        html: `<input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7;" value="${ds}">
-               <div style="max-height:450px; overflow-y:auto; -webkit-overflow-scrolling:touch;">${listHtml}</div>`,
+        width: '95%',
+        html: `
+            <div style="padding:5px;">
+                <input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7; font-family:inherit;" value="${ds}">
+                <div style="max-height:480px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:5px;">
+                    ${listHtml}
+                </div>
+            </div>
+        `,
         confirmButtonText: '關閉',
         confirmButtonColor: '#1d1d1f',
         didOpen: () => {
@@ -1828,6 +1840,29 @@ async function popHistoryLog(targetDate = null) {
             if(picker) picker.onchange = (e) => popHistoryLog(e.target.value);
         }
     });
+}
+
+// 輔助功能：紀錄清單專用的刪除確認
+async function confirmDeleteFromLog(id, ds) {
+    const { isConfirmed } = await Swal.fire({
+        title: '確定刪除？',
+        text: "刪除後無法復原喔！",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff3b30',
+        cancelButtonColor: '#1d1d1f',
+        confirmButtonText: '是的，刪除',
+        cancelButtonText: '取消'
+    });
+
+    if (isConfirmed) {
+        store.appointments = store.appointments.filter(a => String(a.id) !== String(id));
+        await saveS();
+        // 刪除後自動刷新清單畫面，並同步更新主頁面
+        popHistoryLog(ds);
+        renderCalendar(); 
+        if(typeof renderDay === 'function') renderDay(ds);
+    }
 }
 
 // 2. 金額快速填寫 (解鎖數字鍵盤)
