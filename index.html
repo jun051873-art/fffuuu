@@ -317,72 +317,58 @@ background: #f9f9fb !important;
 // --- 🚀 V318 手機直立模式：極致精準比例補丁 (大師優化版) ---
 // ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. 頂部空間極致優化，防止吃字 */
+    /* 1. 全局背景還原：不再強制垂直至中 */
+    .page.active {
+        display: block !important;
+        height: auto !important;
+    }
+
+    /* 2. 頂部 Header：控制高低與留白 */
     .header {
-        padding: 15px 15px 5px !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
+        position: relative !important;
+        padding-top: 50px !important;    /* 👈 改這裡：控制整個頂部離手機邊緣的高低 */
+        padding-bottom: 20px !important;
+        padding-left: 15px !important;   /* 👈 改這裡：店名離左邊的距離 */
+        padding-right: 15px !important;  /* 👈 改這裡：日期離右邊的距離 */
+        background: rgba(255, 255, 255, 0.8) !important;
     }
 
-    /* 2. 讓店名縮小並修正位移 */
+    /* 3. 店名標題大小 */
     .glow-title {
-        font-size: 1.4rem !important;
-        padding-left: 5px !important;
-        min-width: 80px !important;
+        font-size: 1.6rem !important;    /* 👈 改這裡：店名字體大小 */
+        min-width: 100px !important;
     }
 
-    /* 3. 顧客名冊：核心排版大腦 */
-    .client-grid-container {
-        display: grid !important;
-        padding: 12px !important;
-        gap: 12px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        overflow-x: hidden !important; /* 🚀 徹底禁止左右滑移 */
+    /* 4. [查詢] 與 [今天] 按鈕：控制大小、左右間距 */
+    .header div[style*="display:flex"] {
+        gap: 10px !important;            /* 👈 改這裡：兩個按鈕之間的距離 */
     }
 
-    /* 📱 當手機「直立」拿時 (Portrait)：強制一排 */
-    @media (orientation: portrait) {
-        .client-grid-container {
-            grid-template-columns: 1fr !important; 
-        }
-        .cli-luxe-card {
-            padding: 18px !important;
-            margin-bottom: 0 !important;
-        }
-    }
-
-    /* 📱 當手機「橫向」拿時 (Landscape)：自動變兩排 */
-    @media (orientation: landscape) {
-        .client-grid-container {
-            grid-template-columns: 1fr 1fr !important; 
-        }
-    }
-
-    /* 4. 日曆對齊補丁 */
+    /* 5. 日曆位置控制：控制日曆離上面的高低 */
     .calendar-header {
-        margin: 10px 12px 0 !important;
-        font-size: 0.8rem !important;
+        margin-top: 80px !important;     /* 👈 關鍵：改這裡控制日曆要多「高」 */
+        margin-bottom: 5px !important;
+        font-size: 0.9rem !important;    /* 👈 改這裡：一二三...的大小 */
     }
+    
     .calendar-grid {
-        margin: 5px 12px 10px !important;
-    }
-    .cal-day {
-        min-height: 65px !important;
-        padding: 5px !important;
+        margin-left: 15px !important;    /* 👈 改這裡：日曆離左邊的距離 */
+        margin-right: 15px !important;   /* 👈 改這裡：日曆離右邊的距離 */
+        border-radius: 50px !important;  /* 👈 改這裡：日曆圓角大小 */
     }
 
-    /* 5. 修正底部 + 號按鈕位置 */
+    .cal-day {
+        min-height: 85px !important;     /* 👈 關鍵：改這裡控制日曆格子的高低 */
+        padding: 10px !important;
+        font-size: 1.1rem !important;    /* 👈 改這裡：日期數字的大小 */
+    }
+
+    /* 6. 右下角 + 號按鈕：控制左右、高低 */
     .fab {
-        width: 55px !important;
-        height: 55px !important;
-        bottom: 120px !important; 
-        right: 15px !important;
-        font-size: 1.3rem !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        z-index: 9999 !important;
+        width: 60px !important;
+        height: 60px !important;
+        bottom: 125px !important;        /* 👈 改這裡：控制 + 號的高低 */
+        right: 25px !important;          /* 👈 改這裡：控制 + 號離右邊的距離 */
     }
 }
 .set-drawer-trigger {
