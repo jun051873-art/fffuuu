@@ -517,8 +517,10 @@ html, body {
         <div class="header">
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
-                <div class="luxe-btn" onclick="goToday()">今天</div>
-                <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
+<div style="display:flex; gap:10px;">
+    <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
+    <div class="luxe-btn" onclick="goToday()">今天</div>
+</div>                <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
             </div>
         </div>
         <div class="calendar-header" style="display:grid; grid-template-columns: repeat(7, 1fr); margin: 25px 45px 0; text-align: center; font-size: 1.1rem; font-weight: 900; color: #aaa;">
@@ -857,7 +859,22 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         })
     });
 
-    if (res && res.n) {
+   if (res && res.n) {
+        // --- 🚀 營業時間守門員 ---
+        const bookH = res.t.split(':')[0]; // 抓取預約的小時
+        const startH = store.startH.split(':')[0]; // 營業開始小時
+        const endH = store.endH.split(':')[0];     // 營業結束小時
+
+        if (parseInt(bookH) < parseInt(startH) || parseInt(bookH) > parseInt(endH)) {
+            Swal.fire({
+                icon: 'error',
+                title: '時間設定錯誤',
+                text: `預約時間 ${res.t} 已超出營業範圍 (${store.startH} - ${store.endH})，請重新選擇。`,
+                confirmButtonColor: '#1d1d1f'
+            });
+            return; // 攔截，不執行存檔
+        }
+        // --- 守門員結束 ---
         // 🚀 關鍵：金鑰門禁判定
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
         const isPro = auth && auth.id && auth.id !== "未綁定";
@@ -1777,6 +1794,54 @@ function initAll() {
     }
     initMonth(); renderCli(); fillStySelect(); renderSet(); 
 }
+
+
+// ==========================================================================
+// --- 🚀 V318 鋼鐵補丁大集合 (紀錄 + 金額 + 安全鎖) ---
+// ==========================================================================
+
+// 1. 預約紀錄查詢 (主月曆按鈕點開的功能)
+async function popHistoryLog(targetDate = null) {
+    const ds = targetDate || curD.toLocaleDateString('sv');
+    const matched = store.appointments.filter(a => a.date === ds).sort((a,b) => a.time.localeCompare(b.time));
+    let listHtml = matched.length ? matched.map(a => {
+        const sty = store.stylists.find(s => String(s.id) === String(a.styId));
+        return `
+        <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:12px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'};">
+            <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px;">
+                <span style="font-size:1.1rem;">${a.time} - ${a.n}</span>
+                <span style="color:var(--gold);">$${a.price || 0}</span>
+            </div>
+            <div style="font-size:0.85rem; color:#888; font-weight:700;">✂️ ${(a.tags || []).join('+')} | 👤 ${sty?.name || '未指定'}</div>
+        </div>`;
+    }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900;">📅 此日期尚無預約紀錄</div>';
+
+    Swal.fire({
+        title: '<span style="font-weight:900;">預約紀錄查詢</span>',
+        width: '90%',
+        html: `<input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7;" value="${ds}">
+               <div style="max-height:450px; overflow-y:auto; -webkit-overflow-scrolling:touch;">${listHtml}</div>`,
+        confirmButtonText: '關閉',
+        confirmButtonColor: '#1d1d1f',
+        didOpen: () => {
+            const picker = document.getElementById('history-date-picker');
+            if(picker) picker.onchange = (e) => popHistoryLog(e.target.value);
+        }
+    });
+}
+
+// 2. 金額快速填寫 (解鎖數字鍵盤)
+async function popPriceEdit(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    const { value: price } = await Swal.fire({
+        title: '補填消費金額', input: 'tel', inputValue: a.price || "", 
+        confirmButtonColor: '#1d1d1f', showCancelButton: true,
+        didOpen: () => { const input = Swal.getInput(); if (input) { input.setAttribute('inputmode', 'numeric'); input.focus(); } }
+    });
+    if (price !== undefined) { a.price = price; await saveS(); renderDay(ds); }
+}
+
 
 // --- Aether Flow: 補填金額大腦 (大師修正：保證能打字＋跳數字鍵盤) ---
 async function popPriceEdit(aptId, ds) {
