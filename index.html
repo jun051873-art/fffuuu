@@ -16,6 +16,38 @@
 
     <style>
 
+
+/* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
+.calendar-header {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    margin: 15px 15px 0 !important; /* 👈 這是對齊的關鍵數值 */
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #aaa;
+}
+
+/* 🚀 補丁 2：日曆網格數字對齊 */
+.calendar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    margin: 5px 15px 15px !important; /* 👈 邊距必須跟上面 header 鎖死一致 */
+    border-radius: 20px;
+    overflow: hidden;
+    background: #f2f2f7;
+    border: 0.3px solid var(--gold);
+}
+
+/* 🚀 補丁 3：修正左上角店名 Glow Effect 導致的第一個字被切掉 */
+.glow-title { 
+    display: inline-block !important;
+    padding-left: 8px !important; /* 給第一個字呼吸空間 */
+    text-align: left !important;
+}
+
+
+
 /* --- 【Aether Flow: 圓形清單項目恢復】 --- */
 .sty-item, .tag-pill-item {
     background: rgba(255, 255, 255, 0.8) !important;
@@ -281,20 +313,72 @@ background: #f9f9fb !important;
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-        /* --- 【V318 全設備自適應大腦】 --- */
-       @media (max-width: 768px) {
-            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
-            .content-scroll { padding-bottom: 200px !important; }
-            
-            /* 縮小導航條高度以適應手機比例 */
-            .nav { height: 75px; bottom: 25px; }
-            .cal-day { min-height: 95px; font-size: 1.1rem; }
-        }
+       /* ==========================================================================
+// --- 🚀 V318 手機直立模式專屬：比例與對齊終極補丁 ---
+// ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. 讓頂部留白變小，防止內容被擠下去 */
+    .header {
+        padding: 20px 15px 10px !important;
+    }
 
-        /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
-        }
+    /* 2. 修正左上角標題比例，解決第一個字消失問題 */
+    .glow-title {
+        font-size: 1.6rem !important;
+        display: inline-block !important;
+        padding-left: 8px !important;
+        text-align: left !important;
+    }
+
+    /* 3. 讓日期選擇器變窄，防止超出螢幕邊界 */
+    #m-picker {
+        width: 130px !important;
+        font-size: 0.9rem !important;
+        height: 45px !important;
+        padding: 5px !important;
+    }
+
+    /* 4. 解決日曆對不齊：週標題與數字格強制對齊 */
+    .calendar-header {
+        margin: 15px 15px 0 !important;
+        grid-template-columns: repeat(7, 1fr) !important;
+        font-size: 0.8rem !important;
+    }
+    .calendar-grid {
+        margin: 5px 15px 15px !important;
+        grid-template-columns: repeat(7, 1fr) !important;
+    }
+    .cal-day {
+        min-height: 70px !important;
+        padding: 5px !important;
+    }
+
+    /* 5. 修正顧客卡片與新增按鈕被擋住問題 */
+    .client-grid-container {
+        padding: 10px !important;
+        grid-template-columns: 1fr 1fr !important; /* 一排兩張最精緻 */
+        gap: 10px !important;
+    }
+    .cli-luxe-card {
+        padding: 15px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* 6. 修正底部 + 號按鈕位置，防止遮擋功能鍵 */
+    .fab {
+        width: 55px;
+        height: 55px;
+        bottom: 120px !important; /* 向上提，避開導航 */
+        right: 15px !important;
+        font-size: 1.4rem !important;
+        z-index: 4000 !important;
+    }
+    
+    /* 7. 修正捲軸底部間距 */
+    .content-scroll {
+        padding-bottom: 180px !important;
+    }
+}
     /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
@@ -525,8 +609,10 @@ html, body {
 <div style="display:flex; gap:10px;">
     <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
     <div class="luxe-btn" onclick="goToday()">今天</div>
-</div>                <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
-            </div>
+</div>    
+
+<input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="background:#f2f2f7; border-radius:15px; border:1px solid #ddd;"> 
+</div>
         </div>
         <div class="calendar-header" style="display:grid; grid-template-columns: repeat(7, 1fr); margin: 25px 45px 0; text-align: center; font-size: 1.1rem; font-weight: 900; color: #aaa;">
             <div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div>
