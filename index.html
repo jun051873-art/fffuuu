@@ -317,63 +317,75 @@ background: #f9f9fb !important;
 // --- 🚀 V318 手機直立模式：極致精準比例補丁 (大師優化版) ---
 // ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. 讓頂部留白徹底消失，標題靠邊對齊 */
+    /* 1. 頂部 Header 瘦身：解決店名與按鈕重疊 */
     .header {
-        padding: 15px 15px 5px !important; /* 再縮減 5px 留白 */
+        padding: 15px 15px 10px !important; /* 極簡間距 */
+        flex-wrap: nowrap !important;
+        align-items: center !important;
     }
 
-    /* 2. 修正左上角標題：縮小字級防止撐破 header */
+    /* 2. 讓店名縮小，不要擋到「查詢」按鈕 */
     .glow-title {
-        font-size: 1.5rem !important; /* 稍微再縮小一點，更精緻 */
+        font-size: 1.4rem !important; /* 縮小字級 */
         padding-left: 5px !important;
+        min-width: 80px !important; /* 縮短佔位 */
     }
 
-    /* 顧客名冊標題字級修正 */
-    .header div[style*="font-size: 2.6rem"] {
-        font-size: 1.6rem !important; 
-        margin-top: 10px !important;
+    /* 3. 右上角按鈕群組：縮小並靠右 */
+    .header div[style*="display:flex"] {
+        gap: 8px !important; /* 縮小按鈕間距 */
     }
 
-    /* 3. 日期選擇器寬度優化 */
+    /* 4. 修正月份選擇器：讓它變短且精緻 */
     #m-picker {
-        width: 125px !important; /* 精準寬度，不擠壓 */
-        height: 42px !important;
+        width: 110px !important; /* 縮短寬度 */
         font-size: 0.85rem !important;
+        height: 40px !important;
+        padding: 5px !important;
     }
 
-    /* 4. 解決日曆對不齊：關鍵在於 margin 與 grid 固定 */
+    /* 5. 日曆標題 (一二三...)：與數字格精準對齊 */
     .calendar-header {
-        margin: 10px 15px 0 !important;
+        margin: 10px 10px 0 !important; /* 縮小兩側邊距 */
+        font-size: 0.8rem !important;
         grid-template-columns: repeat(7, 1fr) !important;
     }
+
+    /* 6. 日曆格數字：解決超出螢幕問題 */
     .calendar-grid {
-        margin: 5px 15px 15px !important;
-        grid-template-columns: repeat(7, 1fr) !important;
+        margin: 5px 10px 10px !important; /* 邊距必須跟標題同步 */
+        border-radius: 15px !important;
     }
 
-    /* 5. 顧客卡片佈局：一排兩張，對齊邊距 */
-    .client-grid-container {
-        padding: 8px !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
-    }
-    .cli-luxe-card {
-        padding: 12px !important;
-        border-radius: 20px !important;
+    .cal-day {
+        min-height: 65px !important; /* 縮短高度，讓畫面能看到更多週 */
+        padding: 5px !important;
+        font-size: 0.9rem !important;
     }
 
-    /* 6. 🚀 【核心修正】修正 + 號按鈕：確保它絕對不偏心、不被吃掉 */
+    /* 7. 修正浮動按鈕 (+)：調回圓心位置 */
     .fab {
-        width: 58px !important;
-        height: 58px !important;
-        bottom: 115px !important; /* 稍微下降 5px，更符合人體工學 */
-        right: 18px !important;
-        font-size: 1.4rem !important;
+        width: 50px !important;
+        height: 50px !important;
+        bottom: 115px !important; /* 稍微向上提，避開導航 */
+        right: 15px !important;
+        font-size: 1.2rem !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 8px 20px rgba(212,175,55,0.3) !important;
-        z-index: 9999 !important; /* 強制置頂 */
+        z-index: 9999 !important;
+    }
+
+    /* 8. 顧客卡片佈局：一排兩張，增加可視量 */
+    .client-grid-container {
+        padding: 10px !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+
+    .cli-luxe-card {
+        padding: 12px !important;
+        border-radius: 15px !important;
     }
 }
 .set-drawer-trigger {
@@ -603,9 +615,8 @@ html, body {
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
 <div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"> 查詢</div>
-    <div class="luxe-btn" onclick="goToday()">今天</div>
-</div>    
+<div class="luxe-btn" style="height:40px; padding:0 12px; font-size:0.9rem;" onclick="popHistoryLog()">查詢</div>
+<div class="luxe-btn" style="height:40px; padding:0 12px; font-size:0.9rem;" onclick="goToday()">今天</div></div>    
 
 <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="background:#f2f2f7; border-radius:15px; border:1px solid #ddd;"> 
 </div>
