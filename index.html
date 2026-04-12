@@ -317,63 +317,72 @@ background: #f9f9fb !important;
 // --- 🚀 V318 手機直立模式：極致精準比例補丁 (大師優化版) ---
 // ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. 讓頂部留白徹底消失，標題靠邊對齊 */
+    /* 1. 頂部空間極致優化，防止吃字 */
     .header {
-        padding: 15px 15px 5px !important; /* 再縮減 5px 留白 */
+        padding: 15px 15px 5px !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
     }
 
-    /* 2. 修正左上角標題：縮小字級防止撐破 header */
+    /* 2. 讓店名縮小並修正位移 */
     .glow-title {
-        font-size: 1.5rem !important; /* 稍微再縮小一點，更精緻 */
+        font-size: 1.4rem !important;
         padding-left: 5px !important;
+        min-width: 80px !important;
     }
 
-    /* 顧客名冊標題字級修正 */
-    .header div[style*="font-size: 2.6rem"] {
-        font-size: 1.6rem !important; 
-        margin-top: 10px !important;
+    /* 3. 顧客名冊：核心排版大腦 */
+    .client-grid-container {
+        display: grid !important;
+        padding: 12px !important;
+        gap: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important; /* 🚀 徹底禁止左右滑移 */
     }
 
-    /* 3. 日期選擇器寬度優化 */
-    #m-picker {
-        width: 125px !important; /* 精準寬度，不擠壓 */
-        height: 42px !important;
-        font-size: 0.85rem !important;
+    /* 📱 當手機「直立」拿時 (Portrait)：強制一排 */
+    @media (orientation: portrait) {
+        .client-grid-container {
+            grid-template-columns: 1fr !important; 
+        }
+        .cli-luxe-card {
+            padding: 18px !important;
+            margin-bottom: 0 !important;
+        }
     }
 
-    /* 4. 解決日曆對不齊：關鍵在於 margin 與 grid 固定 */
+    /* 📱 當手機「橫向」拿時 (Landscape)：自動變兩排 */
+    @media (orientation: landscape) {
+        .client-grid-container {
+            grid-template-columns: 1fr 1fr !important; 
+        }
+    }
+
+    /* 4. 日曆對齊補丁 */
     .calendar-header {
-        margin: 10px 15px 0 !important;
-        grid-template-columns: repeat(7, 1fr) !important;
+        margin: 10px 12px 0 !important;
+        font-size: 0.8rem !important;
     }
     .calendar-grid {
-        margin: 5px 15px 15px !important;
-        grid-template-columns: repeat(7, 1fr) !important;
+        margin: 5px 12px 10px !important;
+    }
+    .cal-day {
+        min-height: 65px !important;
+        padding: 5px !important;
     }
 
-    /* 5. 顧客卡片佈局：一排兩張，對齊邊距 */
-    .client-grid-container {
-        padding: 8px !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
-    }
-    .cli-luxe-card {
-        padding: 12px !important;
-        border-radius: 20px !important;
-    }
-
-    /* 6. 🚀 【核心修正】修正 + 號按鈕：確保它絕對不偏心、不被吃掉 */
+    /* 5. 修正底部 + 號按鈕位置 */
     .fab {
-        width: 58px !important;
-        height: 58px !important;
-        bottom: 115px !important; /* 稍微下降 5px，更符合人體工學 */
-        right: 18px !important;
-        font-size: 1.4rem !important;
+        width: 55px !important;
+        height: 55px !important;
+        bottom: 120px !important; 
+        right: 15px !important;
+        font-size: 1.3rem !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 8px 20px rgba(212,175,55,0.3) !important;
-        z-index: 9999 !important; /* 強制置頂 */
+        z-index: 9999 !important;
     }
 }
 .set-drawer-trigger {
