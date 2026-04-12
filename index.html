@@ -132,20 +132,25 @@ background: #f9f9fb !important;
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
-        .header {
-    padding: 65px 45px 25px;
+      .header {
+    /* 🚀 縮減上方間距，讓手機版內容不被擠下去 */
+    padding: 25px 25px 15px !important; 
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    /* 🚀 這是靈魂：讓頂部導航透明且模糊 */
     background: rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: blur(40px) saturate(210%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
     z-index: 1000;
     border-bottom: 0.5px solid rgba(0,0,0,0.05) !important;
 }
-        .content-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 280px; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
+.content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 🚀 這裡調整為 160px，確保下方的 + 按鈕跟導航不吃字 */
+    padding-bottom: 160px !important; 
+}        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
@@ -2190,13 +2195,18 @@ function popCliHistory(clientName) {
         </div>
     `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-align:center;">尚無成交紀錄</div>';
 
-    Swal.fire({
+   Swal.fire({
         title: `<span style="font-weight:900;">${clientName}</span><br><span style="font-size:0.8rem; color:#aaa;">最近三次消費紀錄</span>`,
         html: `<div style="padding:10px; max-height:450px; overflow-y:auto; -webkit-overflow-scrolling:touch;">${historyHtml}</div>`,
         confirmButtonText: '關閉視窗',
         confirmButtonColor: '#1d1d1f',
         background: 'rgba(255,255,255,0.98)',
-        backdrop: `blur(10px)`
+        backdrop: `blur(10px)`,
+        
+        // 🚀 關鍵修正：防止殘影與跳動
+        showClass: { popup: 'animated fadeInDown faster' }, // 縮短動畫時間
+        hideClass: { popup: 'animated fadeOutUp faster' },
+        scrollbarPadding: false // 禁止系統自動增加滾動條間距
     });
 }
 
