@@ -313,73 +313,69 @@ background: #f9f9fb !important;
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-       /* ==========================================================================
-// --- 🚀 V318 手機直立模式專屬：比例與對齊終極補丁 ---
+   /* ==========================================================================
+// --- 🚀 V318 手機直立模式：極致精準比例補丁 (大師優化版) ---
 // ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. 讓頂部留白變小，防止內容被擠下去 */
+    /* 1. 讓頂部留白徹底消失，標題靠邊對齊 */
     .header {
-        padding: 20px 15px 10px !important;
+        padding: 15px 15px 5px !important; /* 再縮減 5px 留白 */
     }
 
-    /* 2. 修正左上角標題比例，解決第一個字消失問題 */
+    /* 2. 修正左上角標題：縮小字級防止撐破 header */
     .glow-title {
-        font-size: 1.6rem !important;
-        display: inline-block !important;
-        padding-left: 8px !important;
-        text-align: left !important;
+        font-size: 1.5rem !important; /* 稍微再縮小一點，更精緻 */
+        padding-left: 5px !important;
     }
 
-    /* 3. 讓日期選擇器變窄，防止超出螢幕邊界 */
+    /* 顧客名冊標題字級修正 */
+    .header div[style*="font-size: 2.6rem"] {
+        font-size: 1.6rem !important; 
+        margin-top: 10px !important;
+    }
+
+    /* 3. 日期選擇器寬度優化 */
     #m-picker {
-        width: 130px !important;
-        font-size: 0.9rem !important;
-        height: 45px !important;
-        padding: 5px !important;
+        width: 125px !important; /* 精準寬度，不擠壓 */
+        height: 42px !important;
+        font-size: 0.85rem !important;
     }
 
-    /* 4. 解決日曆對不齊：週標題與數字格強制對齊 */
+    /* 4. 解決日曆對不齊：關鍵在於 margin 與 grid 固定 */
     .calendar-header {
-        margin: 15px 15px 0 !important;
+        margin: 10px 15px 0 !important;
         grid-template-columns: repeat(7, 1fr) !important;
-        font-size: 0.8rem !important;
     }
     .calendar-grid {
         margin: 5px 15px 15px !important;
         grid-template-columns: repeat(7, 1fr) !important;
     }
-    .cal-day {
-        min-height: 70px !important;
-        padding: 5px !important;
-    }
 
-    /* 5. 修正顧客卡片與新增按鈕被擋住問題 */
+    /* 5. 顧客卡片佈局：一排兩張，對齊邊距 */
     .client-grid-container {
-        padding: 10px !important;
-        grid-template-columns: 1fr 1fr !important; /* 一排兩張最精緻 */
-        gap: 10px !important;
+        padding: 8px !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
     }
     .cli-luxe-card {
-        padding: 15px !important;
-        margin-bottom: 5px !important;
+        padding: 12px !important;
+        border-radius: 20px !important;
     }
 
-    /* 6. 修正底部 + 號按鈕位置，防止遮擋功能鍵 */
+    /* 6. 🚀 【核心修正】修正 + 號按鈕：確保它絕對不偏心、不被吃掉 */
     .fab {
-        width: 55px;
-        height: 55px;
-        bottom: 120px !important; /* 向上提，避開導航 */
-        right: 15px !important;
+        width: 58px !important;
+        height: 58px !important;
+        bottom: 115px !important; /* 稍微下降 5px，更符合人體工學 */
+        right: 18px !important;
         font-size: 1.4rem !important;
-        z-index: 4000 !important;
-    }
-    
-    /* 7. 修正捲軸底部間距 */
-    .content-scroll {
-        padding-bottom: 180px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 8px 20px rgba(212,175,55,0.3) !important;
+        z-index: 9999 !important; /* 強制置頂 */
     }
 }
-    /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
     backdrop-filter: blur(30px) saturate(180%) !important;
@@ -607,7 +603,7 @@ html, body {
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
 <div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
+    <div class="luxe-btn" onclick="popHistoryLog()"> 查詢</div>
     <div class="luxe-btn" onclick="goToday()">今天</div>
 </div>    
 
@@ -1887,12 +1883,16 @@ function initAll() {
 }
 
 // ==========================================================================
-// --- 🚀 V318 預約紀錄大腦進階版 (支援清單直接修改/刪除) ---
+// --- 🚀 V318 預約紀錄大腦：業績自動加總豪華版 ---
 // ==========================================================================
 async function popHistoryLog(targetDate = null) {
     const ds = targetDate || curD.toLocaleDateString('sv');
-    // 取得該日預約並排序
+    // 取得該日預約
     const matched = store.appointments.filter(a => a.date === ds).sort((a,b) => a.time.localeCompare(b.time));
+
+    // 🚀 核心黑科技：自動計算今日業績總和
+    const dailyTotal = matched.reduce((sum, a) => sum + (parseFloat(a.price) || 0), 0);
+    const dailyCount = matched.length;
 
     let listHtml = matched.length ? matched.map(a => {
         const sty = store.stylists.find(s => String(s.id) === String(a.styId));
@@ -1900,26 +1900,38 @@ async function popHistoryLog(targetDate = null) {
         <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'}; position:relative;">
             <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px; padding-right:60px;">
                 <span style="font-size:1.1rem; color:#1d1d1f;">${a.time} - ${a.n}</span>
-                <span style="color:var(--gold);">$${a.price || 0}</span>
+                <span style="color:var(--gold);">$${parseInt(a.price || 0).toLocaleString()}</span>
             </div>
             <div style="font-size:0.85rem; color:#888; font-weight:700;">
-                <i class="fas fa-cut"></i> ${(a.tags || []).join('+') || '無項目'} | 👤 ${sty?.name || '未指定'}
+                 ${(a.tags || []).join('+') || '無項目'} | 👤 ${sty?.name || '未指定'}
             </div>
             
             <div style="position:absolute; right:15px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
-                <button onclick="Swal.close(); setTimeout(()=>popBooking('${ds}','${a.id}'), 300)" style="border:none; background:#1d1d1f; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-edit"></i></button>
+                <button onclick="Swal.close(); setTimeout(()=>popBooking('${a.n}','${a.p}','${a.styId}','${a.id}'), 300)" style="border:none; background:#1d1d1f; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-edit"></i></button>
                 <button onclick="confirmDeleteFromLog('${a.id}', '${ds}')" style="border:none; background:#ff3b30; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-trash"></i></button>
             </div>
         </div>`;
     }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900; text-align:center;">📅 此日期尚無預約紀錄</div>';
 
     Swal.fire({
-        title: '<span style="font-weight:900;">預約紀錄查詢</span>',
+        title: '<span style="font-weight:900;">每日帳務速查</span>',
         width: '95%',
         html: `
             <div style="padding:5px;">
                 <input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7; font-family:inherit;" value="${ds}">
-                <div style="max-height:480px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:5px;">
+                
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <div style="flex:1; background:rgba(212,175,55,0.1); padding:15px; border-radius:20px; text-align:center; border:1px solid rgba(212,175,55,0.3);">
+                        <div style="font-size:0.7rem; color:#888; font-weight:900;">今日總業績</div>
+                        <div style="font-size:1.5rem; color:var(--gold); font-weight:900;">$${dailyTotal.toLocaleString()}</div>
+                    </div>
+                    <div style="flex:1; background:rgba(29,29,31,0.05); padding:15px; border-radius:20px; text-align:center; border:1px solid rgba(0,0,0,0.05);">
+                        <div style="font-size:0.7rem; color:#888; font-weight:900;">成交人數</div>
+                        <div style="font-size:1.5rem; color:#1d1d1f; font-weight:900;">${dailyCount} <small style="font-size:0.8rem;">人</small></div>
+                    </div>
+                </div>
+
+                <div style="max-height:380px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:5px;">
                     ${listHtml}
                 </div>
             </div>
@@ -1932,7 +1944,6 @@ async function popHistoryLog(targetDate = null) {
         }
     });
 }
-
 // 輔助功能：紀錄清單專用的刪除確認
 async function confirmDeleteFromLog(id, ds) {
     const { isConfirmed } = await Swal.fire({
