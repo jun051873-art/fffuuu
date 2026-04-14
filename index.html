@@ -17,6 +17,58 @@
     <style>
 
 
+
+/* 🚀 智慧標頭配置 */
+.header-controls {
+    display: flex;
+    flex-wrap: wrap-reverse; /* 關鍵：寬度不足時，前面的(月份)會往上彈 */
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 1;
+}
+
+.month-picker-wrapper {
+    flex: 0 0 auto;
+}
+
+.action-btns-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+/* 針對月份選擇器的精細美化 */
+.picker-style {
+    width: 150px !important;
+    height: 45px !important;
+    background: #f2f2f7 !important;
+    border-radius: 15px !important;
+    font-size: 0.9rem !important;
+    padding: 0 10px !important;
+}
+
+/* 縮小按鈕以適應手機 */
+.sm-btn {
+    height: 45px !important;
+    padding: 0 15px !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap;
+}
+
+/* 🚀 手機直立模式的極致調優 */
+@media (max-width: 430px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        padding-top: 45px !important;
+    }
+    .header-controls {
+        width: 100%;
+        margin-top: 10px;
+        justify-content: space-between; /* 讓月份跟按鈕分居左右兩端 */
+    }
+}
+
+
 /* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
 .calendar-header {
     display: grid !important;
@@ -555,7 +607,7 @@ html, body {
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
 <div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
+    <div class="luxe-btn" onclick="popHistoryLog()"> 紀錄</div>
     <div class="luxe-btn" onclick="goToday()">今天</div>
 </div>    
             
