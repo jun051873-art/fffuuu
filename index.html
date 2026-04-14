@@ -87,13 +87,12 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
     /* --- Aether Flow: 物理釘子修正版 --- */
-html, body { 
-    height: 100%; width: 100%; margin: 0; padding: 0; 
-    /* 這裡要保留，防止整片背景彈跳 */
-    overflow: hidden !important; 
-    position: fixed !important; 
-    /* 修改這裡，背景有深度，毛玻璃才會漂亮 */
-background: #f9f9fb !important;
+html, body {
+    height: 100%; width: 100%; margin: 0; padding: 0;
+    overflow-y: hidden; /* 防止整片晃動 */
+    overflow-x: hidden !important; /* 🚀 關鍵：絕對不准橫向滑動 */
+    position: fixed !important;
+    background: #f9f9fb !important;
 }
 
 /* --- 內容捲軸區：核心解鎖 --- */
