@@ -18,13 +18,15 @@
 
 
 
-/* 🚀 智慧標頭配置 */
+/* 🚀 讓月份選擇器不要太貼邊 */
 .header-controls {
     display: flex;
-    flex-wrap: wrap-reverse; /* 關鍵：寬度不足時，前面的(月份)會往上彈 */
+    flex-wrap: wrap-reverse;
     justify-content: flex-end;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
     flex: 1;
+    padding-right: 15px; /* 👈 關鍵：增加這行，讓它往左移動 15px */
 }
 
 .month-picker-wrapper {
@@ -38,8 +40,8 @@
 
 /* 針對月份選擇器的精細美化 */
 .picker-style {
-    width: 150px !important;
-    height: 45px !important;
+    width: 145px !important; /* 微調寬度 */
+    text-align: center !important; /* 讓日期在盒子裡置中 */
     background: #f2f2f7 !important;
     border-radius: 15px !important;
     font-size: 0.9rem !important;
@@ -69,26 +71,27 @@
 }
 
 
-/* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
+/* 🚀 日曆週標題下移，增加上方呼吸感 */
 .calendar-header {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    margin: 15px 15px 0 !important; /* 👈 這是對齊的關鍵數值 */
+    margin: 35px 25px 0 !important; /* 👈 第一個數字從 15 改成 35，日曆就下移了 */
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 900;
     color: #aaa;
 }
 
-/* 🚀 補丁 2：日曆網格數字對齊 */
+/* 🚀 日曆主體置中且下移 */
 .calendar-grid {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
-    margin: 5px 15px 15px !important; /* 👈 邊距必須跟上面 header 鎖死一致 */
-    border-radius: 20px;
+    margin: 10px 20px 25px !important; /* 👈 增加左右留白 (20px)，視覺會更置中 */
+    border-radius: 30px; /* 增加圓潤度，更符合以太流 */
     overflow: hidden;
     background: #f2f2f7;
-    border: 0.3px solid var(--gold);
+    border: 0.5px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03); /* 增加一點點懸浮感 */
 }
 
 /* 🚀 補丁 3：修正左上角店名 Glow Effect 導致的第一個字被切掉 */
