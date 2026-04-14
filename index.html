@@ -313,73 +313,63 @@ background: #f9f9fb !important;
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-       /* --- 🚀 V318 全設備自適應大腦：極致精品版 --- */
-        @media (max-width: 480px) {
-            /* ✅ 1. 解決店名換行：縮減標頭按鈕，保住店名大氣橫排 */
-            .header {
-                padding: 35px 15px 10px !important;
-                flex-wrap: nowrap !important; 
-                gap: 8px !important;
-            }
-            .glow-title { 
-                font-size: 1.5rem !important; 
-                white-space: nowrap; /* 強制不折行 */
-            }
-            .picker-style { width: 105px !important; height: 38px !important; font-size: 0.8rem !important; }
-            .sm-btn { padding: 0 8px !important; height: 38px !important; font-size: 0.8rem !important; }
+       /* --- 💎 V318 旗艦黃金比例：全設備通用底座 --- */
 
-            /* ✅ 2. 解決日曆對齊：週標題與網格同步鎖定 10px 邊界 */
-            .calendar-header { margin: 15px 10px 0 !important; font-size: 0.8rem !important; }
-            .calendar-grid {
-                margin: 5px 10px 20px !important;
-                width: calc(100% - 20px) !important;
-            }
-            .cal-day { min-height: 85px !important; }
+/* 1. 核心滾動區：給予底部絕對寬裕的呼吸空間，永不吃字 */
+.content-scroll { 
+    padding-bottom: 250px !important; 
+    -webkit-overflow-scrolling: touch;
+}
 
-            /* ✅ 3. 解決 ➕ 號與導航重疊：各走各的路 (高度鎖定) */
-            .nav {
-                width: 92% !important;
-                height: 70px !important;
-                /* 考慮 iPhone 底部安全區 */
-                bottom: calc(15px + env(safe-area-inset-bottom, 0px)) !important;
-                z-index: 5000;
-            }
-            .fab {
-                /* 🚀 將加號抬升，懸浮在導航條上方約 25px，絕對互不相碰 */
-                bottom: calc(105px + env(safe-area-inset-bottom, 0px)) !important; 
-                right: 20px !important;
-                width: 60px !important;
-                height: 60px !important;
-                font-size: 1.6rem !important;
-                z-index: 6000;
-                box-shadow: 0 10px 25px rgba(212,175,55,0.4) !important;
-            }
-            
-            /* ✅ 4. 解決顧客頁面按鈕過大：精緻化縮小 */
-            #pg-cli .luxe-btn {
-                height: 40px !important;
-                min-width: 40px !important;
-                font-size: 0.85rem !important;
-            }
-            #pg-cli .luxe-btn i { font-size: 0.85rem !important; }
-            /* 針對圓形按鈕(搜尋、新增) */
-            #pg-cli .luxe-btn:has(.fa-search), 
-            #pg-cli .luxe-btn:has(.fa-user-plus) {
-                width: 40px !important;
-                border-radius: 50% !important;
-            }
+/* 2. 導航條：採用「浮空膠囊」設計，寬度與位置在任何螢幕都精緻 */
+.nav { 
+    height: 70px !important; 
+    width: 90% !important; /* 保持左右留白，像膠囊一樣浮動 */
+    max-width: 500px; /* 大螢幕時不至於拉太長 */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* 絕對置中 */
+    z-index: 5000;
+}
 
-            /* ✅ 5. 確保內容不被吃字：加大底部滾動緩衝 */
-            .content-scroll { 
-                padding-bottom: 250px !important; 
-            }
-        }
+/* 3. ➕ 號按鈕：鎖定在導航條上方的「衛星軌道」，互不重疊 */
+.fab { 
+    width: 65px !important; 
+    height: 65px !important; 
+    font-size: 1.8rem !important;
+    /* 🚀 關鍵：高度鎖定在導航條上方，兩者永遠保持漂亮間距 */
+    bottom: calc(115px + env(safe-area-inset-bottom, 0px)) !important; 
+    right: 30px !important;
+    z-index: 6000;
+    box-shadow: 0 10px 25px rgba(212,175,55,0.4) !important;
+}
 
-        /* 針對 iPhone 底部橫線自動避讓 (保留妳原本的靈魂代碼並優化) */
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .nav { bottom: calc(15px + env(safe-area-inset-bottom)) !important; }
-            .fab { bottom: calc(105px + env(safe-area-inset-bottom)) !important; }
-        }
+/* 4. 日曆單格高度：採用中庸比例，讓日期在手機不擠、在大螢幕不空 */
+.cal-day { 
+    min-height: 90px !important; 
+    font-size: 1.1rem !important; 
+    padding: 8px !important;
+}
+
+/* 5. 頁面標頭：統一縮減冗餘空間，保持俐落感 */
+.header {
+    padding: 40px 20px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    flex-wrap: nowrap !important; /* 強制不換行，保住店名 */
+}
+
+/* 6. 功能按鈕：統一精緻尺寸 (🔍、👤、📅) */
+.luxe-btn {
+    height: 42px !important;
+    min-width: 42px !important;
+    padding: 0 12px !important;
+    font-size: 0.9rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
     /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
