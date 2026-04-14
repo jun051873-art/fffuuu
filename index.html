@@ -89,19 +89,25 @@
     /* --- Aether Flow: 物理釘子修正版 --- */
 html, body { 
     height: 100%; width: 100%; margin: 0; padding: 0; 
-    /* 🚀 解放核心：允許網頁偵測內容高度 */
-    overflow-x: hidden; 
-    background: #f9f9fb !important;
+    /* 這裡要保留，防止整片背景彈跳 */
+    overflow: hidden !important; 
+    position: fixed !important; 
+    /* 修改這裡，背景有深度，毛玻璃才會漂亮 */
+background: #f9f9fb !important;
 }
 
-/* 🚀 讓每一頁的內容區塊自己決定要不要滑動 */
+/* --- 內容捲軸區：核心解鎖 --- */
 .content-scroll {
+    /* 必須明確給予高度，否則手機不知道滑動範圍 */
+    height: 100vh; 
     flex: 1;
     overflow-y: auto !important; 
-    -webkit-overflow-scrolling: touch;
-    /* 增加底部緩衝，確保不會被導航擋住最後一行 */
-    padding-bottom: 200px !important; 
+    /* 關鍵：開啟 iOS 原生絲滑滾動 */
+    -webkit-overflow-scrolling: touch !important; 
+    /* 給予底部空間，避開導航條 */
+    padding-bottom: 220px !important; 
 }
+
 /* --- 顧客頁面比例修正：讓卡片在手機上縮小 --- */
 .client-grid-container {
     display: grid;
@@ -158,17 +164,17 @@ html, body {
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
-     .header {
-    /* 🚀 智慧對齊核心 */
-    padding: 50px 15px 10px !important; /* 50px 避開動態島 */
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important; /* 置中對齊才不會上下交錯 */
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+      .header {
+    /* 🚀 縮減上方間距，讓手機版內容不被擠下去 */
+    padding: 25px 25px 15px !important; 
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(40px) saturate(210%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
     z-index: 1000;
-    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+    border-bottom: 0.5px solid rgba(0,0,0,0.05) !important;
 }
 .content-scroll {
     flex: 1;
@@ -308,19 +314,25 @@ html, body {
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
         /* --- 【V318 全設備自適應大腦】 --- */
-       @media (max-width: 768px) {
-            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
-            .content-scroll { padding-bottom: 200px !important; }
-            
-            /* 縮小導航條高度以適應手機比例 */
-            .nav { height: 75px; bottom: 25px; }
-            .cal-day { min-height: 95px; font-size: 1.1rem; }
-        }
-
-        /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
-        }
+      @media (max-width: 768px) {
+    /* 🚀 日曆自動縮編 */
+    .calendar-grid {
+        margin: 5px 10px 15px !important; /* 縮小邊距 */
+        width: calc(100% - 20px) !important; /* 讓它永遠等於螢幕寬度減掉間距 */
+    }
+    
+    /* 🚀 數據統計區自動縮編 */
+    .stats-card, .stats-bar-container {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box;
+    }
+    
+    .content-scroll { 
+        padding: 15px !important; /* 縮小手機版內距 */
+    }
+}
     /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
@@ -1828,6 +1840,52 @@ function initAll() {
     initMonth(); renderCli(); fillStySelect(); renderSet(); 
 }
 
+// ==========================================================================
+// --- 🚀 V318 預約紀錄大腦進階版 (支援清單直接修改/刪除) ---
+// ==========================================================================
+async function popHistoryLog(targetDate = null) {
+    const ds = targetDate || curD.toLocaleDateString('sv');
+    // 取得該日預約並排序
+    const matched = store.appointments.filter(a => a.date === ds).sort((a,b) => a.time.localeCompare(b.time));
+
+    let listHtml = matched.length ? matched.map(a => {
+        const sty = store.stylists.find(s => String(s.id) === String(a.styId));
+        return `
+        <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'}; position:relative;">
+            <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px; padding-right:60px;">
+                <span style="font-size:1.1rem; color:#1d1d1f;">${a.time} - ${a.n}</span>
+                <span style="color:var(--gold);">$${a.price || 0}</span>
+            </div>
+            <div style="font-size:0.85rem; color:#888; font-weight:700;">
+                <i class="fas fa-cut"></i> ${(a.tags || []).join('+') || '無項目'} | 👤 ${sty?.name || '未指定'}
+            </div>
+            
+            <div style="position:absolute; right:15px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
+                <button onclick="Swal.close(); setTimeout(()=>popBooking('${ds}','${a.id}'), 300)" style="border:none; background:#1d1d1f; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-edit"></i></button>
+                <button onclick="confirmDeleteFromLog('${a.id}', '${ds}')" style="border:none; background:#ff3b30; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>`;
+    }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900; text-align:center;">📅 此日期尚無預約紀錄</div>';
+
+    Swal.fire({
+        title: '<span style="font-weight:900;">預約紀錄查詢</span>',
+        width: '95%',
+        html: `
+            <div style="padding:5px;">
+                <input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7; font-family:inherit;" value="${ds}">
+                <div style="max-height:480px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:5px;">
+                    ${listHtml}
+                </div>
+            </div>
+        `,
+        confirmButtonText: '關閉',
+        confirmButtonColor: '#1d1d1f',
+        didOpen: () => {
+            const picker = document.getElementById('history-date-picker');
+            if(picker) picker.onchange = (e) => popHistoryLog(e.target.value);
+        }
+    });
+}
 
 // 輔助功能：紀錄清單專用的刪除確認
 async function confirmDeleteFromLog(id, ds) {
