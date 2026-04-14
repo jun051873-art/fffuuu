@@ -2427,11 +2427,10 @@ const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType =
     
     ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}              
                 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+              
+    ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人", "eco")}
                 
-                ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人", "eco")}
-                
-                ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次", "aura")}
+    ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次", "aura")}
                 
               </div>
             
