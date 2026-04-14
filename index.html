@@ -296,10 +296,47 @@
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
         /* --- 【V318 全設備自適應大腦】 --- */
-       @media (max-width: 768px) {
+      /* --- 🚀 V318 手機直立版：全方位空間解鎖方案 --- */
+        @media (max-width: 480px) {
+            /* ✅ 1. 解決店名強行換行：縮減按鈕與間距 */
+            .header {
+                padding: 35px 15px 10px !important;
+                flex-wrap: nowrap !important; /* 強制不換行 */
+            }
+            .glow-title { 
+                font-size: 1.5rem !important; 
+                white-space: nowrap; /* 確保店名橫著走 */
+            }
+            .picker-style { width: 105px !important; height: 38px !important; }
+            .sm-btn { padding: 0 8px !important; height: 38px !important; }
+
+            /* ✅ 2. 解決日曆對齊：左右邊界鎖定 10px */
+            .calendar-header { margin: 15px 10px 0 !important; font-size: 0.8rem !important; }
+            .calendar-grid {
+                margin: 5px 10px 20px !important;
+                width: calc(100% - 20px) !important;
+            }
+            .cal-day { min-height: 85px !important; }
+
+            /* ✅ 3. 解決 ➕ 號與導航重疊：各走各的路 */
+            .nav {
+                width: 92% !important;
+                height: 70px !important;
+                bottom: 15px !important;
+                z-index: 5000;
+            }
+            .fab {
+                /* 🚀 將加號抬升到導航條上方 25px 的位置，絕對互不相碰 */
+                bottom: 110px !important; 
+                right: 25px !important;
+                width: 65px !important;
+                height: 65px !important;
+                z-index: 6000;
+                box-shadow: 0 10px 25px rgba(212,175,55,0.4) !important;
+            }
             
-            .nav { height: 75px; bottom: 25px; }
-            .cal-day { min-height: 95px; font-size: 1.1rem; }
+            /* 確保日曆最後一行不被遮擋 */
+            .content-scroll { padding-bottom: 250px !important; }
         }
 
         /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
