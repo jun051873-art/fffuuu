@@ -589,6 +589,42 @@ html, body {
     letter-spacing: 2px;
 }
 
+
+/* 🚀 修正核心：聯繫作者區塊強制置中對齊 */
+
+/* 1. 讓整個聯繫區域的容器置中 */
+#pg-set .content-scroll > div[style*="text-align:center"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* 強制所有內容走螢幕中軸線 */
+    padding: 40px 20px !important;
+}
+
+/* 2. 修正 ID 顯示盒 (LINE ID : 051873) */
+#pg-set div[style*="background:#fff; padding:15px 25px"] {
+    width: 240px !important; /* 鎖定寬度 */
+    justify-content: center !important;
+    margin: 0 auto 15px !important; /* 確保自己置中，並跟下方保持間距 */
+    display: flex !important;
+    border-radius: 25px !important;
+}
+
+/* 3. 修正 綠色一鍵加好友按鈕 */
+#pg-set a[href*="line.me"] button {
+    width: 240px !important; /* 關鍵：寬度必須跟上面的 ID 盒一模一樣 */
+    margin: 0 auto !important; /* 強制按鈕本身置中 */
+    justify-content: center !important;
+    background: #06C755 !important;
+    border-radius: 30px !important;
+    height: 55px !important;
+    box-shadow: 0 10px 20px rgba(6,199,85,0.2) !important;
+}
+
+/* 4. 修正最上面的 Line 圖示圓圈 */
+#pg-set div[style*="width:60px; height:60px"] {
+    margin: 0 auto 15px !important; /* 強制圖示置中 */
+}
+
   </style>
 </head>
 <body>
