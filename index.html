@@ -87,12 +87,13 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
     /* --- Aether Flow: 物理釘子修正版 --- */
-html, body {
-    height: 100%; width: 100%; margin: 0; padding: 0;
-    overflow-y: hidden; /* 防止整片晃動 */
-    overflow-x: hidden !important; /* 🚀 關鍵：絕對不准橫向滑動 */
-    position: fixed !important;
-    background: #f9f9fb !important;
+html, body { 
+    height: 100%; width: 100%; margin: 0; padding: 0; 
+    /* 這裡要保留，防止整片背景彈跳 */
+    overflow: hidden !important; 
+    position: fixed !important; 
+    /* 修改這裡，背景有深度，毛玻璃才會漂亮 */
+background: #f9f9fb !important;
 }
 
 /* --- 內容捲軸區：核心解鎖 --- */
@@ -313,25 +314,19 @@ html, body {
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
         /* --- 【V318 全設備自適應大腦】 --- */
-      @media (max-width: 768px) {
-    /* 🚀 日曆自動縮編 */
-    .calendar-grid {
-        margin: 5px 10px 15px !important; /* 縮小邊距 */
-        width: calc(100% - 20px) !important; /* 讓它永遠等於螢幕寬度減掉間距 */
-    }
-    
-    /* 🚀 數據統計區自動縮編 */
-    .stats-card, .stats-bar-container {
-        width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        box-sizing: border-box;
-    }
-    
-    .content-scroll { 
-        padding: 15px !important; /* 縮小手機版內距 */
-    }
-}
+       @media (max-width: 768px) {
+            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
+            .content-scroll { padding-bottom: 200px !important; }
+            
+            /* 縮小導航條高度以適應手機比例 */
+            .nav { height: 75px; bottom: 25px; }
+            .cal-day { min-height: 95px; font-size: 1.1rem; }
+        }
+
+        /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
+        }
     /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
