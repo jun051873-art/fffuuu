@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title> Aether V318</title>
+    <title>專屬空間 V318</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="預約系統">
+    <meta name="apple-mobile-web-app-title" content="專屬空間">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,38 +15,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <style>
-
-
-/* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
-.calendar-header {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    margin: 15px 15px 0 !important; /* 👈 這是對齊的關鍵數值 */
-    text-align: center;
-    font-size: 0.9rem;
-    font-weight: 900;
-    color: #aaa;
-}
-
-/* 🚀 補丁 2：日曆網格數字對齊 */
-.calendar-grid {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    margin: 5px 15px 15px !important; /* 👈 邊距必須跟上面 header 鎖死一致 */
-    border-radius: 20px;
-    overflow: hidden;
-    background: #f2f2f7;
-    border: 0.3px solid var(--gold);
-}
-
-/* 🚀 補丁 3：修正左上角店名 Glow Effect 導致的第一個字被切掉 */
-.glow-title { 
-    display: inline-block !important;
-    padding-left: 8px !important; /* 給第一個字呼吸空間 */
-    text-align: left !important;
-}
-
-
 
 /* --- 【Aether Flow: 圓形清單項目恢復】 --- */
 .sty-item, .tag-pill-item {
@@ -118,6 +86,22 @@ background: #f9f9fb !important;
 }
 
 
+/* 🚀 防止彈窗殘影與背景跳動補丁 */
+body.swal2-shown {
+    padding-right: 0 !important; /* 強制取消 SweetAlert 自動加的右邊距 */
+}
+
+.swal2-backdrop-show {
+    backdrop-filter: blur(10px) !important; /* 統一背景模糊感，防止閃爍 */
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* 確保彈窗動畫更輕快，減少視覺殘留 */
+.swal2-show {
+    animation: swal2-show 0.2s !important;
+}
+
+
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
          /* --- 【Aether Flow: 旗艦毛玻璃深黑體】 --- */
 .swal2-popup { 
@@ -164,25 +148,20 @@ background: #f9f9fb !important;
         @keyframes shine { to { background-position: 200% center; } }
         .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
         .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
-      .header {
-    /* 🚀 縮減上方間距，讓手機版內容不被擠下去 */
-    padding: 25px 25px 15px !important; 
+        .header {
+    padding: 65px 45px 25px;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+    /* 🚀 這是靈魂：讓頂部導航透明且模糊 */
     background: rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: blur(40px) saturate(210%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
     z-index: 1000;
     border-bottom: 0.5px solid rgba(0,0,0,0.05) !important;
 }
-.content-scroll {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    /* 🚀 這裡調整為 160px，確保下方的 + 按鈕跟導航不吃字 */
-    padding-bottom: 160px !important; 
-}        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
+        .content-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 280px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
@@ -313,63 +292,20 @@ background: #f9f9fb !important;
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-       /* --- 💎 V318 旗艦黃金比例：全設備通用底座 --- */
+        /* --- 【V318 全設備自適應大腦】 --- */
+       @media (max-width: 768px) {
+            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
+            .content-scroll { padding-bottom: 200px !important; }
+            
+            /* 縮小導航條高度以適應手機比例 */
+            .nav { height: 75px; bottom: 25px; }
+            .cal-day { min-height: 95px; font-size: 1.1rem; }
+        }
 
-/* 1. 核心滾動區：給予底部絕對寬裕的呼吸空間，永不吃字 */
-.content-scroll { 
-    padding-bottom: 250px !important; 
-    -webkit-overflow-scrolling: touch;
-}
-
-/* 2. 導航條：採用「浮空膠囊」設計，寬度與位置在任何螢幕都精緻 */
-.nav { 
-    height: 70px !important; 
-    width: 90% !important; /* 保持左右留白，像膠囊一樣浮動 */
-    max-width: 500px; /* 大螢幕時不至於拉太長 */
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important; /* 絕對置中 */
-    z-index: 5000;
-}
-
-/* 3. ➕ 號按鈕：鎖定在導航條上方的「衛星軌道」，互不重疊 */
-.fab { 
-    width: 65px !important; 
-    height: 65px !important; 
-    font-size: 1.8rem !important;
-    /* 🚀 關鍵：高度鎖定在導航條上方，兩者永遠保持漂亮間距 */
-    bottom: calc(115px + env(safe-area-inset-bottom, 0px)) !important; 
-    right: 30px !important;
-    z-index: 6000;
-    box-shadow: 0 10px 25px rgba(212,175,55,0.4) !important;
-}
-
-/* 4. 日曆單格高度：採用中庸比例，讓日期在手機不擠、在大螢幕不空 */
-.cal-day { 
-    min-height: 90px !important; 
-    font-size: 1.1rem !important; 
-    padding: 8px !important;
-}
-
-/* 5. 頁面標頭：統一縮減冗餘空間，保持俐落感 */
-.header {
-    padding: 40px 20px 10px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 15px !important;
-    flex-wrap: nowrap !important; /* 強制不換行，保住店名 */
-}
-
-/* 6. 功能按鈕：統一精緻尺寸 (🔍、👤、📅) */
-.luxe-btn {
-    height: 42px !important;
-    min-width: 42px !important;
-    padding: 0 12px !important;
-    font-size: 0.9rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
+        /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
+        }
     /* --- 【V318 專屬：以太美學設定鈕】 --- */
 .set-drawer-trigger {
     background: rgba(255, 255, 255, 0.45) !important;
@@ -589,42 +525,6 @@ html, body {
     letter-spacing: 2px;
 }
 
-
-/* 🚀 修正核心：聯繫作者區塊強制置中對齊 */
-
-/* 1. 讓整個聯繫區域的容器置中 */
-#pg-set .content-scroll > div[style*="text-align:center"] {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important; /* 強制所有內容走螢幕中軸線 */
-    padding: 40px 20px !important;
-}
-
-/* 2. 修正 ID 顯示盒 (LINE ID : 051873) */
-#pg-set div[style*="background:#fff; padding:15px 25px"] {
-    width: 240px !important; /* 鎖定寬度 */
-    justify-content: center !important;
-    margin: 0 auto 15px !important; /* 確保自己置中，並跟下方保持間距 */
-    display: flex !important;
-    border-radius: 25px !important;
-}
-
-/* 3. 修正 綠色一鍵加好友按鈕 */
-#pg-set a[href*="line.me"] button {
-    width: 240px !important; /* 關鍵：寬度必須跟上面的 ID 盒一模一樣 */
-    margin: 0 auto !important; /* 強制按鈕本身置中 */
-    justify-content: center !important;
-    background: #06C755 !important;
-    border-radius: 30px !important;
-    height: 55px !important;
-    box-shadow: 0 10px 20px rgba(6,199,85,0.2) !important;
-}
-
-/* 4. 修正最上面的 Line 圖示圓圈 */
-#pg-set div[style*="width:60px; height:60px"] {
-    margin: 0 auto 15px !important; /* 強制圖示置中 */
-}
-
   </style>
 </head>
 <body>
@@ -633,12 +533,8 @@ html, body {
         <div class="header">
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
-<div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"> 紀錄</div>
-    <div class="luxe-btn" onclick="goToday()">今天</div>
-</div>    
-            
-<input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
+                <div class="luxe-btn" onclick="goToday()">今天</div>
+                <input type="month" id="m-picker" onchange="initMonth()" class="luxe-btn" style="width: 240px; background:#f2f2f7;">
             </div>
         </div>
         <div class="calendar-header" style="display:grid; grid-template-columns: repeat(7, 1fr); margin: 25px 45px 0; text-align: center; font-size: 1.1rem; font-weight: 900; color: #aaa;">
@@ -661,23 +557,14 @@ html, body {
     </div>
 
     <div id="pg-cli" class="page">
-    <div class="header cli-header-fix">
-        <div class="cli-title-box" onclick="cliKw=''; renderCli();">
-            <h1 style="margin:0; font-size:1.8rem; font-weight:900; letter-spacing:-1px;">顧客名冊</h1>
-        </div>
-
-        <div class="cli-controls">
-            <div class="luxe-btn sm-search-btn" onclick="popCliSearch()">
-                <i class="fas fa-search"></i>
-            </div>
-            
-            <select id="cli-f-sty" class="luxe-btn sm-select-btn" onchange="renderCli()"></select>
-            
-            <div class="luxe-btn sm-add-btn" onclick="addCliTrig()">
-                <i class="fas fa-user-plus"></i>
+       <div class="header">
+            <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
+            <div style="display:flex; gap:20px; align-items:center;">
+                <div class="luxe-btn" onclick="popCliSearch()"><i class="fas fa-search"></i></div>
+                <select id="cli-f-sty" class="luxe-btn" onchange="renderCli()" style="width:180px;"></select>
+                <div class="luxe-btn" onclick="addCliTrig()" style="font-size:1.8rem; padding:12px 30px;"><i class="fas fa-user-plus"></i></div>
             </div>
         </div>
-    </div>
         <div class="content-scroll"><div class="client-grid-container" id="cli-list"></div></div>
     </div>
 
@@ -753,41 +640,42 @@ const db = firebase.firestore();
         appointments: [], clients: [], offDays: []
     };
 // ==========================================================================
-// --- 🚀 V318 鋼鐵核心：視覺統一 Toast 版 ---
+// --- 🚀 V318 鋼鐵核心：Pro級存檔 + 隱形防盜鎖 + 物理同步提示 ---
 // ==========================================================================
 async function saveS() { 
-    // 1. 本機備份
+    // 1. 本機備份 (保證沒網路也能暫存)
     localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
-    // 2. 雲端同步
+    // 2. 抓取授權並同步到 Firebase
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (auth && auth.id && auth.id !== "未綁定") {
         try {
+            // 🚀 關鍵通電：將資料推上雲端，並附帶 syncCode (踢人用的隱形鎖)
             await db.collection("Salons").doc(auth.id).set({
                 ...store,
-                syncCode: auth.key 
+                syncCode: auth.key // 綁定當初激活的金鑰
             });
             console.log("雲端同步成功:", auth.id);
 
-            // 🚀 視覺回饋：全站統一使用妳最愛的右上角 Toast 樣式
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1500,
-                timerProgressBar: true,
-                background: '#fff',
-                color: '#1d1d1f'
+            // 🚀 視覺回饋：噴出綠色「雲端已同步」提示 (這就是妳要的體感)
+            const Toast = Swal.mixin({ 
+                toast: true, 
+                position: 'top-end', 
+                showConfirmButton: false, 
+                timer: 1000,
+                timerProgressBar: true
             });
             Toast.fire({ icon: 'success', title: '雲端同步成功' });
 
         } catch (e) {
             console.error("雲端同步失敗", e);
+            // 網路不穩時的溫馨提醒
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             Toast.fire({ icon: 'error', title: '同步失敗，請檢查網路' });
         }
     }
 }
+
 // --- 🚀 V318 雲端抓取引擎：主副金鑰相容版 ---
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -802,22 +690,11 @@ async function pullFromCloud() {
             // 這樣就算妳換了店號的 syncCode，只要這把鑰匙沒被妳手動刪除或停用，員工就進得來
             const keyCheck = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             
-           // 🚀 升級版門衛：檢查金鑰是否存在、是否被撤銷、是否過期
-            const keyData = keyCheck.data();
-            const now = new Date().getTime();
-
-            if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
-                
-                // 定義錯誤訊息（根據不同原因顯示不同字）
-                let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
-                if (keyData.expire && now > keyData.expire) {
-                    errMsg = '您的 30 天試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
-                }
-
+            if (!keyCheck.exists || keyCheck.data().status !== "used") {
                 Swal.fire({
                     icon: 'error',
-                    title: '授權失效',
-                    text: errMsg,
+                    title: '授權已失效',
+                    text: '您的授權已被撤銷，請聯繫店長重新獲取金鑰。',
                     confirmButtonColor: '#1d1d1f',
                     confirmButtonText: '確定',
                     allowOutsideClick: false
@@ -986,22 +863,7 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         })
     });
 
-   if (res && res.n) {
-        // --- 🚀 營業時間守門員 ---
-        const bookH = res.t.split(':')[0]; // 抓取預約的小時
-        const startH = store.startH.split(':')[0]; // 營業開始小時
-        const endH = store.endH.split(':')[0];     // 營業結束小時
-
-        if (parseInt(bookH) < parseInt(startH) || parseInt(bookH) > parseInt(endH)) {
-            Swal.fire({
-                icon: 'error',
-                title: '時間設定錯誤',
-                text: `預約時間 ${res.t} 已超出營業範圍 (${store.startH} - ${store.endH})，請重新選擇。`,
-                confirmButtonColor: '#1d1d1f'
-            });
-            return; // 攔截，不執行存檔
-        }
-        // --- 守門員結束 ---
+    if (res && res.n) {
         // 🚀 關鍵：金鑰門禁判定
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
         const isPro = auth && auth.id && auth.id !== "未綁定";
@@ -1256,31 +1118,7 @@ function renderSet() {
                 </div>
                 <div id="master-admin-zone"></div>
             </div>
-         
-
-            <div style="margin-top:80px; padding:40px 20px; text-align:center; background:rgba(0,0,0,0.02); border-radius:40px; border:1px dashed rgba(212,175,55,0.3);">
-                <div style="width:60px; height:60px; background:var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; margin:0 auto 15px; box-shadow:0 10px 20px rgba(212,175,55,0.2);">
-                    <i class="fab fa-line" style="font-size:2rem;"></i>
-                </div>
-                <div style="font-weight:900; font-size:1.1rem; color:#1d1d1f; letter-spacing:1px;">聯繫創作者購買授權</div>
-                <div style="font-size:0.8rem; color:#aaa; font-weight:700; margin-bottom:20px;">V318 QUANTUM DESIGN</div>
-                
-                <div style="background:#fff; padding:15px 25px; border-radius:25px; display:inline-flex; align-items:center; gap:12px; box-shadow:0 5px 15px rgba(0,0,0,0.03); border:1.5px solid #f2f2f7;">
-                    <span style="font-weight:900; color:#06C755;">LINE ID :</span>
-                    <span style="font-weight:900; color:#1d1d1f; font-size:1.2rem;"> 051873 </span>
-                </div>
-                
-                <div style="margin-top:20px;">
-                    <a href="https://line.me/ti/p/5RX7mKrvsa" target="_blank" style="text-decoration:none;">
-                        <button class="luxe-btn" style="width:200px; height:55px; background:#06C755 !important; color:#fff !important; border:none; border-radius:30px; font-weight:900; font-size:1rem;">
-                            <i class="fas fa-comment-dots"></i> 一鍵加好友
-                        </button>
-                    </a>
-                </div>
-                <p style="font-size:0.75rem; color:#ccc; margin-top:20px; font-weight:700;">© 2026 小刀工作室 版權所有</p>
-            </div>
-        </div>`;  
-
+        </div>`;
 
     // 2. 🚀 [關鍵門禁] 只有 admin 才能解鎖最高權限按鈕
     const authLocal = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -1571,39 +1409,25 @@ async function popRenameStore() {
         inputPlaceholder: '請輸入您的店名',
         showCancelButton: true,
         confirmButtonText: '確認更名',
-        confirmButtonColor: '#D4AF37'
+        confirmButtonColor: '#D4AF37',
+        cancelButtonText: '取消'
     });
 
     if (newName) {
         store.storeName = newName;
-        await saveS();      // 1. 同步到雲端
-        updateStoreUI();    // 2. 🚀 這裡會觸發上面的 document.title 更新！
-        renderSet();        // 3. 刷新設定頁面
+        await saveS();      // 1. 同步到雲端與本機
+        updateStoreUI();    // 2. 立即刷新左上角的招牌字
+        renderSet();        // 3. 重新畫設定頁面，更新方塊裡的字
         Swal.fire({ icon: 'success', title: '品牌更名成功！', timer: 1000, showConfirmButton: false });
     }
 }
 
-// --- 🚀 品牌動態同步引擎：讓每一家店都有自己的名字 ---
+// 刷新全站店名圖標的工具
 function updateStoreUI() {
     const name = store.storeName || '專屬空間';
-    
-    // 1. 更新頁面標題 (左上角那個字)
     const el = document.getElementById('main-store-name');
     if (el) el.innerText = name;
-    
-    // 2. 更新網頁標籤名稱
-    document.title = name; 
-
-    // 3. 🚀 核心黑科技：動態修改 iOS 桌面圖標名稱
-    // 這樣客戶在「加入主畫面」時，下方預設字就會是他們改好的店名！
-    let metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-    if (!metaTitle) {
-        // 如果找不到標籤就補一個
-        metaTitle = document.createElement('meta');
-        metaTitle.name = "apple-mobile-web-app-title";
-        document.head.appendChild(metaTitle);
-    }
-    metaTitle.setAttribute('content', name);
+    document.title = name + " V318"; // 連瀏覽器分頁標題也一起換掉
 }
     // --- 各項功能的靈魂 (包含重新激活、導入、導出、標籤管理) ---
 
@@ -1923,116 +1747,6 @@ function initAll() {
 }
 
 // ==========================================================================
-// --- 🚀 V318 預約紀錄大腦進階版 (支援清單直接修改/刪除) ---
-// ==========================================================================
-async function popHistoryLog(targetDate = null) {
-    const ds = targetDate || curD.toLocaleDateString('sv');
-    // 取得該日預約並排序
-    const matched = store.appointments.filter(a => a.date === ds).sort((a,b) => a.time.localeCompare(b.time));
-
-    let listHtml = matched.length ? matched.map(a => {
-        const sty = store.stylists.find(s => String(s.id) === String(a.styId));
-        return `
-        <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid ${sty?.color || '#ddd'}; position:relative;">
-            <div style="display:flex; justify-content:space-between; font-weight:900; margin-bottom:5px; padding-right:60px;">
-                <span style="font-size:1.1rem; color:#1d1d1f;">${a.time} - ${a.n}</span>
-                <span style="color:var(--gold);">$${a.price || 0}</span>
-            </div>
-            <div style="font-size:0.85rem; color:#888; font-weight:700;">
-                <i class="fas fa-cut"></i> ${(a.tags || []).join('+') || '無項目'} | 👤 ${sty?.name || '未指定'}
-            </div>
-            
-            <div style="position:absolute; right:15px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px;">
-                <button onclick="Swal.close(); setTimeout(()=>popBooking('${ds}','${a.id}'), 300)" style="border:none; background:#1d1d1f; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-edit"></i></button>
-                <button onclick="confirmDeleteFromLog('${a.id}', '${ds}')" style="border:none; background:#ff3b30; color:white; width:35px; height:35px; border-radius:10px; font-size:12px;"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>`;
-    }).join('') : '<div style="padding:40px; color:#ccc; font-weight:900; text-align:center;">📅 此日期尚無預約紀錄</div>';
-
-    Swal.fire({
-        title: '<span style="font-weight:900;">預約紀錄查詢</span>',
-        width: '95%',
-        html: `
-            <div style="padding:5px;">
-                <input type="date" id="history-date-picker" class="luxe-btn" style="width:100%; margin-bottom:20px; background:#f2f2f7; font-family:inherit;" value="${ds}">
-                <div style="max-height:480px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:5px;">
-                    ${listHtml}
-                </div>
-            </div>
-        `,
-        confirmButtonText: '關閉',
-        confirmButtonColor: '#1d1d1f',
-        didOpen: () => {
-            const picker = document.getElementById('history-date-picker');
-            if(picker) picker.onchange = (e) => popHistoryLog(e.target.value);
-        }
-    });
-}
-
-// 輔助功能：紀錄清單專用的刪除確認
-async function confirmDeleteFromLog(id, ds) {
-    const { isConfirmed } = await Swal.fire({
-        title: '確定刪除？',
-        text: "刪除後無法復原喔！",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff3b30',
-        cancelButtonColor: '#1d1d1f',
-        confirmButtonText: '是的，刪除',
-        cancelButtonText: '取消'
-    });
-
-    if (isConfirmed) {
-        store.appointments = store.appointments.filter(a => String(a.id) !== String(id));
-        await saveS();
-        // 刪除後自動刷新清單畫面，並同步更新主頁面
-        popHistoryLog(ds);
-        renderCalendar(); 
-        if(typeof renderDay === 'function') renderDay(ds);
-    }
-}
-
-// 2. 金額快速填寫 (解鎖數字鍵盤)
-async function popPriceEdit(aptId, ds) {
-    const a = store.appointments.find(x => String(x.id) === String(aptId));
-    if(!a) return;
-    const { value: price } = await Swal.fire({
-        title: '補填消費金額', input: 'tel', inputValue: a.price || "", 
-        confirmButtonColor: '#1d1d1f', showCancelButton: true,
-        didOpen: () => { const input = Swal.getInput(); if (input) { input.setAttribute('inputmode', 'numeric'); input.focus(); } }
-    });
-    if (price !== undefined) { a.price = price; await saveS(); renderDay(ds); }
-}
-
-
-// --- Aether Flow: 補填金額大腦 (大師修正：保證能打字＋跳數字鍵盤) ---
-async function popPriceEdit(aptId, ds) {
-    const a = store.appointments.find(x => String(x.id) === String(aptId));
-    if(!a) return;
-    const { value: price } = await Swal.fire({
-        title: '補填消費金額', 
-        input: 'tel',             // 🚀 跳數字鍵盤
-        inputValue: a.price || "", 
-        confirmButtonColor: '#1d1d1f', 
-        showCancelButton: true,
-        cancelButtonText: '取消',
-        confirmButtonText: '確定儲存',
-        didOpen: () => {
-            const input = Swal.getInput();
-            if (input) {
-                input.setAttribute('inputmode', 'numeric');
-                input.focus(); 
-            }
-        }
-    });
-    if (price !== undefined) {
-        a.price = price; 
-        await saveS(); 
-        renderDay(ds);
-    }
-}
-
-// ==========================================================================
 // --- S8: 鋼鐵門禁與金鑰生成 ---
 // ==========================================================================
 
@@ -2105,52 +1819,43 @@ if(adminTrigger) {
                 confirmButtonColor: '#D4AF37'
             });
             if (pw === '518') {
-                // 🚀 第一步：互動式選單，現在多了「30天試用版」
+                // 🚀 第一步：互動式選單，決定金鑰權限等級
                 const { value: role } = await Swal.fire({
                     title: '請選擇金鑰授權等級',
                     icon: 'question',
                     input: 'radio',
                     inputOptions: {
-                        'admin': '👑 永久主金鑰 (店長)',
-                        'staff': '👥 永久副金鑰 (團隊)',
-                        'trial': '⏳ 30天限時試用版' // 🚀 新增選項
+                        'admin': '👑 主金鑰 (店長管理員)',
+                        'staff': '👥 副金鑰 (設計師團隊)'
                     },
-                    inputValue: 'staff',
+                    inputValue: 'staff', // 預設為副金鑰，防止手誤生出過多管理者
                     confirmButtonText: '確定生成',
                     confirmButtonColor: '#1d1d1f',
                     background: 'rgba(255,255,255,0.95)',
                     backdrop: `blur(15px)`
                 });
 
+                // 如果妳有點選等級才繼續
                 if (role) {
                     const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
                     
-                    // 🚀 核心邏輯：如果是試用版，計算 30 天後的日期戳記
-                    let expireDate = null;
-                    if (role === 'trial') {
-                        const d = new Date();
-                        d.setDate(d.getDate() + 30); // 往後推 30 天
-                        expireDate = d.getTime();    // 轉換成數字存進資料庫
-                    }
-
-                    // 🚀 第二步：正式寫入 Firebase，新增 expire 欄位！
+                    // 🚀 第二步：正式寫入 Firebase，新增 role 欄位！
                     await db.collection("LicenseKeys_Booking").doc(newKey).set({
                         status: "unused",
                         type: "Booking_V318",
-                        role: role === 'trial' ? 'admin' : role, // 試用版預設給主控權限
-                        expire: expireDate, // 👈 這是妳的「定時炸彈」鎖頭
+                        role: role, // 👈 關鍵通電：這裡就是區分主從的身分標籤
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
-                    // 🚀 第三步：精緻的成功提示
+                    // 🚀 第三步：精緻的成功提示與一鍵複製
                     Swal.fire({
                         title: '成功生成預約金鑰',
                         html: `
                             <div style="background:rgba(212,175,55,0.1); padding:12px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold); font-size:1.1rem;">
-                                授權：${role === 'trial' ? '⏳ 30天限時試用' : (role === 'admin' ? '👑 永久店長' : '👥 團隊成員')}
+                                等級：${role === 'admin' ? '👑 主控店長' : '👥 團隊成員'}
                             </div>
                             <h2 id="copy-target" style="color:#1d1d1f; font-weight:900; margin: 25px 0; letter-spacing:2px; font-size:2rem;">${newKey}</h2>
-                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px; font-size:1.2rem;">
+                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px; font-size:1.2rem; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
                                 <i class="fas fa-copy"></i> 點我直接複製
                             </button>
                         `,
@@ -2164,12 +1869,14 @@ if(adminTrigger) {
     };
 
     const cancelPress = () => clearTimeout(pressTimer);
+
     adminTrigger.addEventListener('touchstart', startPress);
     adminTrigger.addEventListener('mousedown', startPress);
     adminTrigger.addEventListener('touchend', cancelPress);
     adminTrigger.addEventListener('mouseup', cancelPress);
     adminTrigger.addEventListener('mouseleave', cancelPress);
 }
+
 /// 複製功能的鋼鐵大腦 (強效相容版)
 function copyKey(text) {
     // 1. 建立一個隱藏的輸入框
@@ -2223,17 +1930,16 @@ window.addEventListener('load', async () => {
     // 4. 最後檢查金鑰，沒金鑰就跳強制登入
     checkLicense();
 
-   // --- 【以太流：精準防禦攔截器 - 彈窗輸入徹底解鎖版】 ---
+   // --- 【以太流：精準防禦攔截器 - 彈窗解鎖版】 ---
     document.body.addEventListener('touchmove', function(e) {
-        // 🚀 核心解鎖：如果摸到的是彈窗內容、輸入框 (INPUT/TEXTAREA)，絕對不准攔截！
-        if (e.target.closest('.swal2-container') || 
+        // 🚀 關鍵解鎖：如果手指摸的地方是 SweetAlert 彈窗內部，直接放行不攔截！
+        if (e.target.closest('.swal2-html-container') || 
+            e.target.closest('.swal2-popup') || 
             e.target.closest('.content-scroll') || 
-            e.target.closest('.lane-container') ||
-            e.target.tagName === 'INPUT' || 
-            e.target.tagName === 'TEXTAREA' ||
-            e.target.tagName === 'SELECT') {
+            e.target.closest('.lane-container')) {
             return; 
         }
+        // 只有摸到背景標題、導航條等地方才攔截
         e.preventDefault();
     }, { passive: false });
 });
@@ -2299,7 +2005,7 @@ function renderCli() {
     }).join('');
 }
 
-// 🚀 歷史消費紀錄彈窗 (賈伯斯美學：毛玻璃背景 + 滾動限制)
+// 🚀 歷史消費紀錄彈窗 (修正殘影穩定版)
 function popCliHistory(clientName) {
     const history = store.appointments
         .filter(a => (a.n === clientName || a.name === clientName) && a.done)
@@ -2317,7 +2023,7 @@ function popCliHistory(clientName) {
         </div>
     `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-align:center;">尚無成交紀錄</div>';
 
-   Swal.fire({
+    Swal.fire({
         title: `<span style="font-weight:900;">${clientName}</span><br><span style="font-size:0.8rem; color:#aaa;">最近三次消費紀錄</span>`,
         html: `<div style="padding:10px; max-height:450px; overflow-y:auto; -webkit-overflow-scrolling:touch;">${historyHtml}</div>`,
         confirmButtonText: '關閉視窗',
@@ -2325,10 +2031,13 @@ function popCliHistory(clientName) {
         background: 'rgba(255,255,255,0.98)',
         backdrop: `blur(10px)`,
         
-        // 🚀 關鍵修正：防止殘影與跳動
-        showClass: { popup: 'animated fadeInDown faster' }, // 縮短動畫時間
-        hideClass: { popup: 'animated fadeOutUp faster' },
-        scrollbarPadding: false // 禁止系統自動增加滾動條間距
+        // 🚀 這是解決殘影的關鍵技術參數
+        scrollbarPadding: false,      // 禁止自動增加邊距
+        heightAuto: false,            // 禁止自動調整高度
+        didOpen: () => {
+            // 強制鎖定 body 位置，不讓它因為彈窗而平移
+            document.body.style.top = `-${window.scrollY}px`;
+        }
     });
 }
 
@@ -2704,7 +2413,24 @@ async function toggleVIP(aptId, ds) {
 
 
 
-
+// --- Aether Flow: 補填金額大腦 ---
+async function popPriceEdit(aptId, ds) {
+    const a = store.appointments.find(x => String(x.id) === String(aptId));
+    if(!a) return;
+    const { value: price } = await Swal.fire({
+        title: '補填消費金額', 
+        input: 'number', 
+        inputValue: a.price || "", 
+        confirmButtonColor: '#D4AF37'
+    });
+    if (price !== undefined) {
+        a.price = price; 
+        await saveS(); 
+        renderDay(ds);
+        // 如果人在數據頁面，順便刷一下營收圖
+        if(document.getElementById('pg-stat').classList.contains('active')) renderStats();
+    }
+}
 
 // --- 【Aether Flow 穩定修正：人員與項目修改邏輯】 ---
 
@@ -2715,16 +2441,17 @@ async function editStyTrig(id, old) {
         input: 'text', 
         inputValue: old,
         showCancelButton: true,
-        confirmButtonColor: '#1d1d1f'
+        confirmButtonColor: 'var(--gold)'
     });
     if (n) {
         const target = store.stylists.find(s => String(s.id) === String(id));
         if(target) {
             target.name = n;
-            await saveS(); // 🚀 先噴訊息
+            await saveS();
+            popStyDrawer(); // 關鍵：存完檔立刻跳回清單，防止閃退
         }
     } else {
-       
+        popStyDrawer(); // 取消也跳回清單，維持連貫感
     }
 }
 
@@ -2742,8 +2469,10 @@ async function editTagTrig(id, old) {
         if(target) {
             target.name = n;
             await saveS();
+            popTagDrawer(); // 關鍵：存完檔立刻跳回清單
         }
     } else {
+        popTagDrawer(); // 取消也跳回清單
     }
 }
 // ==========================================================================
@@ -2785,17 +2514,23 @@ async function addStyTrig() {
         inputPlaceholder: '請輸入設計師姓名',
         showCancelButton: true,
         confirmButtonText: '確認新增',
-        confirmButtonColor: '#1d1d1f'
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonText: '取消'
     });
     
     if (n && n.trim() !== "") {
-        store.stylists.push({ id: Date.now(), name: n.trim(), color: '#D4AF37' });
+        // 1. 寫入本地數據
+        store.stylists.push({ 
+            id: Date.now(), 
+            name: n.trim(), 
+            color: '#D4AF37' 
+        });
         
-        // 🚀 關鍵微調：先執行同步並「徹底等待」提示噴完
+        // 2. 🚀 核心：等待雲端存檔完成，這會觸發 saveS 裡的綠色 Toast
         await saveS(); 
         
-        // 延遲一下下再開列表，不然綠色訊息會被蓋掉
-        setTimeout(() => { popStyDrawer(); }, 500); 
+        // 3. 刷回名單
+        popStyDrawer(); 
     } else {
         popStyDrawer();
     }
@@ -2875,32 +2610,22 @@ async function pickOffMulti() {
         }
     });
 }
-// 4. 刪除設計師的配套邏輯 (修正版：保證跳出同步訊息)
-async function confirmDelSty(id) {
-    const result = await Swal.fire({
+// 4. 刪除設計師的配套邏輯 (防止原本 confirmDelSty 沒寫完)
+function confirmDelSty(id) {
+    Swal.fire({
         title: '確定移除此成員？',
         text: "相關預約將保留，但不再顯示代表色",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff4d4d',
-        cancelButtonColor: '#aaa',
-        confirmButtonText: '確定移除',
-        cancelButtonText: '取消'
+        confirmButtonText: '確定移除'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
+            await saveS();
+            popStyDrawer();
+        }
     });
-
-    if (result.isConfirmed) {
-        // 1. 先過濾掉該成員
-        store.stylists = store.stylists.filter(s => String(s.id) !== String(id));
-        
-        // 2. 執行存檔並強制等待 (這步會噴出綠色訊息)
-        await saveS(); 
-        
-        // 3. 關閉抽屜回到設定頁
-        popStyDrawer();
-        
-        // 4. 重新刷一下設定頁面的顯示
-        if(typeof renderSet === 'function') renderSet();
-    }
 }
 // --- 【以太流：顧客資料修改引擎】 ---
 async function editCli(oldName) {
