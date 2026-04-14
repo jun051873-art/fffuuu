@@ -86,6 +86,15 @@
     :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
+    /* --- Aether Flow: 物理釘子修正版 --- */
+html, body { 
+    height: 100%; width: 100%; margin: 0; padding: 0; 
+    /* 這裡要保留，防止整片背景彈跳 */
+    overflow: hidden !important; 
+    position: fixed !important; 
+    /* 修改這裡，背景有深度，毛玻璃才會漂亮 */
+background: #f9f9fb !important;
+}
 
 /* --- 內容捲軸區：核心解鎖 --- */
 .content-scroll {
@@ -167,7 +176,13 @@
     z-index: 1000;
     border-bottom: 0.5px solid rgba(0,0,0,0.05) !important;
 }
-
+.content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 🚀 這裡調整為 160px，確保下方的 + 按鈕跟導航不吃字 */
+    padding-bottom: 160px !important; 
+}        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); margin: 15px 45px; border-radius: 40px; overflow: hidden; background: #f2f2f7; border: 0.3px solid var(--gold); }
         .cal-day { background: #fff; min-height: 135px; padding: 20px; cursor: pointer; border: 0.3px solid rgba(212, 175, 55, 0.15); font-size: 1.5rem; position: relative; }
         .cal-day.today-highlight { background: rgba(212, 175, 55, 0.08) !important; }
         .client-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 25px; padding: 25px; }
@@ -276,6 +291,9 @@
         .nav-item i { font-size: 1.4rem; margin-bottom: 2px; } /* 圖示縮小一點點 */
         .nav-item span { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.5px; }
 
+        /* 內容區塊的間距調整，確保不被導航條遮住 */
+        .content-scroll { padding-bottom: 150px !important; }
+
         .page { display: none; width: 100%; height: 100%; }
         .page.active { display: flex; flex-direction: column; }
         .tag-pill { font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 12px; background: #f0f0f0; color: #aaa; cursor: pointer; border: 1px solid #eee; transition: 0.2s; }
@@ -296,47 +314,13 @@
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
         /* --- 【V318 全設備自適應大腦】 --- */
-      /* --- 🚀 V318 手機直立版：全方位空間解鎖方案 --- */
-        @media (max-width: 960px) {
-            /* ✅ 1. 解決店名強行換行：縮減按鈕與間距 */
-            .header {
-                padding: 35px 15px 10px !important;
-                flex-wrap: nowrap !important; /* 強制不換行 */
-            }
-            .glow-title { 
-                font-size: 1.5rem !important; 
-                white-space: nowrap; /* 確保店名橫著走 */
-            }
-            .picker-style { width: 105px !important; height: 38px !important; }
-            .sm-btn { padding: 0 8px !important; height: 38px !important; }
-
-            /* ✅ 2. 解決日曆對齊：左右邊界鎖定 10px */
-            .calendar-header { margin: 15px 10px 0 !important; font-size: 0.8rem !important; }
-            .calendar-grid {
-                margin: 5px 10px 20px !important;
-                width: calc(100% - 20px) !important;
-            }
-            .cal-day { min-height: 85px !important; }
-
-            /* ✅ 3. 解決 ➕ 號與導航重疊：各走各的路 */
-            .nav {
-                width: 92% !important;
-                height: 70px !important;
-                bottom: 15px !important;
-                z-index: 5000;
-            }
-            .fab {
-                /* 🚀 將加號抬升到導航條上方 25px 的位置，絕對互不相碰 */
-                bottom: 110px !important; 
-                right: 25px !important;
-                width: 65px !important;
-                height: 65px !important;
-                z-index: 6000;
-                box-shadow: 0 10px 25px rgba(212,175,55,0.4) !important;
-            }
+       @media (max-width: 768px) {
+            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
+            .content-scroll { padding-bottom: 200px !important; }
             
-            /* 確保日曆最後一行不被遮擋 */
-            .content-scroll { padding-bottom: 250px !important; }
+            /* 縮小導航條高度以適應手機比例 */
+            .nav { height: 75px; bottom: 25px; }
+            .cal-day { min-height: 95px; font-size: 1.1rem; }
         }
 
         /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
@@ -524,6 +508,15 @@ html, body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* 確保只有每一頁內部的滾動區可以滑動 */
+.content-scroll {
+    overflow-y: auto;
+    /* 這是關鍵：允許內部滾動，但不觸發外部回彈 */
+    overscroll-behavior-y: contain; 
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+}
+
 /* 針對顧客頁面特別強化 */
 #pg-cli .content-scroll {
     touch-action: pan-y; /* 只允許上下滑動，禁止手勢誤觸 */
@@ -562,7 +555,7 @@ html, body {
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
 <div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"> 紀錄</div>
+    <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
     <div class="luxe-btn" onclick="goToday()">今天</div>
 </div>    
             
