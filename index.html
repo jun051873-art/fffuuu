@@ -582,14 +582,23 @@ html, body {
     </div>
 
     <div id="pg-cli" class="page">
-       <div class="header">
-            <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
-            <div style="display:flex; gap:20px; align-items:center;">
-                <div class="luxe-btn" onclick="popCliSearch()"><i class="fas fa-search"></i></div>
-                <select id="cli-f-sty" class="luxe-btn" onchange="renderCli()" style="width:180px;"></select>
-                <div class="luxe-btn" onclick="addCliTrig()" style="font-size:1.8rem; padding:12px 30px;"><i class="fas fa-user-plus"></i></div>
+    <div class="header cli-header-fix">
+        <div class="cli-title-box" onclick="cliKw=''; renderCli();">
+            <h1 style="margin:0; font-size:1.8rem; font-weight:900; letter-spacing:-1px;">顧客名冊</h1>
+        </div>
+
+        <div class="cli-controls">
+            <div class="luxe-btn sm-search-btn" onclick="popCliSearch()">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <select id="cli-f-sty" class="luxe-btn sm-select-btn" onchange="renderCli()"></select>
+            
+            <div class="luxe-btn sm-add-btn" onclick="addCliTrig()">
+                <i class="fas fa-user-plus"></i>
             </div>
         </div>
+    </div>
         <div class="content-scroll"><div class="client-grid-container" id="cli-list"></div></div>
     </div>
 
