@@ -56,21 +56,6 @@
     white-space: nowrap;
 }
 
-/* 🚀 手機直立模式的極致調優 */
-@media (max-width: 430px) {
-    .header {
-        flex-direction: column;
-        align-items: flex-start !important;
-        padding-top: 45px !important;
-    }
-    .header-controls {
-        width: 100%;
-        margin-top: 10px;
-        justify-content: space-between; /* 讓月份跟按鈕分居左右兩端 */
-    }
-}
-
-
 /* 🚀 日曆週標題下移，增加上方呼吸感 */
 .calendar-header {
     display: grid !important;
@@ -368,16 +353,7 @@ background: #f9f9fb !important;
         .shield-input { border-radius: 15px !important; width: 75px !important; height: 45px !important; text-align: center !important; border: 1.5px solid var(--gold) !important; background: #fff !important; font-weight: 900 !important; font-size: 1.2rem !important; display: inline-block !important; margin: 0 5px !important; }
         .tag-chip { display: inline-block; padding: 15px 28px; border-radius: 30px; border: 1px solid var(--gold); margin: 8px; font-weight: 900; font-size: 1.2rem; cursor: pointer; background: #fff; transition: 0.3s; }
         .tag-chip.selected { background: linear-gradient(135deg, var(--gold), #f3d060); color: #fff; border-color: var(--gold); }
-        /* --- 【V318 全設備自適應大腦】 --- */
-       @media (max-width: 768px) {
-            /* 針對小螢幕，讓內容滾動區留出更多底部空間，防止被導航擋住 */
-            .content-scroll { padding-bottom: 200px !important; }
-            
-            /* 縮小導航條高度以適應手機比例 */
-            .nav { height: 75px; bottom: 25px; }
-            .cal-day { min-height: 95px; font-size: 1.1rem; }
-        }
-
+        
         /* 針對 iPhone 底部橫線自動避讓 (核心私心代碼) */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .nav { bottom: calc(25px + env(safe-area-inset-bottom)) !important; }
@@ -599,6 +575,41 @@ html, body {
     color: var(--primary);
     opacity: 0.3;
     letter-spacing: 2px;
+}
+
+/* 🚀 旗艦級智慧自適應：手機直立專屬 */
+@media (max-width: 480px) {
+    /* 1. 標頭：店名縮小，按鈕自動分層 */
+    .header {
+        padding: 40px 15px 15px !important;
+        flex-wrap: wrap !important;
+    }
+    .glow-title { 
+        font-size: 1.8rem !important; 
+        flex: 1; 
+    }
+    .header-controls {
+        width: 100%;
+        margin-top: 5px;
+        justify-content: space-between !important; /* 月份跟按鈕分居左右 */
+    }
+    .picker-style { width: 115px !important; font-size: 0.8rem !important; }
+    .sm-btn { padding: 0 10px !important; font-size: 0.8rem !important; }
+
+    /* 2. 日曆：縮小置中，不晃動 */
+    .calendar-header { margin: 20px 15px 0 !important; font-size: 0.8rem !important; }
+    .calendar-grid {
+        margin: 5px 12px 20px !important; /* 👈 精準置中間距 */
+        width: calc(100% - 24px) !important;
+    }
+    .cal-day {
+        min-height: 85px !important; /* 👈 高度縮小，防止吃字 */
+        padding: 8px !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* 3. 底部空間防護 */
+    .content-scroll { padding-bottom: 220px !important; }
 }
 
   </style>
