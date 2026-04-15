@@ -146,9 +146,18 @@ body.swal2-shown {
 }
          .glow-title { font-size: 2.2rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #1d1d1f 20%, #D4AF37 40%, #D4AF37 60%, #1d1d1f 80%); background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine 5s linear infinite; }
         @keyframes shine { to { background-position: 200% center; } }
-        .fab { position: fixed; bottom: 140px; right: 40px; width: 85px; height: 85px; background: #fff; border: 2.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.5rem; z-index: 3000; box-shadow: 0 15px 35px rgba(212,175,55,0.25); }
-        .luxe-btn { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--luxe-border); border-radius: var(--round-pill); padding: 18px 32px; font-weight: 800; cursor: pointer; color: var(--primary); font-size: 1.2rem; height: 65px; display: inline-flex; align-items: center; justify-content: center; }
-        .header {
+.fab { 
+            position: fixed !important; 
+            /* 🚀 關鍵：讓它根據安全區自動加高，110px 是基礎高度 */
+            bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important; 
+            right: 30px !important; 
+            width: 65px; height: 65px; background: #fff; border: 2.5px solid var(--gold); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            color: var(--gold); font-size: 1.8rem; z-index: 6000; 
+            box-shadow: 0 10px 25px rgba(212,175,55,0.4); 
+            transition: transform 0.2s ease;
+        }
+        .fab:active { transform: scale(0.9); }        .header {
     padding: 65px 45px 25px;
     display: flex;
     justify-content: space-between;
