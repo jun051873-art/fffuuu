@@ -1544,7 +1544,14 @@ function popTimeDrawer() {
             saveS(); // 同步雲端
             renderSet(); // 刷新設定頁面顯示
           
-          // --- 🚀 副授權管理系統核心 ---
+            // 提醒妳：儲存後，跑道會根據新的時間自動重新生成
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'success', title: '營業時間已更新' });
+        } 
+    });
+}
+
+// --- 🚀 副授權管理系統核心 (已移出至正確作用域，保證點擊有反應) ---
 
 // A. 載入屬於這間店的所有副授權
 async function loadSubKeys() {
@@ -1582,7 +1589,7 @@ async function loadSubKeys() {
     }
 }
 
-      // B. 生成副鑰彈窗 (指定人員) - 旗艦穩定版
+// B. 生成副鑰彈窗 (指定人員) - 旗艦穩定版
 async function popCreateSubKey() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
@@ -1657,12 +1664,6 @@ async function revokeSubKey(keyId, name) {
             if (typeof loadSubKeys === 'function') loadSubKeys(); 
         }, 500); 
     }
-}      
-            // 提醒妳：儲存後，跑道會根據新的時間自動重新生成
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
-            Toast.fire({ icon: 'success', title: '營業時間已更新' });
-        } 
-    });
 }
 // --- 【品牌自定義大腦：一鍵更名系統】 ---
 async function popRenameStore() {
