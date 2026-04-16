@@ -714,31 +714,31 @@ async function pullFromCloud() {
             // 這樣就算妳換了店號的 syncCode，只要這把鑰匙沒被妳手動刪除或停用，員工就進得來
             const keyCheck = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             
-           // 🚀 升級版門衛：檢查金鑰是否存在、是否被撤銷、是否過期
-            const keyData = keyCheck.data();
-            const now = new Date().getTime();
+           // 【修改後的代碼段落】
+const keyData = keyCheck.data();
+const now = new Date().getTime();
 
-            if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
-                
-                // 定義錯誤訊息（根據不同原因顯示不同字）
-                let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
-                if (keyData.expire && now > keyData.expire) {
-                    errMsg = '您的 30 天試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
-                }
+// 🚀 強化門衛：檢查金鑰是否存在、是否被撤銷、或是否過期
+if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
+    let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
+    
+    // 🚀 新增：判斷是否是因為過期
+    if (keyData.expire && now > keyData.expire) {
+        errMsg = '您的試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
+    }
 
-                Swal.fire({
-                    icon: 'error',
-                    title: '授權失效',
-                    text: errMsg,
-                    confirmButtonColor: '#1d1d1f',
-                    confirmButtonText: '確定',
-                    allowOutsideClick: false
-                }).then(() => {
-                    localStorage.removeItem('v318_booking_auth');
-                    location.reload(); 
-                });
-                return;
-            }
+    Swal.fire({
+        icon: 'error',
+        title: '授權失效',
+        text: errMsg,
+        confirmButtonColor: '#1d1d1f',
+        allowOutsideClick: false
+    }).then(() => {
+        localStorage.removeItem('v318_booking_auth');
+        location.reload(); 
+    });
+    return;
+}
 
             // 驗證通過，將雲端數據刷入手機
             store = cloudData;
@@ -984,9 +984,14 @@ function renderDay(ds) {
     if(dayTitleEl) dayTitleEl.innerText = `${ds} (週${days[new Date(ds).getDay()]})`; 
     const area = document.getElementById('day-lanes'); if(!area) return;
     area.innerHTML = '';
-    const start = parseInt(store.startH || '11'), end = parseInt(store.endH || '19');
-    const hours = []; for(let i=start; i<=end; i++) hours.push(`${i}:00`);
-
+   // --- 修改後的跑道時段生成 ---
+const start = parseInt(store.startH || '0'); // 從 0 點開始（或維持妳設定的開始時間）
+const end = parseInt(store.endH || '23');   // 到 23 點結束
+const hours = [];
+for (let i = start; i <= end; i++) {
+    // 🚀 關鍵：確保顯示為 00:00, 01:00... 格式
+    hours.push(`${String(i).padStart(2, '0')}:00`); 
+}
     store.stylists.forEach(s => {
         const lane = document.createElement('div'); lane.className = 'lane';
         lane.innerHTML = `<div style="text-align:center; font-weight:900; color:${s.color}; font-size:1.8rem; margin-bottom:20px;">${s.name}</div>`;
@@ -1163,7 +1168,8 @@ function renderSet() {
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                         <span style="font-weight:900;">目前店號：</span>
                         <span style="color:var(--gold); font-weight:900;">${auth.id}</span>
-                    </div>
+                    <div id="trial-timer-zone"></div>
+                        </div>
                     <button class="luxe-btn" style="width:100%; height:50px; background:#ffefef; color:#ff4d4d; border:none; margin-top:10px;" id="btn-reauth-real">重新激活系統</button>
                 </div>
                 <div id="master-admin-zone"></div>
@@ -1225,7 +1231,34 @@ function renderSet() {
     
     const reBtn = document.getElementById('btn-reauth-real');
     if(reBtn) reBtn.onclick = (e) => { e.stopPropagation(); reAuth(); };
-}
+if(reBtn) reBtn.onclick = (e) => { e.stopPropagation(); reAuth(); };
+
+    // 🚀 倒計時邏輯：自動去雲端看這把鑰匙還剩多久
+    const checkKeyTimer = async () => {
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        if (!auth?.key) return;
+        try {
+            const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
+            if (keySnap.exists && keySnap.data().expire) {
+                const diff = keySnap.data().expire - new Date().getTime();
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const zone = document.getElementById('trial-timer-zone');
+                    if (zone) {
+                        zone.innerHTML = `
+                            <div style="margin-top:10px; padding:12px; background:rgba(255,77,77,0.05); border-radius:15px; border:1px solid #ff4d4d; display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:#ff4d4d; font-weight:900; font-size:0.8rem;"><i class="fas fa-hourglass-half"></i> 試用剩餘：</span>
+                                <span style="color:#1d1d1f; font-weight:900; font-size:0.9rem;">${days}天 ${hours}小時</span>
+                            </div>`;
+                    }
+                }
+            }
+        } catch(e) { console.log("Timer Error:", e); }
+    };
+    checkKeyTimer();
+} // 👈 這是 renderSet 真正的結束標籤，要保留喔！
+
 
 // --- 【Aether Flow：排休抽屜旗艦版 - 恢復黑灰按鈕美學】 ---
 function popOffDayDrawer() {
@@ -1460,19 +1493,52 @@ function popTagDrawer() {
         }
     });
 }
-// 0. 營業時間抽屜
+// 0. 營業時間設定 (24小時制優化版)
 function popTimeDrawer() {
     Swal.fire({
-        title: '營業時間設定',
-        html: `<div style="display:flex; align-items:center; gap:15px; padding:20px;">
-                <input type="time" class="luxe-btn" id="new-startH" value="${store.startH}" style="flex:1;">
-                <span style="font-weight:900; color:#ccc;">至</span>
-                <input type="time" class="luxe-btn" id="new-endH" value="${store.endH}" style="flex:1;">
-               </div>`,
-        confirmButtonText: '確認儲存', confirmButtonColor: '#D4AF37',
+        title: '營業時間設定 (24H)',
+        html: `
+            <div style="padding: 10px;">
+                <p style="font-size:0.85rem; color:#888; margin-bottom:15px; font-weight:900;">請設定店舖每日營業起訖時段</p>
+                <div style="display:flex; align-items:center; gap:15px; padding:10px;">
+                    <div style="flex:1;">
+                        <span style="font-size:0.75rem; color:var(--gold); font-weight:900; display:block; margin-bottom:5px;">開始時間</span>
+                        <input type="time" class="luxe-btn" id="new-startH" value="${store.startH || '11:00'}" style="width:100%; border-radius:20px; text-align:center;">
+                    </div>
+                    <span style="font-weight:900; color:#ccc; margin-top:20px;">至</span>
+                    <div style="flex:1;">
+                        <span style="font-size:0.75rem; color:var(--gold); font-weight:900; display:block; margin-bottom:5px;">結束時間</span>
+                        <input type="time" class="luxe-btn" id="new-endH" value="${store.endH || '20:00'}" style="width:100%; border-radius:20px; text-align:center;">
+                    </div>
+                </div>
+                <p style="font-size:0.75rem; color:#ccc; margin-top:15px;">※ 系統將根據此時段自動生成 24H 預約跑道</p>
+            </div>`,
+        confirmButtonText: '確認儲存', 
+        confirmButtonColor: '#1d1d1f', // 換回妳最愛的精品黑
         showCancelButton: true,
-        preConfirm: () => ({ start: document.getElementById('new-startH').value, end: document.getElementById('new-endH').value })
-    }).then(r => { if(r.value){ store.startH=r.value.start; store.endH=r.value.end; saveS(); renderSet(); } });
+        cancelButtonText: '取消',
+        reverseButtons: true,
+        preConfirm: () => {
+            const start = document.getElementById('new-startH').value;
+            const end = document.getElementById('new-endH').value;
+            if (!start || !end) {
+                Swal.showValidationMessage('請完整填寫起訖時間');
+                return false;
+            }
+            return { start, end };
+        }
+    }).then(r => { 
+        if(r.value){ 
+            store.startH = r.value.start; 
+            store.endH = r.value.end; 
+            saveS(); // 同步雲端
+            renderSet(); // 刷新設定頁面顯示
+            
+            // 提醒妳：儲存後，跑道會根據新的時間自動重新生成
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'success', title: '營業時間已更新' });
+        } 
+    });
 }
 // --- 【品牌自定義大腦：一鍵更名系統】 ---
 async function popRenameStore() {
@@ -1989,25 +2055,25 @@ async function checkLicense() {
         if (res && res.key) {
             try {
                 const doc = await db.collection("LicenseKeys_Booking").doc(res.key).get();
-                if (doc.exists && doc.data().status === "unused") {
-                    
-                    // 🚀 關鍵：從雲端抓取該金鑰的身分 (若無設定則預設為 staff)
-                    const cloudRole = doc.data().role || 'staff';
+              if (doc.exists && doc.data().status === "unused") {
+    // 🚀 新增：抓取雲端設定的角色(admin/staff)與期限(expire)
+    const cloudRole = doc.data().role || 'staff'; 
+    const expireAt = doc.data().expire || null;
 
-                    await db.collection("LicenseKeys_Booking").doc(res.key).update({
-                        status: "used",
-                        salonId: res.id,
-                        activatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+    await db.collection("LicenseKeys_Booking").doc(res.key).update({
+        status: "used",
+        salonId: res.id,
+        activatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-                    // 🚀 關鍵：把身分 (role) 跟著店號一起存進手機
-                    const finalAuth = { 
-                        key: res.key, 
-                        id: res.id, 
-                        role: cloudRole 
-                    };
-                    localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
-
+    // 🚀 新增：存入手機時，多存入 role 與 expire 資訊
+    const finalAuth = { 
+        key: res.key, 
+        id: res.id, 
+        role: cloudRole,
+        expire: expireAt 
+    };
+    localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
                     Swal.fire({
                         icon: 'success',
                         title: '激活成功',
@@ -2041,55 +2107,50 @@ if(adminTrigger) {
                 inputPlaceholder: '請輸入管理密碼',
                 confirmButtonColor: '#D4AF37'
             });
-            if (pw === '518') {
-                // 🚀 第一步：互動式選單，現在多了「30天試用版」
-                const { value: role } = await Swal.fire({
-                    title: '請選擇金鑰授權等級',
-                    icon: 'question',
-                    input: 'radio',
-                    inputOptions: {
-                        'admin': '👑 永久主金鑰 (店長)',
-                        'staff': '👥 永久副金鑰 (團隊)',
-                        'trial': '⏳ 30天限時試用版' // 🚀 新增選項
-                    },
-                    inputValue: 'staff',
-                    confirmButtonText: '確定生成',
-                    confirmButtonColor: '#1d1d1f',
-                    background: 'rgba(255,255,255,0.95)',
-                    backdrop: `blur(15px)`
-                });
+           if (pw === '518') {
+    // 🚀 修改：移除員工選項，只保留店長與試用
+    const { value: role } = await Swal.fire({
+        title: '請選擇金鑰授權等級',
+        input: 'radio',
+        inputOptions: {
+            'admin': '👑 店長 (永久主鑰)',
+            'trial': '⏳ 試用 (自定天數)' 
+        },
+        inputValue: 'admin', // 預設改為店長
+        confirmButtonColor: '#1d1d1f'
+    });
 
-                if (role) {
-                    const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-                    
-                    // 🚀 核心邏輯：如果是試用版，計算 30 天後的日期戳記
-                    let expireDate = null;
-                    if (role === 'trial') {
-                        const d = new Date();
-                        d.setDate(d.getDate() + 30); // 往後推 30 天
-                        expireDate = d.getTime();    // 轉換成數字存進資料庫
-                    }
+    if (role) {
+        let expireTimestamp = null;
+        if (role === 'trial') {
+            const { value: days } = await Swal.fire({
+                title: '設定試用天數',
+                input: 'number',
+                inputValue: 30,
+                confirmButtonColor: '#1d1d1f'
+            });
+            if (!days) return;
+            const d = new Date();
+            d.setDate(d.getDate() + parseInt(days));
+            expireTimestamp = d.getTime(); 
+        }
 
-                    // 🚀 第二步：正式寫入 Firebase，新增 expire 欄位！
-                    await db.collection("LicenseKeys_Booking").doc(newKey).set({
-                        status: "unused",
-                        type: "Booking_V318",
-                        role: role === 'trial' ? 'admin' : role, // 試用版預設給主控權限
-                        expire: expireDate, // 👈 這是妳的「定時炸彈」鎖頭
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    // 🚀 第三步：精緻的成功提示
+        const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        await db.collection("LicenseKeys_Booking").doc(newKey).set({
+            status: "unused",
+            role: 'admin', // 🚀 因為妳不要員工選項，所以生成出來的統一都是 admin 權限（試用版也給 admin 才能測試功能）
+            expire: expireTimestamp, 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
                     Swal.fire({
                         title: '成功生成預約金鑰',
                         html: `
-                            <div style="background:rgba(212,175,55,0.1); padding:12px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold); font-size:1.1rem;">
-                                授權：${role === 'trial' ? '⏳ 30天限時試用' : (role === 'admin' ? '👑 永久店長' : '👥 團隊成員')}
+                            <div style="background:rgba(212,175,55,0.1); padding:12px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold);">
+                                授權期限：${displayDays}
                             </div>
-                            <h2 id="copy-target" style="color:#1d1d1f; font-weight:900; margin: 25px 0; letter-spacing:2px; font-size:2rem;">${newKey}</h2>
-                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px; font-size:1.2rem;">
-                                <i class="fas fa-copy"></i> 點我直接複製
-                            </button>
+                            <h2 style="color:#1d1d1f; font-weight:900; margin: 25px 0;">${newKey}</h2>
+                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px;">點我直接複製</button>
                         `,
                         showConfirmButton: false
                     });
