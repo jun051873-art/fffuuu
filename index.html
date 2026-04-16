@@ -2094,63 +2094,76 @@ async function checkLicense() {
         pullFromCloud(); 
     }
 }
-// 支援手機觸控、平板、電腦滑鼠長按 3 秒生成金鑰
+
+// --- 🚀 V318 管理員長按生成引擎 (店長專屬修復版) ---
 let pressTimer;
 const adminTrigger = document.getElementById('admin-trigger');
 
 if(adminTrigger) {
     const startPress = (e) => {
+        // 長按 3 秒觸發驗證
         pressTimer = setTimeout(async () => {
             const { value: pw } = await Swal.fire({ 
                 title: '管理員驗證', 
                 input: 'password', 
                 inputPlaceholder: '請輸入管理密碼',
-                confirmButtonColor: '#D4AF37'
+                confirmButtonColor: '#1d1d1f' // 精品黑
             });
-           if (pw === '518') {
-    // 🚀 修改：移除員工選項，只保留店長與試用
-    const { value: role } = await Swal.fire({
-        title: '請選擇金鑰授權等級',
-        input: 'radio',
-        inputOptions: {
-            'admin': '👑 店長 (永久主鑰)',
-            'trial': '⏳ 試用 (自定天數)' 
-        },
-        inputValue: 'admin', // 預設改為店長
-        confirmButtonColor: '#1d1d1f'
-    });
 
-    if (role) {
-        let expireTimestamp = null;
-        if (role === 'trial') {
-            const { value: days } = await Swal.fire({
-                title: '設定試用天數',
-                input: 'number',
-                inputValue: 30,
-                confirmButtonColor: '#1d1d1f'
-            });
-            if (!days) return;
-            const d = new Date();
-            d.setDate(d.getDate() + parseInt(days));
-            expireTimestamp = d.getTime(); 
-        }
+            if (pw === '518') {
+                // 🚀 第一步：選擇授權等級 (只保留店長與試用)
+                const { value: role } = await Swal.fire({
+                    title: '請選擇金鑰授權等級',
+                    input: 'radio',
+                    inputOptions: {
+                        'admin': '👑 店長 (永久主鑰)',
+                        'trial': '⏳ 試用 (自定天數)' 
+                    },
+                    inputValue: 'admin',
+                    confirmButtonColor: '#1d1d1f'
+                });
 
-        const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-        await db.collection("LicenseKeys_Booking").doc(newKey).set({
-            status: "unused",
-            role: 'admin', // 🚀 因為妳不要員工選項，所以生成出來的統一都是 admin 權限（試用版也給 admin 才能測試功能）
-            expire: expireTimestamp, 
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+                if (role) {
+                    let expireTimestamp = null;
+                    let displayDays = "永久授權"; // 預設顯示文字
 
+                    // 🚀 第二步：如果是試用，設定天數
+                    if (role === 'trial') {
+                        const { value: days } = await Swal.fire({
+                            title: '設定試用天數',
+                            input: 'number',
+                            inputValue: 30,
+                            confirmButtonColor: '#1d1d1f'
+                        });
+                        if (!days) return;
+                        const d = new Date();
+                        d.setDate(d.getDate() + parseInt(days));
+                        expireTimestamp = d.getTime(); 
+                        displayDays = days + " 天試用期"; 
+                    }
+
+                    // 🚀 第三步：生成 8 位大寫序號
+                    const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+                    // 🚀 第四步：寫入 Firebase 雲端
+                    await db.collection("LicenseKeys_Booking").doc(newKey).set({
+                        status: "unused",
+                        role: 'admin', // 統一給予店長管理權限
+                        expire: expireTimestamp, 
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // 🚀 第五步：顯示生成結果與複製鈕
                     Swal.fire({
                         title: '成功生成預約金鑰',
                         html: `
-                            <div style="background:rgba(212,175,55,0.1); padding:12px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold);">
+                            <div style="background:rgba(212,175,55,0.1); padding:15px; border-radius:20px; margin-bottom:15px; font-weight:900; color:var(--gold);">
                                 授權期限：${displayDays}
                             </div>
-                            <h2 style="color:#1d1d1f; font-weight:900; margin: 25px 0;">${newKey}</h2>
-                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px;">點我直接複製</button>
+                            <h2 style="color:#1d1d1f; font-weight:900; margin: 25px 0; letter-spacing:2px; font-size:2.2rem;">${newKey}</h2>
+                            <button onclick="copyKey('${newKey}')" class="luxe-btn" style="width:100%; height:65px; background:#1d1d1f; color:#fff; border:none; border-radius:35px; cursor:pointer; font-weight:900;">
+                                <i class="fas fa-copy"></i> 點我直接複製
+                            </button>
                         `,
                         showConfirmButton: false
                     });
@@ -2168,6 +2181,7 @@ if(adminTrigger) {
     adminTrigger.addEventListener('mouseup', cancelPress);
     adminTrigger.addEventListener('mouseleave', cancelPress);
 }
+
 /// 複製功能的鋼鐵大腦 (強效相容版)
 function copyKey(text) {
     // 1. 建立一個隱藏的輸入框
