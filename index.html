@@ -815,30 +815,80 @@ function startSecurityHeartbeat() {
     }, 10000); // 10秒自動跑一次，不刷新也能抓到妳撤銷了
 }
 
-// 🚀 執行系統全封鎖 (屏蔽所有功能)
+// 🚀 V318 背景即時安全性監控：每 10 秒自動檢查一次
+function startSecurityHeartbeat() {
+    // 這裡設定 10 秒檢查一次雲端鑰匙狀態
+    setInterval(async () => {
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        // 如果連登入都沒有，就不檢查
+        if (!auth || !auth.key) return;
+
+        try {
+            // 🎯 去 Firebase 抓取這把鑰匙的最新狀態
+            const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
+            const now = new Date().getTime();
+            
+            let isBlock = false;
+            let reason = "";
+
+            // 1. 檢查金鑰是否存在 (如果妳撤銷了，這裡會變成不存在)
+            if (!keySnap.exists) {
+                isBlock = true;
+                reason = "您的授權已被店長撤銷";
+            } else {
+                const keyData = keySnap.data();
+                // 2. 檢查試用期是否截止
+                if (keyData.expire && now > keyData.expire) {
+                    isBlock = true;
+                    reason = "試用期限已屆滿";
+                }
+                // 3. 檢查店號是否被竄改
+                if (auth.id !== keyData.salonId) {
+                    isBlock = true;
+                    reason = "店號驗證異常";
+                }
+            }
+
+            // 🚀 核心：如果偵測到問題，立即執行毀滅性封鎖
+            if (isBlock) {
+                executeSystemLockdown(reason);
+            }
+        } catch (e) {
+            console.log("安全監控正常運作中...");
+        }
+    }, 10000); 
+}
+
+// 🚀 執行系統全封鎖：清空資料 + 全螢幕遮蔽 (讓員工看不了顧客)
 function executeSystemLockdown(reason) {
-    // 1. 清除本地所有資料，讓他斷網也看不到
+    // 1. 毀滅性清除：把本機的所有客人、預約、權限全部刪掉
     localStorage.removeItem('v318_booking_auth');
     localStorage.removeItem('SALON_LOCK_V318');
     
-    // 2. 插入全螢幕黑色遮罩，屏蔽所有設定與數據
-    const mask = document.createElement('div');
-    mask.style = `
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: #1d1d1f; color: white; z-index: 999999;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        font-family: sans-serif; text-align: center; padding: 20px;
-    `;
-    mask.innerHTML = `
-        <i class="fas fa-shield-alt" style="font-size: 4rem; color: #ff4d4d; margin-bottom: 20px;"></i>
-        <h1 style="font-size: 1.5rem; font-weight: 900;">系統存取已受限</h1>
-        <p style="color: #888; margin-top: 10px;">原因：${reason}</p>
-        <p style="margin-top: 30px; font-size: 0.9rem; color: #D4AF37;">請聯繫店長重新取得授權金鑰</p>
-        <button onclick="location.reload()" style="margin-top: 40px; padding: 12px 30px; border-radius: 25px; border: 1px solid #fff; background: transparent; color: white;">返回登入介面</button>
-    `;
-    document.body.appendChild(mask);
+    // 2. 插入黑色遮罩：覆蓋整個網頁，讓他點不到也看不到背景
+    if (!document.getElementById('security-mask')) {
+        const mask = document.createElement('div');
+        mask.id = 'security-mask';
+        mask.style = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #1d1d1f; color: white; z-index: 1000000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: 'Noto Sans TC', sans-serif; text-align: center; padding: 20px;
+        `;
+        mask.innerHTML = `
+            <i class="fas fa-shield-alt" style="font-size: 5rem; color: #ff4d4d; margin-bottom: 25px;"></i>
+            <h1 style="font-size: 2rem; font-weight: 900; letter-spacing:-1px;">系統存取已終止</h1>
+            <p style="color: #888; margin-top: 15px; font-size: 1.1rem;">原因：${reason}</p>
+            <div style="margin-top: 40px; padding: 20px; border: 1px solid rgba(212,175,55,0.3); border-radius:20px;">
+                <p style="font-size: 0.9rem; color: #D4AF37; font-weight:900;">權限已失效，本機快取資料已全數銷毀</p>
+                <p style="font-size: 0.8rem; color: #555; margin-top:5px;">如需繼續使用請聯繫店長</p>
+            </div>
+            <button onclick="location.reload()" style="margin-top: 50px; padding: 15px 40px; border-radius: 30px; border: 1.5px solid #fff; background: transparent; color: white; font-weight:900;">返回登入介面</button>
+        `;
+        document.body.appendChild(mask);
+    }
     
-    // 3. 停止所有剩餘的腳本執行
+    // 3. 停止所有剩餘腳本
     throw new Error("Security Lockdown: Access Denied.");
 }
         }
@@ -1987,7 +2037,7 @@ async function popCliSearch() {
         Swal.fire({
             icon: 'warning',
             title: '已達試用上限',
-            text: '試用版僅限 20 位顧客，請解鎖 Aether Pro 以儲存無限顧客。',
+            text: '試用版僅限 2 位顧客，請解鎖 Aether Pro 以儲存無限顧客。',
             confirmButtonColor: 'var(--gold)'
         });
         return;
@@ -2447,29 +2497,38 @@ function copyKey(text) {
     }
 }
 
-// 開機程序：啟動時自動去雲端搬資料回來
+// ==========================================================================
+// --- 🚀 V318 旗艦開機程序：含背景安全監控與防護攔截 ---
+// ==========================================================================
 window.addEventListener('load', async () => {
-    // 1. 先刷出本地資料 (即使沒網路也要能看)
+    // 1. 先刷出本地資料 (確保離線時也能看見最後快取)
     updateStoreUI(); 
     initMonth();
     renderCli();
     
+    // 初始化月份選擇器
     const mPicker = document.getElementById('m-picker');
     if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
     
-    // 2. 背景去雲端搬最新資料
+    // 2. 背景去雲端搬最新資料 (確保資料一致性)
     await pullFromCloud(); 
     
-    // 3. 搬完資料後，再刷一次 UI 確保最新
+    // 3. 搬完資料後，再次刷新 UI 呈現最新狀態
     updateStoreUI();
     initMonth();
     
-    // 4. 最後檢查金鑰，沒金鑰就跳強制登入
+    // 🎯 🚀 【V318 關鍵增補】：啟動 10 秒自動安全性監控
+    // 就算員工不刷新網頁，只要妳撤銷權限，10秒內系統會自動觸發黑色遮罩並鎖死
+    if (typeof startSecurityHeartbeat === 'function') {
+        startSecurityHeartbeat();
+    }
+
+    // 4. 最後檢查金鑰，若無授權則彈出強制登入
     checkLicense();
 
    // --- 【以太流：精準防禦攔截器 - 彈窗輸入徹底解鎖版】 ---
     document.body.addEventListener('touchmove', function(e) {
-        // 🚀 核心解鎖：如果摸到的是彈窗內容、輸入框 (INPUT/TEXTAREA)，絕對不准攔截！
+        // 🚀 核心解鎖：如果摸到的是彈窗內容、輸入框、或滾動區，允許操作
         if (e.target.closest('.swal2-container') || 
             e.target.closest('.content-scroll') || 
             e.target.closest('.lane-container') ||
@@ -2478,8 +2537,11 @@ window.addEventListener('load', async () => {
             e.target.tagName === 'SELECT') {
             return; 
         }
-        e.preventDefault();
+        // 其餘空白處禁止 iOS 彈跳與亂滑
+        if (e.cancelable) e.preventDefault();
     }, { passive: false });
+
+    console.log("Aether V318 系統核心啟動成功...");
 });
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
