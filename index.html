@@ -673,6 +673,7 @@ async function saveS() {
 
     // 2. 雲端同步
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+   
     if (auth && auth.id && auth.id !== "未綁定") {
         try {
             await db.collection("Salons").doc(auth.id).set({
@@ -1199,21 +1200,31 @@ function renderSet() {
             </div>
         </div>`;  
 
-
-    // 2. 🚀 [關鍵門禁] 只有 admin 才能解鎖最高權限按鈕
+    // . 🚀 [關鍵門禁] 只有 admin 才能解鎖最高權限按鈕
     const authLocal = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    if (authLocal && authLocal.role === 'admin') {
-        const adminZone = document.getElementById('master-admin-zone');
-        if (adminZone) {
-            adminZone.innerHTML = `
+    
+   // --- 🚀 副授權管理區塊 (替換原本 1207 行後的內容) ---
+if (authLocal && authLocal.role === 'admin') {
+    const adminZone = document.getElementById('master-admin-zone');
+    if (adminZone) {
+        adminZone.innerHTML = `
+            <div style="margin-top:40px; border-top:2px solid #f2f2f7; padding-top:20px;">
+                <p style="font-weight:900; color:#888; margin-bottom:15px;">👤 副授權人員管理</p>
+                <div id="sub-auth-list" style="margin-bottom:20px;">
+                    <div style="text-align:center; color:#ccc; padding:20px;">載入人員名單中...</div>
+                </div>
+                <button class="luxe-btn" style="width:100%; height:60px; background:#1d1d1f; color:#fff; border-radius:30px; font-weight:900;" onclick="popCreateSubKey()">
+                    <i class="fas fa-user-plus"></i> 生成新的副授權 (給員工)
+                </button>
                 <div style="margin-top:20px;">
-                    <button class="luxe-btn" style="width:100%; height:60px; background:#1d1d1f; color:#ff4d4d; border:2px solid #ff4d4d; border-radius:30px; font-weight:900;" onclick="reAuthMaster()">
-                        <i class="fas fa-user-shield"></i> 撤銷全店授權 (踢除所有員工)
+                    <button class="luxe-btn" style="width:100%; height:50px; background:#fff; color:#ff4d4d; border:1px solid #ff4d4d; border-radius:30px; font-size:0.8rem;" onclick="reAuthMaster()">
+                        <i class="fas fa-exclamation-triangle"></i> 撤銷全店授權 (含主裝置)
                     </button>
-                    <p style="font-size:0.8rem; color:#ff4d4d; text-align:center; margin-top:10px; font-weight:700;">※ 此操作將重置雲端同步碼，員工副金鑰將立即失效</p>
-                </div>`;
-        }
+                </div>
+            </div>`;
+        loadSubKeys(); // 🚀 這行很重要，確保畫面出來後會去抓名單
     }
+}
     const list = document.getElementById('set-main-list');
     list.onclick = (e) => {
         const item = e.target.closest('.set-drawer-trigger');
@@ -1231,7 +1242,6 @@ function renderSet() {
     
     const reBtn = document.getElementById('btn-reauth-real');
     if(reBtn) reBtn.onclick = (e) => { e.stopPropagation(); reAuth(); };
-if(reBtn) reBtn.onclick = (e) => { e.stopPropagation(); reAuth(); };
 
     // 🚀 倒計時邏輯：自動去雲端看這把鑰匙還剩多久
     const checkKeyTimer = async () => {
@@ -1533,7 +1543,121 @@ function popTimeDrawer() {
             store.endH = r.value.end; 
             saveS(); // 同步雲端
             renderSet(); // 刷新設定頁面顯示
-            
+          
+          // --- 🚀 副授權管理系統核心 ---
+
+// A. 載入屬於這間店的所有副授權
+async function loadSubKeys() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const listArea = document.getElementById('sub-auth-list');
+    if (!listArea) return;
+
+    try {
+        // 抓取 LicenseKeys_Booking 集合中，屬於這間店 (salonId) 且角色是 staff 的鑰匙
+        const snap = await db.collection("LicenseKeys_Booking")
+            .where("salonId", "==", auth.id)
+            .where("role", "==", "staff")
+            .get();
+
+        if (snap.empty) {
+            listArea.innerHTML = `<div style="text-align:center; color:#ccc; padding:20px; background:#f9f9fb; border-radius:20px;">目前尚無副授權人員</div>`;
+            return;
+        }
+
+        listArea.innerHTML = snap.docs.map(doc => {
+            const data = doc.data();
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:15px 20px; border-radius:25px; margin-bottom:10px; border:1px solid #f2f2f7; box-shadow:0 4px 10px rgba(0,0,0,0.02);">
+                    <div>
+                        <div style="font-weight:900; color:#1d1d1f;">${data.ownerName || '未命名人員'}</div>
+                        <div style="font-size:0.7rem; color:#aaa;">代碼: ${doc.id} | 狀態: ${data.status === 'used' ? '🟢 已登入' : '⚪ 未使用'}</div>
+                    </div>
+                    <button onclick="revokeSubKey('${doc.id}', '${data.ownerName}')" style="background:#ffefef; color:#ff4d4d; border:none; padding:8px 15px; border-radius:15px; font-weight:900; font-size:0.8rem;">
+                        撤銷
+                    </button>
+                </div>`;
+        }).join('');
+    } catch (e) {
+        console.error("載入名單失敗", e);
+    }
+}
+
+      // B. 生成副鑰彈窗 (指定人員) - 旗艦穩定版
+async function popCreateSubKey() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    
+    const { value: name } = await Swal.fire({
+        title: '生成副授權',
+        input: 'text',
+        inputLabel: '請輸入人員姓名 (如: 王小明)',
+        inputPlaceholder: '之後您可依姓名撤銷其權限',
+        confirmButtonColor: '#1d1d1f',
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        reverseButtons: true
+    });
+
+    if (name) {
+        // 生成 6 位大寫隨機碼
+        const newKey = "BOK-SUB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        // 🚀 寫入 Firebase
+        await db.collection("LicenseKeys_Booking").doc(newKey).set({
+            status: "unused",
+            role: "staff",          // 強制標記為員工副鑰
+            salonId: auth.id,       // 綁定主裝置的店號
+            ownerName: name,        // 記錄人員名稱
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 🚀 顯示成功視窗 (賈伯斯金石配色)
+        Swal.fire({
+            title: '副授權生成成功',
+            html: `請讓 <b>${name}</b> 在其裝置輸入：<br><h2 style="color:#D4AF37; margin:15px 0; letter-spacing:2px; font-size:2.2rem; font-weight:900;">${newKey}</h2>`,
+            icon: 'success',
+            confirmButtonColor: '#1d1d1f'
+        });
+
+        // 🚀 關鍵修正：延遲 800 毫秒刷新列表，確保雲端資料已寫入成功
+        setTimeout(() => { 
+            if (typeof loadSubKeys === 'function') loadSubKeys(); 
+        }, 800); 
+    }
+}
+
+// C. 單獨撤銷某位人員 - 旗艦穩定版
+async function revokeSubKey(keyId, name) {
+    const res = await Swal.fire({
+        title: `確定撤銷 ${name} 的權限？`,
+        text: "撤銷後該裝置將立即斷線且無法再次登入。",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4d4d',
+        confirmButtonText: '確定撤銷',
+        cancelButtonText: '取消',
+        reverseButtons: true
+    });
+
+    if (res.isConfirmed) {
+        // 🚀 直接從雲端刪除該金鑰
+        await db.collection("LicenseKeys_Booking").doc(keyId).delete();
+        
+        // 🚀 撤銷成功的視覺回饋
+        Swal.fire({
+            icon: 'success',
+            title: '已解除授權',
+            text: `${name} 的權限已從雲端移除`,
+            timer: 1500,
+            showConfirmButton: false,
+            background: '#fff'
+        });
+
+        // 🚀 撤銷後也延遲一下再刷新列表，保證畫面準確
+        setTimeout(() => { 
+            if (typeof loadSubKeys === 'function') loadSubKeys(); 
+        }, 500); 
+    }
+}      
             // 提醒妳：儲存後，跑道會根據新的時間自動重新生成
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
             Toast.fire({ icon: 'success', title: '營業時間已更新' });
