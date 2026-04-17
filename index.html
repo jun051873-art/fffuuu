@@ -734,47 +734,45 @@ async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.id) return;
     try {
-        // 1. 先抓取該店家的數據
         const doc = await db.collection("Salons").doc(auth.id).get();
         if (doc.exists) {
             const cloudData = doc.data();
-            
-            // 🚀 關鍵安全檢查：去金鑰庫確認這把鑰匙是否還「活著」
-            // 這樣就算妳換了店號的 syncCode，只要這把鑰匙沒被妳手動刪除或停用，員工就進得來
             const keyCheck = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             
-           // 【修改後的代碼段落】
-const keyData = keyCheck.data();
-const now = new Date().getTime();
+            const keyData = keyCheck.data();
+            const now = new Date().getTime();
 
-// 🚀 強化門衛：檢查金鑰是否存在、是否被撤銷、或是否過期
-if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
-    let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
-    
-    // 🚀 新增：判斷是否是因為過期
-    if (keyData.expire && now > keyData.expire) {
-        errMsg = '您的試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
-    }
+            // 🚀 強化門衛：檢查金鑰狀態
+            if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
+                let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
+                
+                if (keyData && keyData.expire && now > keyData.expire) {
+                    errMsg = '您的試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
+                }
 
-    Swal.fire({
-        icon: 'error',
-        title: '授權失效',
-        text: errMsg,
-        confirmButtonColor: '#1d1d1f',
-        allowOutsideClick: false
-    }).then(() => {
-        localStorage.removeItem('v318_booking_auth');
-        location.reload(); 
-    });
-    return;
-}
+                Swal.fire({
+                    icon: 'error',
+                    title: '授權失效',
+                    text: errMsg,
+                    confirmButtonColor: '#1d1d1f',
+                    allowOutsideClick: false
+                }).then(() => {
+                    localStorage.removeItem('v318_booking_auth');
+                    location.reload(); 
+                });
+                return;
+            }
 
-            // 驗證通過，將雲端數據刷入手機
+            // 驗證通過，刷入數據
             store = cloudData;
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
             updateStoreUI();
             initAll();
-
+        }
+    } catch (e) {
+        console.error("雲端抓取失敗", e);
+    }
+}
             // 🚀 V318 背景即時安全性監控 (每 10 秒檢查一次)
 function startSecurityHeartbeat() {
     setInterval(async () => {
@@ -859,43 +857,105 @@ function startSecurityHeartbeat() {
     }, 10000); 
 }
 
-// 🚀 執行系統全封鎖：清空資料 + 全螢幕遮蔽 (讓員工看不了顧客)
+// ==========================================================================
+// --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
+// ==========================================================================
+
+// 1. 執行系統全封鎖：清空資料 + 黑色遮罩遮斷所有操作
 function executeSystemLockdown(reason) {
-    // 1. 毀滅性清除：把本機的所有客人、預約、權限全部刪掉
+    console.error("🚨 安全攔截啟動: " + reason);
+    
+    // A. 立即銷毀本地快取，確保他重整也進不來
     localStorage.removeItem('v318_booking_auth');
     localStorage.removeItem('SALON_LOCK_V318');
     
-    // 2. 插入黑色遮罩：覆蓋整個網頁，讓他點不到也看不到背景
+    // B. 建立最高等級的黑色阻斷遮罩
     if (!document.getElementById('security-mask')) {
         const mask = document.createElement('div');
         mask.id = 'security-mask';
         mask.style = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #1d1d1f; color: white; z-index: 1000000;
+            background: #1d1d1f; color: white; z-index: 999999999; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: 'Noto Sans TC', sans-serif; text-align: center; padding: 20px;
+            backdrop-filter: blur(20px);
         `;
         mask.innerHTML = `
-            <i class="fas fa-shield-alt" style="font-size: 5rem; color: #ff4d4d; margin-bottom: 25px;"></i>
-            <h1 style="font-size: 2rem; font-weight: 900; letter-spacing:-1px;">系統存取已終止</h1>
-            <p style="color: #888; margin-top: 15px; font-size: 1.1rem;">原因：${reason}</p>
-            <div style="margin-top: 40px; padding: 20px; border: 1px solid rgba(212,175,55,0.3); border-radius:20px;">
-                <p style="font-size: 0.9rem; color: #D4AF37; font-weight:900;">權限已失效，本機快取資料已全數銷毀</p>
-                <p style="font-size: 0.8rem; color: #555; margin-top:5px;">如需繼續使用請聯繫店長</p>
+            <i class="fas fa-shield-alt" style="font-size: 6rem; color: #ff4d4d; margin-bottom: 30px; animation: pulse 2s infinite;"></i>
+            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1px;">系統存取已終止</h1>
+            <p style="color: #888; margin-top: 15px; font-size: 1.2rem; max-width: 300px;">原因：${reason}</p>
+            <div style="margin-top: 40px; padding: 25px; border: 1.5px solid rgba(212,175,55,0.3); border-radius:30px; background:rgba(255,255,255,0.05);">
+                <p style="font-size: 0.95rem; color: #D4AF37; font-weight:900;">您的授權已失效<br>本機快取資料已同步銷毀</p>
             </div>
-            <button onclick="location.reload()" style="margin-top: 50px; padding: 15px 40px; border-radius: 30px; border: 1.5px solid #fff; background: transparent; color: white; font-weight:900;">返回登入介面</button>
+            <button onclick="location.reload()" style="margin-top: 50px; padding: 18px 50px; border-radius: 35px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer;">返回登入介面</button>
+            <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>
         `;
         document.body.appendChild(mask);
     }
     
-    // 3. 停止所有剩餘腳本
-    throw new Error("Security Lockdown: Access Denied.");
+    // C. 暴力停止：移除所有頁面內容，防止透過控制台修改 CSS 規避
+    const mainPages = document.querySelectorAll('.page, .nav, .fab');
+    mainPages.forEach(p => p.remove());
+
+    // D. 拋出錯誤強迫停止所有後續 JS 執行
+    throw new Error("ACCESS_DENIED");
 }
+
+// 2. 核心監控心跳：每 10 秒去雲端「點名」一次
+function startSecurityHeartbeat() {
+    console.log("🛡️ V318 安全守衛已上崗，每 10 秒執行巡邏...");
+    
+    setInterval(async () => {
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        
+        // 如果原本就沒登入，不執行監控
+        if (!auth || !auth.key) return;
+
+        try {
+            // 🎯 直接從 Firebase 獲取這把鑰匙的實時狀態
+            const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
+            const now = new Date().getTime();
+            
+            let isBlock = false;
+            let reason = "";
+
+            // --- 判斷 A：金鑰是否還存在 (店長是否點了撤銷) ---
+            if (!keySnap.exists) {
+                isBlock = true;
+                reason = "您的授權已被店長從雲端撤銷";
+            } else {
+                const keyData = keySnap.data();
+                
+                // --- 判斷 B：試用期是否突然截止 ---
+                if (keyData.expire && now > keyData.expire) {
+                    isBlock = true;
+                    reason = "您的試用授權已屆滿";
+                }
+                
+                // --- 判斷 C：店號安全檢查 (防止本地數據偽造) ---
+                if (auth.id !== keyData.salonId) {
+                    isBlock = true;
+                    reason = "安全驗證異常 (店號不符)";
+                }
+
+                // --- 判斷 D：金鑰狀態被設為 unused (例如店長手動重置金鑰) ---
+                if (keyData.status !== 'used') {
+                     isBlock = true;
+                     reason = "授權狀態變更，請重新登入";
+                }
+            }
+
+            // 🚀 如果偵測到任何異常，立即處決
+            if (isBlock) {
+                executeSystemLockdown(reason);
+            }
+        } catch (e) {
+            // 只有在斷網時會報錯，這裡不處理，等待下一個 10 秒嘗試
+            console.warn("安全監控連線中...");
         }
-    } catch (e) { 
-        console.error("雲端載入失敗", e); 
-    }
+    }, 10000); // 10秒一次，達到即時防禦與流量負載的平衡
 }
+
 // ==========================================================================
 // --- S4: 頁面顯示與分頁切換控制 ---
 // ==========================================================================
