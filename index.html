@@ -2090,15 +2090,16 @@ async function popCliSearch() {
     }); 
 }
     async function addCliTrig() {
-       // --- Aether Pro 顧客上限鎖 ---
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isPro = auth && auth.id && auth.id !== "未綁定";
-    if (!isPro && store.clients.length >= 20) {
+
+    // 🚀 鋼鐵鎖：嚴格限制 2 位
+    if (!isPro && store.clients.length >= 2) {
         Swal.fire({
-            icon: 'warning',
-            title: '已達試用上限',
-            text: '試用版僅限 2 位顧客，請解鎖 Aether Pro 以儲存無限顧客。',
-            confirmButtonColor: 'var(--gold)'
+            icon: 'lock',
+            title: 'Aether Pro 專屬',
+            text: '試用版僅限儲存 2 位顧客，請解鎖 Aether Pro 以儲存無限名單。',
+            confirmButtonColor: '#1d1d1f'
         });
         return;
     }
