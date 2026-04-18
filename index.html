@@ -121,7 +121,7 @@ background: #f9f9fb !important;
          body { font-family: 'Noto Sans TC', sans-serif; color: var(--primary); display: flex; flex-direction: column; }
          /* --- 【Aether Flow: 旗艦毛玻璃深黑體】 --- */
 .swal2-popup { 
-    background: rgba(255, 255, 255, 0.75) !important; 
+    background: rgba(255, 255, 255, 0.80) !important; 
     backdrop-filter: blur(40px) saturate(210%) !important; 
     -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
     border-radius: 40px !important;
@@ -555,7 +555,7 @@ html, body {
             <div class="glow-title" id="main-store-name" style="cursor:pointer;" onclick="popRenameStore()">載入中...</div>
             <div style="display:flex; gap:20px; align-items:center;">
 <div style="display:flex; gap:10px;">
-    <div class="luxe-btn" onclick="popHistoryLog()"><i class="fas fa-list-ul"></i> 紀錄</div>
+    <div class="luxe-btn" onclick="popHistoryLog()"> 紀錄</div>
     <div class="luxe-btn" onclick="goToday()">今天</div>
 </div>    
             
@@ -1053,7 +1053,7 @@ async function popBooking(n="", p="", sId=null, editId=null) {
 
                 <div style="margin-bottom:18px;">
                     <div id="tag-drawer-trigger" onclick="toggleTagDrawer()" style="background:rgba(212,175,55,0.1); border:1.5px solid var(--gold); padding:18px 25px; border-radius:25px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:900; color:var(--gold); font-size:1.1rem;">✂️ 選擇服務項目</span>
+                        <span style="font-weight:900; color:var(--gold); font-size:1.1rem;"> 選擇服務項目</span>
                         <i id="tag-arrow" class="fas fa-chevron-down" style="color:var(--gold);"></i>
                     </div>
                     <div id="tag-drawer-content" style="display:none; margin-top:10px; background:rgba(0,0,0,0.03); padding:15px; border-radius:25px; max-height:180px; overflow-y:auto; -webkit-overflow-scrolling:touch;">
@@ -1234,7 +1234,7 @@ for (let i = start; i <= end; i++) {
                         </div>
 
                         <div style="background:rgba(0,0,0,0.02); padding:15px; border-radius:20px; border-left:5px solid var(--gold);">
-                            <div style="font-weight:900; color:var(--gold); font-size:1rem; margin-bottom:5px;">✂️ ${(a.tags || []).join(' + ') || '服務項目'}</div>
+                            <div style="font-weight:900; color:var(--gold); font-size:1rem; margin-bottom:5px;"> ${(a.tags || []).join(' + ') || '服務項目'}</div>
                             <div onclick="event.stopPropagation(); popNoteEdit('${a.id}', '${ds}')" style="font-size:0.95rem; color:#444; font-weight:700; cursor:pointer;">${a.note_full || "點擊輸入備註..."}</div>
                         </div>
 
@@ -1339,7 +1339,7 @@ function renderSet() {
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-user-tie"></i></div>
                     <div>
-                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">設計師團隊管理</div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">人員團隊管理</div>
                         <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">STYLIST TEAM</div>
                     </div>
                 </div>
@@ -1543,7 +1543,7 @@ function popStyDrawer() {
     const isPro = auth && auth.id && auth.id !== "未綁定";
 
     Swal.fire({
-        title: '設計師團隊管理',
+        title: '人員管理',
         width: '90%',
         padding: '2rem 1.5rem',
         html: `
@@ -2416,13 +2416,15 @@ async function checkLicense() {
                     });
 
                     const finalAuth = { 
-                        key: res.key, 
-                        id: res.id, 
-                        role: keyData.role || 'staff',
-                        expire: keyData.expire || null 
-                    };
-                    localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
+    key: res.key, 
+    id: res.id, 
+    role: keyData.role || 'staff', // 這裡是關鍵，會抓到 admin 或 staff
+    expire: keyData.expire || null 
+};
+localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
 
+// 新增這一行：登入成功立刻檢查是否要遮蔽金額
+if (finalAuth.role === 'staff') applyStaffMask();
                     Swal.fire({
                         icon: 'success',
                         title: '激活成功',
@@ -2603,6 +2605,32 @@ window.addEventListener('load', async () => {
     }, { passive: false });
 
     console.log("Aether V318 系統核心啟動成功...");
+
+// 🚀 V318 員工模式金額遮蔽補丁
+const authData = JSON.parse(localStorage.getItem('v318_booking_auth'));
+if (authData && authData.role === 'staff') {
+    applyStaffMask();
+}
+
+function applyStaffMask() {
+    const maskStyle = document.createElement('style');
+    maskStyle.innerHTML = `
+        /* 1. 隱藏預約卡片上的金額 */
+        [onclick*="popPriceEdit"] { display: none !important; } 
+        
+        /* 2. 隱藏今日紀錄 (HistoryLog) 裡面的業績與金額 */
+        .swal2-html-container [style*="color:#06C755"] { display: none !important; } /* 金額 */
+        .swal2-html-container [style*="linear-gradient"] { display: none !important; } /* 今日業績戰報板 */
+        
+        /* 3. 隱藏導航列的數據按鈕（選配，若想徹底不讓他點） */
+        #n-stat { display: none !important; }
+        #nav-aether-mover { width: calc(33.3% - 12px) !important; } /* 重新計算滑塊寬度 */
+        .nav-item { flex: 1; }
+    `;
+    document.head.appendChild(maskStyle);
+    console.log("🛡️ 員工模式啟動：已自動隱藏全站金額數據。");
+}
+
 });
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
@@ -2722,9 +2750,21 @@ function pickSug(n, p, s, boxId) {
 
 function renderStats() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    
+    // 🚀 關鍵修改：如果是員工，直接攔截並顯示鎖定畫面
+    if (auth && auth.role === 'staff') {
+        const area = document.getElementById('pg-stat').querySelector('.content-scroll');
+        area.innerHTML = `
+            <div style="padding:100px 40px; text-align:center;">
+                <i class="fas fa-user-shield" style="font-size:4rem; color:#ccc; margin-bottom:20px;"></i>
+                <h2 style="font-weight:900; color:#ccc;">員工模式：數據已屏蔽</h2>
+                <p style="color:#aaa;">營收與統計數據僅限店長主裝置查閱。</p>
+            </div>`;
+        return; // 停止執行後續的計算邏輯
+    }
+
     const isPro = auth && auth.id && auth.id !== "未綁定";
-    const area = document.getElementById('pg-stat').querySelector('.content-scroll');
-    const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
+    // ... 原本的繪製代碼    const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
     // 1. 初始化經營數據大腦
     let totalRevenue = 0; // 總營收
     // 原有的營收統計
