@@ -2370,7 +2370,7 @@ async function popPriceEdit(aptId, ds) {
 // --- S8: 鋼鐵門禁與金鑰生成 ---
 // ==========================================================================
 
-// --- 🚀 V318 鋼鐵門禁：副鑰匙連線修正版 ---
+// --- 🚀 V318 鋼鐵門禁：【解決報錯但成功】終極修正版 ---
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth) {
@@ -2395,15 +2395,20 @@ async function checkLicense() {
                 if (doc.exists) {
                     const keyData = doc.data();
 
-                    // 檢查是否已被使用
+                    // 檢查金鑰是否為未使用狀態
                     if (keyData.status !== "unused") {
                         Swal.fire('驗證失敗', '金鑰已被佔用或無效', 'error').then(() => checkLicense());
                         return;
                     }
                     
-                    // 🚀 【核心修正】：如果是副鑰匙 (staff)
+                    // 🚀 【核心修正邏輯】
+                    let updateData = {
+                        status: "used",
+                        activatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
                     if (keyData.role === 'staff') {
-                        // 強制檢查：輸入的店號必須等於生成時綁定的店號
+                        // 副鑰匙：強制檢查店號是否正確，但不將店號再次寫回雲端 (避免權限阻斷)
                         if (res.id !== keyData.salonId) {
                             Swal.fire({
                                 icon: 'error',
@@ -2413,20 +2418,13 @@ async function checkLicense() {
                             }).then(() => checkLicense());
                             return;
                         }
-                        
-                        // 副鑰匙：只更新狀態，不改動原本綁定的 salonId
-                        await db.collection("LicenseKeys_Booking").doc(res.key).update({
-                            status: "used",
-                            activatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
                     } else {
-                        // 主鑰匙 (admin)：第一次激活，將輸入的店號鎖定進去
-                        await db.collection("LicenseKeys_Booking").doc(res.key).update({
-                            status: "used",
-                            salonId: res.id,
-                            activatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        // 主鑰匙 (admin)：第一次激活，才將店號鎖定寫入
+                        updateData.salonId = res.id;
                     }
+
+                    // 執行雲端激活 (依照角色分流寫入)
+                    await db.collection("LicenseKeys_Booking").doc(res.key).update(updateData);
 
                     // 2. 準備本地授權資訊
                     const finalAuth = { 
@@ -2438,16 +2436,16 @@ async function checkLicense() {
                     
                     localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
 
-                    // 3. 員工權限遮蔽
+                    // 3. 員工模式金額遮蔽
                     if (finalAuth.role === 'staff' && typeof applyStaffMask === 'function') {
                         applyStaffMask();
                     }
 
-                    // 4. 成功回饋
+                    // 4. 激活成功回饋
                     Swal.fire({
                         icon: 'success',
                         title: '激活成功',
-                        text: `權限級別：${keyData.role === 'admin' ? '主控店長' : '團隊成員'}`,
+                        text: `歡迎使用 Aether V318`,
                         confirmButtonColor: '#1d1d1f'
                     }).then(() => location.reload());
 
@@ -2455,12 +2453,12 @@ async function checkLicense() {
                     Swal.fire('驗證失敗', '找不到此授權金鑰', 'error').then(() => checkLicense());
                 }
             } catch(e) {
-                console.error("激活引擎錯誤:", e);
-                Swal.fire('連線錯誤', '激活失敗，請檢查網路或金鑰權限', 'error').then(() => checkLicense());
+                console.error("激活引擎報錯:", e);
+                Swal.fire('連線錯誤', '請檢查網路狀態或金鑰權限', 'error').then(() => checkLicense());
             }
         }
     } else {
-        // 已有授權，執行正常同步
+        // 已有授權，進入正常雲端同步流程
         pullFromCloud(); 
     }
 }
