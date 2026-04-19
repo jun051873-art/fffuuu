@@ -593,17 +593,12 @@ html, body {
         <div class="content-scroll"><div class="client-grid-container" id="cli-list"></div></div>
     </div>
 
-    <div id="pg-stat" class="page">
-        <div class="header"><div style="font-size: 2.6rem; font-weight: 900;">數據統計</div></div>
-        <div class="content-scroll" style="padding:45px;">
-            <div style="background:rgba(212,175,55,0.05); border:2px dashed var(--gold); border-radius:40px; padding:60px; text-align:center;">
-                <i class="fas fa-chart-pie" style="font-size:4rem; color:var(--gold); margin-bottom:20px;"></i>
-                <h2 style="font-weight:900;">客群數據中心已就緒</h2>
-                <p>之後將顯示男女比例、時段分析與預約排行</p>
-            </div>
-        </div>
+<div id="pg-stat" class="page">
+    <div class="header"><div style="font-size: 2.6rem; font-weight: 900;">數據統計</div></div>
+    <div class="content-scroll" id="stats-render-container" style="padding:0;">
+        <div style="text-align:center; padding:100px; color:#ccc; font-weight:900;">數據搬運中...</div>
     </div>
-
+</div>
     <div id="pg-set" class="page">
         <div class="header"><div id="admin-trigger" style="font-size: 2.6rem; font-weight: 900; user-select: none;">設定</div></div>
         <div class="content-scroll" style="padding: 0 45px 150px 45px;" id="set-content-container"></div>
@@ -2656,11 +2651,17 @@ function applyStaffMask() {
 let statsMonth = new Date().toISOString().slice(0,7); // 預設當月
 
 // ==========================================================================
-// --- 🚀 補回：V318 顧客名冊奢華穩定版 (隱藏歷程入口 + 全平台防跳白) ---
+// 🚀 V318 顧客名冊：滾動位置記憶版 (完整樣式不減少)
 // ==========================================================================
 function renderCli() {
     const area = document.getElementById('cli-list');
     if (!area) return;
+
+    // 🎯 核心補丁 1：在重畫之前，先記住父層滾動區現在滑到哪了
+    // 這樣在修改、刪除或執行任何動作後，畫面會停在原地
+    const scrollContainer = area.closest('.content-scroll');
+    const savedScrollPos = scrollContainer ? scrollContainer.scrollTop : 0;
+
     const filterSty = document.getElementById('cli-f-sty').value;
     
     // 1. 過濾邏輯
@@ -2710,6 +2711,13 @@ function renderCli() {
                 </div>
             </div>`;
     }).join('');
+
+    // 🎯 核心補丁 2：畫面畫好後，利用 requestAnimationFrame 在瀏覽器渲染下一幀前閃回原位
+    if (scrollContainer) {
+        requestAnimationFrame(() => {
+            scrollContainer.scrollTop = savedScrollPos;
+        });
+    }
 }
 
 // 🚀 歷史消費紀錄彈窗 (賈伯斯美學：毛玻璃背景 + 滾動限制)
@@ -2739,12 +2747,11 @@ function popCliHistory(clientName) {
         backdrop: `blur(10px)`,
         
         // 🚀 關鍵修正：防止殘影與跳動
-        showClass: { popup: 'animated fadeInDown faster' }, // 縮短動畫時間
+        showClass: { popup: 'animated fadeInDown faster' }, 
         hideClass: { popup: 'animated fadeOutUp faster' },
-        scrollbarPadding: false // 禁止系統自動增加滾動條間距
+        scrollbarPadding: false 
     });
 }
-
 function searchStored(el, boxId) {
     const val = el.value.trim(); const box = document.getElementById(boxId);
     if(!val) { box.style.display='none'; return; }
@@ -2767,30 +2774,37 @@ function pickSug(n, p, s, boxId) {
 }
 
 function renderStats() {
+    // 🚀 修正 1：精準抓取渲染區域 ID
+    const area = document.getElementById('stats-render-container');
+    if (!area) return;
+
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
     // 🚀 關鍵修改：如果是員工，直接攔截並顯示鎖定畫面
     if (auth && auth.role === 'staff') {
-        const area = document.getElementById('pg-stat').querySelector('.content-scroll');
         area.innerHTML = `
             <div style="padding:100px 40px; text-align:center;">
                 <i class="fas fa-user-shield" style="font-size:4rem; color:#ccc; margin-bottom:20px;"></i>
                 <h2 style="font-weight:900; color:#ccc;">員工模式：數據已屏蔽</h2>
                 <p style="color:#aaa;">營收與統計數據僅限店長主裝置查閱。</p>
             </div>`;
-        return; // 停止執行後續的計算邏輯
+        return; 
+    }
+
+    // 🚀 修正 2：確保 statsMonth 已定義，防止噴錯導致空白
+    if (typeof statsMonth === 'undefined') {
+        window.statsMonth = new Date().toISOString().slice(0, 7);
     }
 
     const isPro = auth && auth.id && auth.id !== "未綁定";
-    // ... 原本的繪製代碼    const filteredApts = store.appointments.filter(a => a.done && a.date.startsWith(statsMonth));
+    
     // 1. 初始化經營數據大腦
-    let totalRevenue = 0; // 總營收
-    // 原有的營收統計
+    const filteredApts = store.appointments.filter(a => a.done && a.date && a.date.startsWith(statsMonth));
+    let totalRevenue = 0; 
     const weekMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0}; 
-    // --- 新增：人次統計 ---
     const weekCountMap = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 0:0};
-    const tagUsageMap = {}; // 服務項目熱度 (剪、染、燙次數)
-    const payMap = {};      // 支付方式分布
+    const tagUsageMap = {}; 
+    const payMap = {};      
     const sexMap = { 'Mars ♂': 0, 'Venus ♀': 0 };
     const vipMap = { '指定': 0, '不指定': 0 };
 
@@ -2798,156 +2812,101 @@ function renderStats() {
         const d = new Date(a.date);
         const price = parseFloat(a.price) || 0;
         
-        // 累加營收與週起伏
         totalRevenue += price;
         weekCountMap[d.getDay()] += 1;
         weekMap[d.getDay()] += price; 
 
-        // 統計指定比
         if(a.isVIP) vipMap['指定'] += 1; else vipMap['不指定'] += 1;
 
-        // 統計服務項目熱度 (方案三：從 tags 抓)
         (a.tags || []).forEach(t => {
             tagUsageMap[t] = (tagUsageMap[t] || 0) + 1;
         });
 
-        // --- Aether Flow: 數據自動分流大腦 ---
-        // 1. 性別統計：直接抓取系統性別欄位，100% 精準
         if (a.sex === 'M') sexMap['Mars ♂'] += 1;
         else if (a.sex === 'F') sexMap['Venus ♀'] += 1;
 
-        // 2. 支付標籤統計：過濾掉性別關鍵字，只留純支付數據
         (a.payTags || []).forEach(tId => {
             const pt = store.payTagsDef.find(x => x.id === tId);
             if (!pt) return;
             const tName = pt.name;
-            
-            // 只要標籤名稱包含支付相關字眼，就計入支付分佈圖
             if (/現金|Line|街口|轉帳|刷卡|支付|錢|匯款|Apple|Google/.test(tName)) {
                 payMap[tName] = (payMap[tName] || 0) + 1;
             }
         });
     });
-    // --- 【以太流：多色彩能量條引擎】 ---
-const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType = "gold") => {
-    const entries = Object.entries(dataObj);
-    const maxVal = Math.max(...Object.values(dataObj), 1);
-    
-    // 定義以太色譜
-    // 在 colorSchemes 裡面補上 eco 與 aura
-    const colorSchemes = {
-        gold: "linear-gradient(to top, #D4AF37, #f9e39d)",   // 財富金
-        fire: "linear-gradient(to top, #FF512F, #DD2476)",   // 熱度紅
-        tech: "linear-gradient(to top, #6A11CB, #2575FC)",   // 專業紫
-        flow: "linear-gradient(to top, #4facfe, #00f2fe)",   // 流動藍
-        eco: "linear-gradient(to top, #11998e, #38ef7d)",    // 客群綠 (New!)
-        aura: "linear-gradient(to top, #ff9a9e, #fad0c4)"    // 魅力粉 (New!)
-    };
 
-    const gradient = colorSchemes[colorType] || colorSchemes.gold;
+    // --- 【以太流：多色彩能量條引擎】 (保留你的所有邏輯) ---
+    const renderGlassBars = (dataObj, titleIcon, titleText, suffix = "", colorType = "gold") => {
+        const entries = Object.entries(dataObj);
+        const maxVal = Math.max(...Object.values(dataObj), 1);
+        const colorSchemes = {
+            gold: "linear-gradient(to top, #D4AF37, #f9e39d)",
+            fire: "linear-gradient(to top, #FF512F, #DD2476)",
+            tech: "linear-gradient(to top, #6A11CB, #2575FC)",
+            flow: "linear-gradient(to top, #4facfe, #00f2fe)",
+            eco: "linear-gradient(to top, #11998e, #38ef7d)",
+            aura: "linear-gradient(to top, #ff9a9e, #fad0c4)"
+        };
+        const gradient = colorSchemes[colorType] || colorSchemes.gold;
 
-    return `
-        <div class="stats-card">
-            <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
-                <i class="${titleIcon}" style="background:${gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-right:12px;"></i>${titleText}
-            </div>
-            <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0;">
-                ${entries.map(([label, val]) => {
-                    const hPercent = (val / maxVal) * 100;
-                    return `
-                    <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
-                        <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
-                            <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
-                                        background:${gradient}; 
-                                        border-radius:15px; transition: height 1s cubic-bezier(0.23, 1, 0.32, 1);
-                                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                                ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:var(--primary); font-size:0.85rem; opacity:0.6;">${val}${suffix}</div>` : ''}
+        return `
+            <div class="stats-card" style="background:#fff; border-radius:40px; padding:35px; margin-bottom:30px; border:1.5px solid rgba(212,175,55,0.15); box-shadow:0 15px 45px rgba(0,0,0,0.04);">
+                <div style="font-weight:900; font-size:1.3rem; margin-bottom:45px;">
+                    <i class="${titleIcon}" style="background:${gradient}; -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-right:12px;"></i>${titleText}
+                </div>
+                <div class="stats-bar-container" style="display:flex; align-items:flex-end; gap:12px; height:180px; padding:40px 0 10px 0; overflow-x:auto;">
+                    ${entries.map(([label, val]) => {
+                        const hPercent = (val / maxVal) * 100;
+                        return `
+                        <div style="flex:1; min-width:60px; display:flex; flex-direction:column; align-items:center; height:100%; position:relative;">
+                            <div style="width:100%; flex:1; background:#f2f2f7; border-radius:15px; position:relative;">
+                                <div style="position:absolute; bottom:0; width:100%; height:${hPercent}%; 
+                                            background:${gradient}; 
+                                            border-radius:15px; transition: height 1s cubic-bezier(0.23, 1, 0.32, 1);">
+                                    ${val > 0 ? `<div style="position:absolute; top:-35px; width:100%; text-align:center; font-weight:900; color:#1d1d1f; font-size:0.85rem; opacity:0.6;">${val}${suffix}</div>` : ''}
+                                </div>
                             </div>
-                        </div>
-                        <div style="margin-top:15px; font-weight:900; color:#888; font-size:0.8rem; white-space:nowrap;">${label}</div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>`;
-};
+                            <div style="margin-top:15px; font-weight:900; color:#888; font-size:0.8rem; white-space:nowrap;">${label}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+    };
 
     const weekLabels = ['一','二','三','四','五','六','日'];
     const weekKeys = [1, 2, 3, 4, 5, 6, 0];
-    const revData = {};
-    weekKeys.forEach((k, i) => revData[weekLabels[i]] = weekMap[k]);
-    const countData = {};
-    weekKeys.forEach((k, i) => countData[weekLabels[i]] = weekCountMap[k]);
-    
+    const revData = {}; weekKeys.forEach((k, i) => revData[weekLabels[i]] = weekMap[k]);
+    const countData = {}; weekKeys.forEach((k, i) => countData[weekLabels[i]] = weekCountMap[k]);
     const mName = statsMonth.split('-')[1];
 
+    // 🚀 正式執行渲染
     area.innerHTML = `
         <div style="padding:40px 20px;">
-           <div class="stats-card" style="
-                /* 繼承下方卡片的純白溫潤感 */
-                background: #fff; 
-                border-radius: 40px; 
-                padding: 35px; 
-                margin-bottom: 30px; 
-                
-                /* 注入你說的「稀稀金石邊框」質感 */
-                border: 1.5px solid rgba(212, 175, 55, 0.2); 
-                
-                /* 統一的輕量懸浮陰影 */
-                box-shadow: 0 15px 45px rgba(0,0,0,0.04);
-                
-                position: relative; 
-                overflow: hidden;
-            ">
+           <div class="stats-card" style="background:#fff; border-radius:40px; padding:35px; margin-bottom:30px; border:1.5px solid rgba(212, 175, 55, 0.2); box-shadow:0 15px 45px rgba(0,0,0,0.04); position:relative; overflow:hidden;">
                 <div style="position:absolute; top:-10px; right:-15px; font-size:9rem; color:rgba(212, 175, 55, 0.05); transform:rotate(15deg); font-weight:900; user-select:none;">$</div>
-                
                 <div style="font-size:0.85rem; color:#888; font-weight:900; letter-spacing:2px; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-chart-line" style="color:var(--gold);"></i> AETHER TOTAL REVENUE
                 </div>
-                
-                <div style="font-size:3.5rem; font-weight:900; margin-bottom:15px; color:#1d1d1f; letter-spacing:-2px;">
-                    $${totalRevenue.toLocaleString()}
-                </div>
-                
+                <div style="font-size:3.5rem; font-weight:900; margin-bottom:15px; color:#1d1d1f; letter-spacing:-2px;">$${totalRevenue.toLocaleString()}</div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-top:15px; border-top:1px dashed rgba(0,0,0,0.05);">
-                    <div style="font-weight:900; color:var(--gold); font-size:1.05rem; display:flex; align-items:center; gap:6px;">
-                        <i class="fas fa-crown"></i> ${mName}月 · ${filteredApts.length} 單成交
-                    </div>
+                    <div style="font-weight:900; color:var(--gold); font-size:1.05rem;"><i class="fas fa-crown"></i> ${mName}月 · ${filteredApts.length} 單成交</div>
                     <div style="background:rgba(212,175,55,0.08); padding:6px 15px; border-radius:12px; font-size:0.75rem; font-weight:900; color:var(--gold);">V318 QUANTUM</div>
                 </div>
             </div>
             
-            <input type="month" class="month-selector" value="${statsMonth}" onchange="statsMonth=this.value; renderStats();">
+            <input type="month" class="month-selector" value="${statsMonth}" onchange="window.statsMonth=this.value; renderStats();">
 
             <div style="position:relative;">
-                ${!isPro ? `
-                    <div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:100; 
-                                backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-                                display:flex; flex-direction:column; align-items:center; justify-content:center;
-                                background:rgba(255,255,255,0.3); border-radius:40px;">
-                        <i class="fas fa-lock" style="font-size:3.5rem; color:var(--gold); margin-bottom:15px;"></i>
-                        <p style="font-weight:900; color:#1d1d1f; text-align:center; font-size:1.2rem;">
-                           解鎖 Aether Pro<br>
-                           <span style="font-size:0.9rem; color:#888; font-weight:400;">即可查看商業營收趨勢與項目分析</span>
-                        </p>
-                    
-                        </div>` : ''}
+                ${!isPro ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:100; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.3); border-radius:40px;"><i class="fas fa-lock" style="font-size:3rem; color:var(--gold); margin-bottom:10px;"></i><p style="font-weight:900;">Pro 版開啟趨勢分析</p></div>` : ''}
 
-    ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)", "", "gold")}
-    
-    ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人", "fire")}
-    
-    ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
-    
-    ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}              
-                                
+                ${renderGlassBars(revData, "fas fa-hand-holding-usd", "每週營收趨勢 ($)", "", "gold")}
+                ${renderGlassBars(countData, "fas fa-fire-alt", "一週預約熱度 (人次)", "人", "fire")}
+                ${Object.keys(tagUsageMap).length ? renderGlassBars(tagUsageMap, "fas fa-cut", "熱門服務項目統計", "次", "tech") : ''}
+                ${Object.keys(payMap).length ? renderGlassBars(payMap, "fas fa-wallet", "支付方式分布", "次", "flow") : ''}              
                 ${renderGlassBars(sexMap, "fas fa-venus-mars", "客群分布", "人", "eco")}
-                
                 ${renderGlassBars(vipMap, "fas fa-star", "指定佔比", "次", "aura")}
-                
-              </div>
-            
             </div>
-    `;
+        </div>`;
 }
 async function editPayTag(id, old) {
     const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
