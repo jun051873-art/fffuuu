@@ -769,13 +769,12 @@ async function pullFromCloud() {
     }
 }
           
-// 🚀 V318 鋼鐵安全性監控：每 10 秒自動執行一次雲端巡邏
+// 🚀 V318 鋼鐵安全性監控：每 10 秒自動執行一次雲端巡邏 (主從連動 + 續費自動解鎖版)
 function startSecurityHeartbeat() {
     console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
     
     setInterval(async () => {
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        // 如果沒有登入資訊，直接跳過巡邏
         if (!auth || !auth.key) return;
 
         try {
@@ -802,7 +801,7 @@ function startSecurityHeartbeat() {
 
                     if (!masterSnap.empty) {
                         const masterData = masterSnap.docs[0].data();
-                        // 如果老闆的主鑰過期，員工副鑰必須連帶鎖死
+                        // 漏洞修正：如果老闆的主鑰過期，員工副鑰必須連帶鎖死
                         if (masterData.expire && now > masterData.expire) {
                             isBlock = true;
                             reason = "店鋪主授權試用期已滿，請聯繫店長";
@@ -816,23 +815,29 @@ function startSecurityHeartbeat() {
                     reason = "試用期限已屆滿";
                 }
 
-                // --- 判斷 C：店號安全檢查 (防止偽造資料) ---
+                // --- 判斷 C：店號安全檢查 ---
                 if (!isBlock && auth.id !== keyData.salonId) {
                     isBlock = true;
                     reason = "安全驗證異常 (店號不符)";
                 }
             }
 
-            // 🚀 處決程序：偵測到任何異常，立即鎖死系統並銷毀本地數據
+            // 🚀 關鍵邏輯：處決或解封
             if (isBlock) {
                 executeSystemLockdown(reason);
+            } else {
+                // 🚀 如果沒被封鎖且畫面有遮罩，表示後台剛加完天數，立即解除鎖屏
+                const mask = document.getElementById('security-mask');
+                if (mask) {
+                    console.log("✨ 檢測到續費成功，自動解除鎖定...");
+                    location.reload(); // 重新整理恢復所有功能
+                }
             }
         } catch (e) {
             console.warn("安全巡邏連線中...");
         }
     }, 10000); 
 }
-
 // ==========================================================================
 // --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
 // ==========================================================================
