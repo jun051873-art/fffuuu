@@ -768,86 +768,67 @@ async function pullFromCloud() {
         console.error("雲端抓取失敗", e);
     }
 }
-            // 🚀 V318 背景即時安全性監控 (每 10 秒檢查一次)
+          
+// 🚀 V318 鋼鐵安全性監控：每 10 秒自動執行一次雲端巡邏
 function startSecurityHeartbeat() {
+    console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
+    
     setInterval(async () => {
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        // 如果沒有登入資訊，直接跳過巡邏
         if (!auth || !auth.key) return;
 
         try {
+            // 🎯 1. 抓取目前這把鑰匙的最新狀態
             const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             const now = new Date().getTime();
             
             let isBlock = false;
             let reason = "";
 
-            // 1. 檢查金鑰是否存在 (處理被撤銷的副鑰)
+            // --- 判斷 A：金鑰本身是否存在 (檢查是否被撤銷) ---
             if (!keySnap.exists) {
                 isBlock = true;
-                reason = "授權已被撤銷";
+                reason = "您的授權已被從雲端撤銷";
             } else {
                 const keyData = keySnap.data();
-                // 2. 檢查試用期是否截止
-                if (keyData.expire && now > keyData.expire) {
+
+                // --- 🚀 關鍵漏洞修補：如果是副鑰 (staff)，強制檢查「主店鋪」是否過期 ---
+                if (keyData.role === 'staff') {
+                    const masterSnap = await db.collection("LicenseKeys_Booking")
+                        .where("salonId", "==", auth.id)
+                        .where("role", "==", "admin")
+                        .get();
+
+                    if (!masterSnap.empty) {
+                        const masterData = masterSnap.docs[0].data();
+                        // 如果老闆的主鑰過期，員工副鑰必須連帶鎖死
+                        if (masterData.expire && now > masterData.expire) {
+                            isBlock = true;
+                            reason = "店鋪主授權試用期已滿，請聯繫店長";
+                        }
+                    }
+                }
+
+                // --- 判斷 B：檢查自身試用期是否截止 ---
+                if (!isBlock && keyData.expire && now > keyData.expire) {
                     isBlock = true;
                     reason = "試用期限已屆滿";
                 }
-                // 3. 檢查店號是否被竄改
-                if (auth.id !== keyData.salonId) {
+
+                // --- 判斷 C：店號安全檢查 (防止偽造資料) ---
+                if (!isBlock && auth.id !== keyData.salonId) {
                     isBlock = true;
-                    reason = "店號驗證異常";
+                    reason = "安全驗證異常 (店號不符)";
                 }
             }
 
+            // 🚀 處決程序：偵測到任何異常，立即鎖死系統並銷毀本地數據
             if (isBlock) {
                 executeSystemLockdown(reason);
             }
         } catch (e) {
-            console.log("安全監控中...");
-        }
-    }, 10000); // 10秒自動跑一次，不刷新也能抓到妳撤銷了
-}
-
-// 🚀 V318 背景即時安全性監控：每 10 秒自動檢查一次
-function startSecurityHeartbeat() {
-    // 這裡設定 10 秒檢查一次雲端鑰匙狀態
-    setInterval(async () => {
-        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        // 如果連登入都沒有，就不檢查
-        if (!auth || !auth.key) return;
-
-        try {
-            // 🎯 去 Firebase 抓取這把鑰匙的最新狀態
-            const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
-            const now = new Date().getTime();
-            
-            let isBlock = false;
-            let reason = "";
-
-            // 1. 檢查金鑰是否存在 (如果妳撤銷了，這裡會變成不存在)
-            if (!keySnap.exists) {
-                isBlock = true;
-                reason = "您的授權已被店長撤銷";
-            } else {
-                const keyData = keySnap.data();
-                // 2. 檢查試用期是否截止
-                if (keyData.expire && now > keyData.expire) {
-                    isBlock = true;
-                    reason = "試用期限已屆滿";
-                }
-                // 3. 檢查店號是否被竄改
-                if (auth.id !== keyData.salonId) {
-                    isBlock = true;
-                    reason = "店號驗證異常";
-                }
-            }
-
-            // 🚀 核心：如果偵測到問題，立即執行毀滅性封鎖
-            if (isBlock) {
-                executeSystemLockdown(reason);
-            }
-        } catch (e) {
-            console.log("安全監控正常運作中...");
+            console.warn("安全巡邏連線中...");
         }
     }, 10000); 
 }
