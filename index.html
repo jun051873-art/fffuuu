@@ -1018,11 +1018,11 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                 <input type="hidden" id="pop-sex" value="${apt?.sex || 'F'}">
 
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
-                    <input id="pop-p" class="luxe-btn" style="flex:2; border-radius:25px; height:60px; font-size:1.2rem;" value="${p}" placeholder="電話號碼">
-                    <div style="flex:1; position:relative;">
-                        <input id="pop-c" type="number" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; text-align:center; font-size:1.2rem;" value="${apt?.c || 1}">
-                        <div style="position:absolute; top:-10px; left:15px; background:#fff; padding:0 5px; font-size:0.7rem; color:#aaa; font-weight:900;">人數</div>
-                    </div>
+                   <div style="flex:2; position:relative;">
+    <input id="pop-p" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; font-size:1.2rem;" 
+           value="${p}" placeholder="電話號碼" oninput="searchStored(this, 'pop-box-p')" autocomplete="off">
+    <div id="pop-box-p" class="suggest-box" style="position:absolute !important; top:65px !important; left:0; width:100%; background:rgba(255,255,255,0.98); backdrop-filter:blur(25px); border:1.5px solid var(--gold); border-radius:25px; max-height:280px; overflow-y:auto !important; z-index:10005 !important; display:none; box-shadow:0 15px 45px rgba(0,0,0,0.3); -webkit-overflow-scrolling:touch !important;"></div>
+</div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
@@ -1067,9 +1067,11 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         didOpen: () => {
             const container = Swal.getHtmlContainer();
             // 點擊姓名以外處自動關閉搜尋建議
-            container.addEventListener('click', (e) => {
-                if(e.target.id !== 'pop-n') document.getElementById('pop-box').style.display = 'none';
-            });
+          // 在 didOpen 裡面加入這行監聽（在 popBooking 的 didOpen 裡）
+container.addEventListener('click', (e) => {
+    if(e.target.id !== 'pop-n') document.getElementById('pop-box').style.display = 'none';
+    if(e.target.id !== 'pop-p') document.getElementById('pop-box-p').style.display = 'none'; // 🚀 加上這行
+});
         },
         preConfirm: () => ({
             n: document.getElementById('pop-n').value,
@@ -1247,13 +1249,23 @@ function searchStored(el, boxId) {
     } else box.style.display='none';
 }
 
+// --- 找到原本的 pickSug 函數並替換為此版本 ---
 function pickSug(n, p, s, boxId) {
-    if(boxId === 'pop-box') { 
-        document.getElementById('pop-n').value = n; document.getElementById('pop-p').value = p;
-        const sEl = document.getElementById('pop-s'); if(sEl) sEl.value = s;
-        document.getElementById('pop-box').style.display = 'none'; 
+    if(boxId === 'pop-box' || boxId === 'pop-box-p') {  // 🚀 同時支援姓名盒與電話盒
+        if(document.getElementById('pop-n')) document.getElementById('pop-n').value = n; 
+        if(document.getElementById('pop-p')) document.getElementById('pop-p').value = p;
+        
+        const sEl = document.getElementById('pop-s'); 
+        if(sEl) sEl.value = s;
+        
+        // 關閉所有可能的建議盒
+        if(document.getElementById('pop-box')) document.getElementById('pop-box').style.display = 'none';
+        if(document.getElementById('pop-box-p')) document.getElementById('pop-box-p').style.display = 'none';
     } else {
-        cliKw = n; Swal.close(); showP('pg-cli', 1); setTimeout(() => renderCli(), 150);
+        cliKw = n; 
+        Swal.close(); 
+        showP('pg-cli', 1); 
+        setTimeout(() => renderCli(), 150);
     }
 }
 // ==========================================================================
