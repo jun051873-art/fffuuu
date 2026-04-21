@@ -697,80 +697,83 @@ async function saveS() {
     }
 }
           
-// 🚀 V318 鋼鐵安全性監控：增加「主從連動」檢查與自動解鎖功能
+// 🚀 V318 鋼鐵安全性監控：【2秒頻率版】主從連動 + 瞬時封鎖
 function startSecurityHeartbeat() {
-    console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
+    console.log("🛡️ V318 安全守衛已上崗，執行 2 秒/次 高頻監控...");
     
     setInterval(async () => {
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        if (!auth || !auth.key) return;
+        
+        // 🛡️ 如果連 auth 資料都沒有，或是單機模式，就不跑巡邏（交給 checkLicense 處理）
+        if (!auth || !auth.key || auth.id === "未綁定") return;
 
         try {
-            // 🎯 1. 先抓取副鑰匙自己的最新資料
+            // 🎯 1. 抓取當前金鑰的雲端狀態
             const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             const now = new Date().getTime();
             
             let isBlock = false;
             let reason = "";
 
-            // --- 判斷 A：金鑰本身是否存在 ---
+            // --- 判斷 A：金鑰是否還活著 ---
             if (!keySnap.exists) {
                 isBlock = true;
                 reason = "您的授權已被從雲端撤銷";
             } else {
                 const keyData = keySnap.data();
 
-                // --- 🚀 重點：判斷 B (主從連鎖處決) ---
-                // 如果是員工 (staff)，必須回頭檢查老闆 (admin) 的期限
+                // --- 🚀 關鍵：主從連鎖處決 ---
+                // 如果是副鑰 (staff)，必須檢查該店號的「店長主金鑰 (admin)」
                 if (keyData.role === 'staff') {
                     const masterSnap = await db.collection("LicenseKeys_Booking")
-                        .where("salonId", "==", auth.id) // 確保店號一致
+                        .where("salonId", "==", auth.id)
                         .where("role", "==", "admin")
                         .get();
 
                     if (!masterSnap.empty) {
                         const masterData = masterSnap.docs[0].data();
-                        // 漏洞修正：如果老闆的主鑰過期，員工副鑰必須連帶鎖死
+                        // 💀 連動鎖：老闆沒續費，員工一起死
                         if (masterData.expire && now > masterData.expire) {
                             isBlock = true;
-                            reason = "店鋪主授權已失效，請聯繫店長續費";
+                            reason = "店鋪主授權試用期已滿，請聯繫店長";
                         }
                     } else {
                         isBlock = true;
-                        reason = "主授權異常，請重新驗證";
+                        reason = "找不到店鋪主授權，系統已鎖定";
                     }
                 }
 
-                // --- 判斷 C：檢查自身試用期是否截止 ---
+                // --- 判斷 B：自身金鑰是否過期 ---
                 if (!isBlock && keyData.expire && now > keyData.expire) {
                     isBlock = true;
-                    reason = "您的授權期限已屆滿";
+                    reason = "您的試用授權已屆滿";
                 }
 
-                // --- 判斷 D：店號安全檢查 ---
+                // --- 判斷 C：店號防盜檢查 ---
                 if (!isBlock && auth.id !== keyData.salonId) {
                     isBlock = true;
                     reason = "安全驗證異常 (店號不符)";
                 }
             }
 
-            // 🚀 執行鎖死或「自動解除」
+            // 🚀 執行鎖死或自動解鎖
             if (isBlock) {
+                // 只要沒續費，2 秒一到，executeSystemLockdown 會噴出黑色遮罩
                 executeSystemLockdown(reason);
             } else {
-                // ✨ 核心升級：如果現在「合法」了（表示後台剛加完時間）
-                // 自動移除黑色的鎖定遮罩，恢復使用！
+                // ✨ 鑽石修復：如果後台加完天數變「合法」了，自動撤銷黑屏
                 const mask = document.getElementById('security-mask');
                 if (mask) {
-                    console.log("✨ 授權已恢復，自動解鎖系統...");
+                    console.log("💎 授權已恢復，自動解除封鎖...");
                     location.reload(); 
                 }
             }
 
         } catch (e) {
-            console.warn("安全巡邏連線中...");
+            // 背景巡邏，不干擾正常操作，報錯僅記錄於控制台
+            console.warn("🛡️ 安全守衛巡邏中...");
         }
-    }, 2000); // 2秒自動巡邏一次
+    }, 2000); // 👈 正式改為 2000ms (2秒)，讓僥倖者無所遁形！
 }
 // ==========================================================================
 // --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
