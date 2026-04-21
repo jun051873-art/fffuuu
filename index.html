@@ -213,13 +213,14 @@ background: #f9f9fb !important;
     font-weight: 800 !important;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
-/* 🚀 物理縮放基礎樣式：移除所有延遲，讓縮放跟手 */
+/* 🚀 Aether V318: 極限物理縮放樣式 */
 .lane-container {
     display: flex;
     overflow-x: auto;
-    padding: 35px 45px;
+    padding: 20px !important; /* 👈 縮小邊距，把更多空間留給內容 */
     gap: var(--lane-gap) !important;
-    transition: none !important; /* 👈 絕對不能有 transition，否則縮放會卡頓 */
+    transition: none !important; /* 👈 確保手指捏的時候零延遲 */
+    align-items: flex-start;
 }
 
 .lane {
@@ -228,10 +229,13 @@ background: #f9f9fb !important;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    transform-origin: top left; /* 👈 縮放中心點設在左上角，放大才不會跑位 */
-    transition: none !important; /* 👈 同樣移除 transition */
-}        .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
-        .apt-card {
+    transform-origin: top left; /* 👈 縮放原點，保證放大時不跑偏 */
+    transition: none !important;
+    white-space: nowrap; /* 👈 縮小時名字不換行，維持上帝視角的整潔 */
+}
+ 
+     .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
+     .apt-card {
     padding: 30px;
     /* 🚀 這是讓卡片變精品毛玻璃的關鍵：透明度 0.55 + 高模糊 */
     background: rgba(255, 255, 255, 0.55) !important;
@@ -3528,21 +3532,23 @@ function popStyleDrawer() {
             const delta = dist / startDist;
             let newScale = currentScale * delta;
 
-            // 🚀 設定物理限制：最小縮到 0.4 (看全店)，最大 1.5 (看大字)
-            if (newScale < 0.4) newScale = 0.4;
-            if (newScale > 1.5) newScale = 1.5;
+        // 原本是 0.4，我們改成 0.15 (這代表可以縮小到原本的 15%，保證看全 10 個人)
+            if (newScale < 0.15) newScale = 0.15; 
+            if (newScale > 2.0) newScale = 2.0; // 放大也給妳加碼到 2 倍，看細節更爽
 
-            // 核心控制：直接調整 CSS 變數，達成直擊人心的手感
+            // 🚀 2. 修改寬度計算的基數
+            // 為了讓縮小時更緊湊，我們把間距 (gap) 也跟著倍率大幅縮減
             document.documentElement.style.setProperty('--lane-w', (380 * newScale) + 'px');
             document.documentElement.style.setProperty('--lane-gap', (30 * newScale) + 'px');
+            
+            // 🚀 3. 同步縮放卡片內部的文字與按鈕
             document.documentElement.style.setProperty('--apt-scale', newScale);
-
             // 更新參考點與當前縮放值
             startDist = dist;
             currentScale = newScale;
         }
-    }, { passive: false });
-})();
+      }, { passive: false });
+ })();
 
 
 </script>
