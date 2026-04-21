@@ -17,6 +17,25 @@
     <style>
 
 
+/* 🚀 上帝模式下的微縮優化 */
+:root {
+    --apt-scale: 1;
+}
+
+.apt-card {
+    transform: scale(var(--apt-scale));
+    transform-origin: top left;
+    transition: all 0.4s ease;
+}
+
+/* 當寬度小於 150px 時，自動隱藏不重要的備註，只留名字 */
+@container (max-width: 150px) {
+    .apt-card div:not(:first-child) {
+        display: none; 
+    }
+}
+
+
 /* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
 .calendar-header {
     display: grid !important;
@@ -98,23 +117,24 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
-/* 🚀 修正：跑道容器（讓間距可動） */
+/* 🚀 修正 1：跑道容器，讓它在手機上更靈活 */
 .lane-container { 
     display: flex; 
     overflow-x: auto; 
-    padding: 35px 45px; 
-    gap: var(--lane-gap) !important; 
+    padding: 20px 15px; /* 👈 縮小四周邊距，手機版才不會太擠 */
+    gap: var(--lane-gap, 30px) !important; 
     transition: gap 0.4s ease;
 }
 
-/* 🚀 修正：跑道寬度（實現上帝視角的關鍵） */
+/* 🚀 修正 2：跑道本體（請檢查有沒有重複寫死的 380px，全部刪掉） */
 .lane { 
     flex: 1; 
-    min-width: var(--lane-w) !important; 
+    /* 🎯 這裡最重要！把原本的 380px 刪掉，只留下面這一行 */
+    min-width: var(--lane-w, 380px) !important; 
     display: flex; 
     flex-direction: column; 
     gap: 20px; 
-    transition: min-width 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
 }
 
 /* 🚀 修正：預約卡片（同步微縮內容） */
@@ -3524,32 +3544,39 @@ function popStyleDrawer() {
 }
 
 // 🔭 V318 一覽模式（上帝視角）切換控制
+
 let isEagleEye = false;
 function toggleEagleEye() {
     const root = document.documentElement;
     const btn = document.getElementById('eagle-eye-btn');
+    const lanes = document.getElementById('day-lanes');
 
     if (!isEagleEye) {
-        // 進入一覽模式：縮小跑道寬度、間距與內容比例
-        root.style.setProperty('--lane-w', '220px');     
-        root.style.setProperty('--lane-gap', '12px');    
-        root.style.setProperty('--apt-scale', '0.88');   
+        // 🚀 上帝模式開啟：暴力縮小
+        root.style.setProperty('--lane-w', '125px');      // 跑道縮到超級窄
+        root.style.setProperty('--lane-gap', '5px');      // 間距幾乎消失
+        root.style.setProperty('--apt-scale', '0.6');     // 卡片內容縮小 60%
         
-        btn.innerHTML = `<i class="fas fa-compress-alt"></i> 標準模式`;
-        btn.style.color = "#D4AF37"; // 變金色提醒
+        // 讓容器不換行，強制並排
+        lanes.style.alignItems = 'flex-start';
+        lanes.style.padding = '10px';
+        
+        btn.innerHTML = `<i class="fas fa-compress-alt"></i> 標準`;
+        btn.style.background = "rgba(212, 175, 55, 0.4)"; 
         isEagleEye = true;
     } else {
-        // 恢復標準模式
+        // 🎨 回歸標準：賈伯斯式的舒適大器
         root.style.setProperty('--lane-w', '380px');
         root.style.setProperty('--lane-gap', '30px');
         root.style.setProperty('--apt-scale', '1');
         
-        btn.innerHTML = `<i class="fas fa-expand-alt"></i> 一覽模式`;
-        btn.style.color = "#1d1d1f";
+        lanes.style.padding = '35px 45px';
+        
+        btn.innerHTML = `<i class="fas fa-expand-alt"></i> 一覽`;
+        btn.style.background = "rgba(255, 255, 255, 0.4)";
         isEagleEye = false;
     }
 }
-
 
 </script>
 </body>
