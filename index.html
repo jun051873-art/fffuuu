@@ -17,25 +17,6 @@
     <style>
 
 
-/* 🚀 上帝模式下的微縮優化 */
-:root {
-    --apt-scale: 1;
-}
-
-.apt-card {
-    transform: scale(var(--apt-scale));
-    transform-origin: top left;
-    transition: all 0.4s ease;
-}
-
-/* 當寬度小於 150px 時，自動隱藏不重要的備註，只留名字 */
-@container (max-width: 150px) {
-    .apt-card div:not(:first-child) {
-        display: none; 
-    }
-}
-
-
 /* 🚀 補丁 1：強制日曆週標題（日一二...）與下方數字對齊 */
 .calendar-header {
     display: grid !important;
@@ -102,48 +83,9 @@
 
 
 
-   :root { 
-    --primary: #1d1d1f; 
-    --gold: #D4AF37; 
-    --luxe-border: rgba(212, 175, 55, 0.4); 
-    --glass: rgba(255, 255, 255, 0.6); 
-    --round-pill: 40px; 
+    :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
     
-    /* 🚀 鷹眼引擎：縮放控制閥 */
-    --lane-w: 380px;      /* 預設跑道寬度 */
-    --lane-gap: 30px;     /* 預設跑道間距 */
-    --apt-scale: 1;       /* 預設卡片縮放 */
-}
-
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
-/* 🚀 修正 1：跑道容器，讓它在手機上更靈活 */
-.lane-container { 
-    display: flex; 
-    overflow-x: auto; 
-    padding: 20px 15px; /* 👈 縮小四周邊距，手機版才不會太擠 */
-    gap: var(--lane-gap, 30px) !important; 
-    transition: gap 0.4s ease;
-}
-
-/* 🚀 修正 2：跑道本體（請檢查有沒有重複寫死的 380px，全部刪掉） */
-.lane { 
-    flex: 1; 
-    /* 🎯 這裡最重要！把原本的 380px 刪掉，只留下面這一行 */
-    min-width: var(--lane-w, 380px) !important; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 20px; 
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
-}
-
-/* 🚀 修正：預約卡片（同步微縮內容） */
-.apt-card {
-    /* ... 你原本的樣式 ... */
-    transform: scale(var(--apt-scale));
-    transform-origin: top left;
-    transition: transform 0.4s ease;
-}
     /* --- Aether Flow: 物理釘子修正版 --- */
 html, body { 
     height: 100%; width: 100%; margin: 0; padding: 0; 
@@ -271,9 +213,24 @@ background: #f9f9fb !important;
     font-weight: 800 !important;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
-        .lane-container { display: flex; overflow-x: auto; padding: 35px 45px; gap: 30px; flex: 1; align-items: flex-start; }
-        .lane { flex: 1; min-width: 380px; display: flex; flex-direction: column; gap: 20px; }
-        .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
+/* 🚀 物理縮放基礎樣式：移除所有延遲，讓縮放跟手 */
+.lane-container {
+    display: flex;
+    overflow-x: auto;
+    padding: 35px 45px;
+    gap: var(--lane-gap) !important;
+    transition: none !important; /* 👈 絕對不能有 transition，否則縮放會卡頓 */
+}
+
+.lane {
+    flex: 1;
+    min-width: var(--lane-w) !important;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transform-origin: top left; /* 👈 縮放中心點設在左上角，放大才不會跑位 */
+    transition: none !important; /* 👈 同樣移除 transition */
+}        .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
         .apt-card {
     padding: 30px;
     /* 🚀 這是讓卡片變精品毛玻璃的關鍵：透明度 0.55 + 高模糊 */
@@ -626,7 +583,7 @@ html, body {
         <div class="content-scroll"><div id="cal-grid" class="calendar-grid"></div></div>
     </div>
 
-<div id="pg-day" class="page">
+    <div id="pg-day" class="page">
         <div class="header">
             <div style="display:flex; align-items:center; gap:25px;">
                 <i class="fas fa-chevron-left luxe-btn" style="border:none;" onclick="showP('pg-res')"></i>
@@ -634,16 +591,11 @@ html, body {
                 <div id="day-title" style="font-weight:900; font-size:2rem;"></div>
                 <i class="fas fa-chevron-right luxe-btn" onclick="shiftDay(1)"></i>
             </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <div class="luxe-btn" onclick="toggleEagleEye()" id="eagle-eye-btn" style="background: rgba(255,255,255,0.4); border: 1px solid var(--luxe-border);">
-                    <i class="fas fa-expand-alt"></i> 一覽模式
-                </div>
-                <div class="luxe-btn" onclick="goToday()">今天</div>
-            </div>
+            <div class="luxe-btn" onclick="goToday()">今天</div>
         </div>
         <div class="lane-container" id="day-lanes"></div>
     </div>
+
     <div id="pg-cli" class="page">
        <div class="header">
             <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
@@ -3543,40 +3495,55 @@ function popStyleDrawer() {
     });
 }
 
-// 🔭 V318 一覽模式（上帝視角）切換控制
+// ==========================================================================
+// 📱 Aether V318: 物理縮放引擎 (雙指操作直覺版)
+// ==========================================================================
+(function() {
+    const laneArea = document.getElementById('day-lanes');
+    if (!laneArea) return;
 
-let isEagleEye = false;
-function toggleEagleEye() {
-    const root = document.documentElement;
-    const btn = document.getElementById('eagle-eye-btn');
-    const lanes = document.getElementById('day-lanes');
+    let currentScale = 1;
+    let startDist = 0;
 
-    if (!isEagleEye) {
-        // 🚀 上帝模式開啟：暴力縮小
-        root.style.setProperty('--lane-w', '125px');      // 跑道縮到超級窄
-        root.style.setProperty('--lane-gap', '5px');      // 間距幾乎消失
-        root.style.setProperty('--apt-scale', '0.6');     // 卡片內容縮小 60%
-        
-        // 讓容器不換行，強制並排
-        lanes.style.alignItems = 'flex-start';
-        lanes.style.padding = '10px';
-        
-        btn.innerHTML = `<i class="fas fa-compress-alt"></i> 標準`;
-        btn.style.background = "rgba(212, 175, 55, 0.4)"; 
-        isEagleEye = true;
-    } else {
-        // 🎨 回歸標準：賈伯斯式的舒適大器
-        root.style.setProperty('--lane-w', '380px');
-        root.style.setProperty('--lane-gap', '30px');
-        root.style.setProperty('--apt-scale', '1');
-        
-        lanes.style.padding = '35px 45px';
-        
-        btn.innerHTML = `<i class="fas fa-expand-alt"></i> 一覽`;
-        btn.style.background = "rgba(255, 255, 255, 0.4)";
-        isEagleEye = false;
-    }
-}
+    laneArea.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            // 抓取兩指間的初始物理距離
+            startDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    }, { passive: false });
+
+    laneArea.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault(); // 攔截系統預設縮放，讓手指直接接管 DOM
+            
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+
+            // 計算縮放變化量
+            const delta = dist / startDist;
+            let newScale = currentScale * delta;
+
+            // 🚀 設定物理限制：最小縮到 0.4 (看全店)，最大 1.5 (看大字)
+            if (newScale < 0.4) newScale = 0.4;
+            if (newScale > 1.5) newScale = 1.5;
+
+            // 核心控制：直接調整 CSS 變數，達成直擊人心的手感
+            document.documentElement.style.setProperty('--lane-w', (380 * newScale) + 'px');
+            document.documentElement.style.setProperty('--lane-gap', (30 * newScale) + 'px');
+            document.documentElement.style.setProperty('--apt-scale', newScale);
+
+            // 更新參考點與當前縮放值
+            startDist = dist;
+            currentScale = newScale;
+        }
+    }, { passive: false });
+})();
+
 
 </script>
 </body>
