@@ -235,9 +235,8 @@ background: #f9f9fb !important;
 }
  
      .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
-     .apt-card {
+    .apt-card {
     padding: 30px;
-    /* 🚀 這是讓卡片變精品毛玻璃的關鍵：透明度 0.55 + 高模糊 */
     background: rgba(255, 255, 255, 0.55) !important;
     backdrop-filter: blur(30px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
@@ -249,7 +248,17 @@ background: #f9f9fb !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: 0.4s;
+
+    /* 🚀 物理縮放核心補丁 */
+    transition: none !important; /* 👈 移除 transition，縮放才不會有殘影 */
+    transform: scale(var(--apt-scale)); /* 👈 讓內容跟著手指變大變小 */
+    transform-origin: top left; /* 👈 縮放基準點鎖死左上角 */
+    
+    /* 🚀 寬度補償公式：防止縮小時卡片橫向跟著縮水 */
+    width: calc(100% / var(--apt-scale)) !important; 
+    
+    /* 防止卡片內的文字因為縮小而換行亂掉 */
+    overflow: hidden;
 }
         /* --- 【Aether Flow 美學語言：比例優化版】 --- */
         /* --- Aether Flow: 核心導航整合 --- */
