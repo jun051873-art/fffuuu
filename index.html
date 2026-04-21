@@ -664,108 +664,36 @@ const db = firebase.firestore();
 // ==========================================================================
 // --- 🚀 V318 鋼鐵存檔守門員：保留原功能 + 即時權限封鎖版 ---
 async function saveS() { 
-    // 1. 取得授權資訊
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.key) return;
 
-    // 🚀 【鋼鐵驗證核心】：存檔前先問雲端這把鑰匙還在不在
     try {
-        const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
-        const now = new Date().getTime();
-
-        // 判斷：金鑰被刪除 OR 試用期滿 OR 店號不符
-        if (!keySnap.exists || (keySnap.data().expire && now > keySnap.data().expire)) {
-            let reason = !keySnap.exists ? "授權已被撤銷" : "試用期限已屆滿";
-            
-            // 立即執行毀滅性封鎖 (不減反增：加入自動清除與鎖死)
-            localStorage.clear(); 
-            if (typeof executeSystemLockdown === 'function') {
-                executeSystemLockdown(reason); 
-            } else {
-                Swal.fire({ icon: 'error', title: '系統存取受限', text: reason, confirmButtonColor: '#1d1d1f' })
-                    .then(() => location.reload());
-            }
-            return; // 攔截！不執行後續存檔
-        }
-
-        // 2. 本機備份 (保留妳的原代碼)
+        // 先將資料存入本機，保證第一時間不卡頓
         localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
-        // 3. 雲端同步 (保留妳的原代碼並執行)
+        // 雲端同步 (如果店號正確)
         if (auth.id && auth.id !== "未綁定") {
+            // 這裡使用 update 或是 set 取決於你是否要覆蓋整個文件
             await db.collection("Salons").doc(auth.id).set({
                 ...store,
                 syncCode: auth.key 
             });
+
             console.log("雲端同步成功:", auth.id);
 
-            // 🚀 視覺回饋：保留妳最愛的 Toast
+            // 只有存檔成功才跳 Toast
             const Toast = Swal.mixin({
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
-                timer: 1500,
-                timerProgressBar: true,
+                timer: 1000,
                 background: '#fff',
                 color: '#1d1d1f'
             });
             Toast.fire({ icon: 'success', title: '雲端同步成功' });
         }
     } catch (e) {
-        console.error("雲端同步失敗", e);
-        const Toast = Swal.mixin({ 
-            toast: true, 
-            position: 'top-end', 
-            showConfirmButton: false, 
-            timer: 2000,
-            background: '#fff',
-            color: '#1d1d1f'
-        });
-        Toast.fire({ icon: 'error', title: '同步失敗，請檢查網路' });
-    }
-}
-// --- 🚀 V318 雲端抓取引擎：主副金鑰相容版 ---
-async function pullFromCloud() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    if (!auth || !auth.id) return;
-    try {
-        const doc = await db.collection("Salons").doc(auth.id).get();
-        if (doc.exists) {
-            const cloudData = doc.data();
-            const keyCheck = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
-            
-            const keyData = keyCheck.data();
-            const now = new Date().getTime();
-
-            // 🚀 強化門衛：檢查金鑰狀態
-            if (!keyCheck.exists || keyData.status !== "used" || (keyData.expire && now > keyData.expire)) {
-                let errMsg = '您的授權已被撤銷，請聯繫店長重新獲取金鑰。';
-                
-                if (keyData && keyData.expire && now > keyData.expire) {
-                    errMsg = '您的試用期已結束。請聯繫創作者購買正式版（LINE ID: 051873）。';
-                }
-
-                Swal.fire({
-                    icon: 'error',
-                    title: '授權失效',
-                    text: errMsg,
-                    confirmButtonColor: '#1d1d1f',
-                    allowOutsideClick: false
-                }).then(() => {
-                    localStorage.removeItem('v318_booking_auth');
-                    location.reload(); 
-                });
-                return;
-            }
-
-            // 驗證通過，刷入數據
-            store = cloudData;
-            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-            updateStoreUI();
-            initAll();
-        }
-    } catch (e) {
-        console.error("雲端抓取失敗", e);
+        console.error("同步報錯，但不影響本機運作", e);
     }
 }
           
@@ -848,18 +776,37 @@ function startSecurityHeartbeat() {
 // --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
 // ==========================================================================
 
-// 🚀 V318 鋼鐵門禁：主動式防護引擎 (續費相容版)
+
+// 🚀 V318 鋼鐵封鎖引擎：數據真空隔離版 (不減少、更強大)
 function executeSystemLockdown(reason) {
     console.error("🚨 安全攔截啟動: " + reason);
     
-    // 🚀 核心修正：只有在惡意情況下才銷毀本地快取
-    // 如果只是「過期」，我們必須保留 auth 資訊，心跳監控才能持續運作並在續費後自動解封
+    // 🎯 第一階段：惡意行為處決
     if (reason === "您的授權已被店長從雲端撤銷" || reason === "安全驗證異常 (店號不符)") {
         localStorage.removeItem('v318_booking_auth');
         localStorage.removeItem('SALON_LOCK_V318');
+        location.reload(); // 立即重新導向清空
+        return;
     }
-    
-    // 建立最高等級的黑色阻斷遮罩
+
+    // 🎯 第二階段：數據隔離 (Data Vacuum)
+    // 即使刪掉遮罩，記憶體內的資料也必須為空，讓對方看不到也改不到
+    window.store = { 
+        stylists: [], tags: [], appointments: [], clients: [], offDays: [],
+        storeName: "系統已鎖定", startH: "11:00", endH: "11:00"
+    };
+
+    // 立即重新渲染空白 UI
+    if (typeof initMonth === 'function') initMonth();
+    if (typeof renderCli === 'function') renderCli();
+    if (typeof renderStats === 'function') renderStats();
+
+    // 🎯 第三階段：物理阻斷 UI
+    // 隱藏所有操作按鈕與導航，讓他連點「新增」的機會都沒有
+    const uiElements = document.querySelectorAll('.nav, .fab, .header');
+    uiElements.forEach(el => el.style.display = 'none');
+
+    // 🎯 第四階段：建立最高等級黑色鋼鐵遮罩
     if (!document.getElementById('security-mask')) {
         const mask = document.createElement('div');
         mask.id = 'security-mask';
@@ -868,28 +815,42 @@ function executeSystemLockdown(reason) {
             background: #1d1d1f; color: white; z-index: 999999999; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: 'Noto Sans TC', sans-serif; text-align: center; padding: 20px;
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%);
         `;
         mask.innerHTML = `
-            <i class="fas fa-clock" style="font-size: 6rem; color: #D4AF37; margin-bottom: 30px; animation: pulse 2s infinite;"></i>
-            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1px;">系統授權已屆滿</h1>
-            <p style="color: #888; margin-top: 15px; font-size: 1.2rem; max-width: 300px;">原因：${reason}</p>
-            <div style="margin-top: 40px; padding: 25px; border: 1.5px solid rgba(212,175,55,0.3); border-radius:30px; background:rgba(255,255,255,0.05);">
-                <p style="font-size: 0.95rem; color: #D4AF37; font-weight:900;">後台正在監控授權狀態...<br>若您已完成續費，稍候將自動恢復使用。</p>
+            <div style="margin-bottom: 30px;">
+                <i class="fas fa-crown" style="font-size: 5rem; color: #D4AF37; filter: drop-shadow(0 0 20px rgba(212,175,55,0.4)); animation: pulse 2s infinite;"></i>
             </div>
-            <button onclick="location.reload()" style="margin-top: 50px; padding: 18px 50px; border-radius: 35px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer;">手動檢查狀態</button>
-            <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>
+            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1.5px; margin-bottom: 8px;">AETHER PRO</h1>
+            <p style="color: #D4AF37; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px;">系統授權已屆滿</p>
+            
+            <div style="margin-top: 30px; padding: 25px; border: 1.5px solid rgba(212,175,55,0.25); border-radius:35px; background:rgba(255,255,255,0.03); max-width: 320px;">
+                <p style="font-size: 0.9rem; color: #aaa; line-height: 1.6; margin:0;">
+                    原因：${reason}<br><br>
+                    <span style="color:#fff;">為了數據安全，系統已暫時隔離您的預約與顧客資料。</span><br><br>
+                    <i class="fas fa-satellite-dish" style="color:#06C755; margin-right:5px;"></i> 雲端正自動偵測續費狀態...
+                </p>
+            </div>
+
+            <button onclick="location.reload()" style="margin-top: 40px; padding: 18px 55px; border-radius: 40px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer; font-size:1.1rem; transition:0.3s;">
+                手動檢查授權
+            </button>
+            
+            <p style="margin-top: 40px; font-size: 0.75rem; color: #444; font-weight:900; letter-spacing:1px;">
+                © 2026 小刀工作室 | LINE: 051873
+            </p>
+            
+            <style>
+                @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+                body { overflow: hidden !important; position: fixed !important; width: 100%; }
+            </style>
         `;
         document.body.appendChild(mask);
-        
-        // 移除內容區，防止規避
-        const mainPages = document.querySelectorAll('.page, .nav, .fab');
-        mainPages.forEach(p => p.remove());
     }
     
+    // 拋出錯誤終止所有 JS 後續執行
     throw new Error("ACCESS_DENIED_WAITING_FOR_RENEWAL");
 }
-
 // 🚀 V318 安全心跳：主從連鎖 + 續費自動解鎖
 function startSecurityHeartbeat() {
     console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
@@ -1098,18 +1059,25 @@ container.addEventListener('click', (e) => {
     if(e.target.id !== 'pop-p') document.getElementById('pop-box-p').style.display = 'none'; // 🚀 加上這行
 });
         },
-        preConfirm: () => ({
-            n: document.getElementById('pop-n').value,
-            sex: document.getElementById('pop-sex').value,
-            p: document.getElementById('pop-p').value,
-            c: document.getElementById('pop-c').value,
-            styId: document.getElementById('pop-s').value,
-            price: document.getElementById('pop-price').value,
-            note: document.getElementById('pop-note').value,
-            d: document.getElementById('pop-d').value,
-            t: document.getElementById('pop-t').value,
-            saveCli: document.getElementById('pop-save-cli').checked
-        })
+        preConfirm: () => {
+            const n = document.getElementById('pop-n').value.trim();
+            if (!n) {
+                Swal.showValidationMessage('請輸入顧客姓名');
+                return false;
+            }
+            return {
+                n: n,
+                sex: document.getElementById('pop-sex').value,
+                p: document.getElementById('pop-p')?.value || "",
+                c: "1", 
+                styId: document.getElementById('pop-s').value,
+                price: document.getElementById('pop-price')?.value || "0",
+                note: document.getElementById('pop-note')?.value || "",
+                d: document.getElementById('pop-d').value,
+                t: document.getElementById('pop-t').value,
+                saveCli: document.getElementById('pop-save-cli').checked
+            };
+        }
     });
 
    if (res && res.n) {
