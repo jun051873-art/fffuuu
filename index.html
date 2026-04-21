@@ -784,69 +784,86 @@ function startSecurityHeartbeat() {
 // 🛡️ V318 鋼鐵安全引擎：數據真空隔離 + 2秒頻率主從連動 (整合版)
 // ==========================================================================
 
-// 🚀 第一部分：封鎖引擎 (負責蓋黑幕、清資料、阻斷操作)
+// ==========================================================================
+// 🛡️ 核心：數據存檔守門員 (防止隔離期間誤存空資料上雲端)
+// ==========================================================================
+async function saveS() { 
+    // 🚀 鋼鐵保險：如果系統處於隔離鎖定狀態 (IS_LOCKED_VACUUM)，禁止任何存檔動作
+    if (window.IS_LOCKED_VACUUM === true) {
+        console.error("🚨 數據隔離保護中，攔截非法存檔請求！");
+        return; 
+    }
+    
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.key) return;
+
+    try {
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
+        if (auth.id && auth.id !== "未綁定") {
+            await db.collection("Salons").doc(auth.id).set({
+                ...store,
+                syncCode: auth.key 
+            });
+            console.log("雲端同步成功:", auth.id);
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
+            Toast.fire({ icon: 'success', title: '雲端同步成功' });
+        }
+    } catch (e) { console.error("同步失敗", e); }
+}
+
+// ==========================================================================
+// 🚀 第一部分：封鎖引擎 (隔離數據但不 reload，保留背景巡邏能力)
+// ==========================================================================
 function executeSystemLockdown(reason) {
-    // 🎯 1. 惡意行為處決 (店號不符或被撤銷直接踢出去)
+    // 🎯 1. 惡意行為處決 (店號不符/撤銷)
     if (reason === "您的授權已被從雲端撤銷" || reason === "安全驗證異常 (店號不符)") {
-        console.error("🚨 惡意異常：清空本地憑證並登出");
         localStorage.removeItem('v318_booking_auth');
         localStorage.removeItem('SALON_LOCK_V318');
         location.reload(); 
         return;
     }
 
-    // 🎯 2. 數據隔離 (Data Vacuum) - 讓記憶體內的資料歸零
+    // 🎯 2. 啟動隔離鎖：禁止 saveS 存檔，並清空目前記憶體資料
+    window.IS_LOCKED_VACUUM = true; 
     window.store = { 
         stylists: [], tags: [], appointments: [], clients: [], offDays: [],
         storeName: "系統已鎖定", startH: "11:00", endH: "11:00"
     };
 
-    // 🎯 3. 立即重新渲染空白 UI 並隱藏操作鈕
+    // 🎯 3. UI 物理阻斷：隱藏操作鈕
     if (typeof initMonth === 'function') initMonth();
     if (typeof renderCli === 'function') renderCli();
     const uiElements = document.querySelectorAll('.nav, .fab, .header');
     uiElements.forEach(el => el.style.display = 'none');
 
-    // 🎯 4. 建立鋼鐵黑色遮罩 (如果還沒建立的話)
+    // 🎯 4. 蓋上鋼鐵黑色遮罩 (毛玻璃質感)
     if (!document.getElementById('security-mask')) {
         const mask = document.createElement('div');
         mask.id = 'security-mask';
-        mask.style = `
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #1d1d1f; color: white; z-index: 999999999; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-family: 'Noto Sans TC', sans-serif; text-align: center; padding: 20px;
-            backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%);
-        `;
+        mask.style = `position:fixed; top:0; left:0; width:100vw; height:100vh; background:#1d1d1f; color:white; z-index:999999999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Noto Sans TC',sans-serif; text-align:center; padding:20px; backdrop-filter:blur(25px) saturate(180%); -webkit-backdrop-filter:blur(25px) saturate(180%);`;
         mask.innerHTML = `
-            <div style="margin-bottom: 30px;">
-                <i class="fas fa-crown" style="font-size: 5rem; color: #D4AF37; filter: drop-shadow(0 0 20px rgba(212,175,55,0.4)); animation: pulse 2s infinite;"></i>
-            </div>
-            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1.5px; margin-bottom: 8px;">AETHER PRO</h1>
-            <p style="color: #D4AF37; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px;">系統授權已屆滿</p>
-            <div style="margin-top: 30px; padding: 25px; border: 1.5px solid rgba(212,175,55,0.25); border-radius:35px; background:rgba(255,255,255,0.03); max-width: 320px;">
-                <p style="font-size: 0.9rem; color: #aaa; line-height: 1.6; margin:0;">
+            <div style="margin-bottom:30px;"><i class="fas fa-crown" style="font-size:5rem; color:#D4AF37; animation:pulse 2s infinite;"></i></div>
+            <h1 style="font-size:2.2rem; font-weight:900; letter-spacing:-1.5px; margin-bottom:8px;">AETHER PRO</h1>
+            <p style="color:#D4AF37; font-weight:900; font-size:1.2rem; letter-spacing:2px;">系統授權已屆滿</p>
+            <div style="margin-top:30px; padding:25px; border:1.5px solid rgba(212,175,55,0.25); border-radius:35px; background:rgba(255,255,255,0.03); max-width:320px;">
+                <p style="font-size:0.9rem; color:#aaa; line-height:1.6; margin:0;">
                     原因：${reason}<br><br>
-                    <span style="color:#fff;">為了數據安全，系統已暫時隔離您的預約與顧客資料。</span><br><br>
+                    <span style="color:#fff;">為了數據安全，系統已隔離您的資料。</span><br><br>
                     <i class="fas fa-satellite-dish" style="color:#06C755; margin-right:5px;"></i> 雲端正自動偵測續費狀態...
                 </p>
             </div>
-            <button onclick="location.reload()" style="margin-top: 40px; padding: 18px 55px; border-radius: 40px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer; font-size:1.1rem; transition:0.3s;">
-                手動檢查授權
-            </button>
-            <p style="margin-top: 40px; font-size: 0.75rem; color: #444; font-weight:900; letter-spacing:1px;">© 2026 小刀工作室 | LINE: 051873</p>
-            <style>
-                @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
-                body { overflow: hidden !important; position: fixed !important; width: 100%; }
-            </style>
+            <button onclick="location.reload()" style="margin-top:40px; padding:18px 55px; border-radius:40px; border:2px solid #fff; background:transparent; color:white; font-weight:900; cursor:pointer;">手動檢查</button>
+            <style> @keyframes pulse { 0%{opacity:1;transform:scale(1);} 50%{opacity:0.7;transform:scale(0.95);} 100%{opacity:1;transform:scale(1);} } body{overflow:hidden!important;position:fixed!important;width:100%;} </style>
         `;
         document.body.appendChild(mask);
     }
 }
 
-// 🚀 第二部分：安全心跳監控 (負責 2秒一次巡邏，並在續費後自動解鎖)
+// ==========================================================================
+// 🚀 第二部分：安全心跳監控 (每 2 秒一次，偵測到恢復後強制回填數據)
+// ==========================================================================
 function startSecurityHeartbeat() {
-    console.log("🛡️ V318 安全守衛已上崗，執行 2 秒/次 鋼鐵監控...");
+    console.log("🛡️ V318 鋼鐵監控上崗 (2秒/次)...");
     
     setInterval(async () => {
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -855,7 +872,6 @@ function startSecurityHeartbeat() {
         try {
             const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             const now = new Date().getTime();
-            
             let isBlock = false;
             let reason = "";
 
@@ -864,55 +880,37 @@ function startSecurityHeartbeat() {
                 reason = "您的授權已被從雲端撤銷";
             } else {
                 const keyData = keySnap.data();
-
-                // 🚀 主從連鎖：員工副鑰需檢查老闆主鑰
+                // 💎 副鑰連動：檢查店鋪主鑰是否過期
                 if (keyData.role === 'staff') {
-                    const masterSnap = await db.collection("LicenseKeys_Booking")
-                        .where("salonId", "==", auth.id)
-                        .where("role", "==", "admin")
-                        .get();
-
-                    if (!masterSnap.empty) {
-                        const masterData = masterSnap.docs[0].data();
-                        if (masterData.expire && now > masterData.expire) {
-                            isBlock = true;
-                            reason = "店鋪主授權試用期已滿，請聯繫店長";
-                        }
-                    } else {
-                        isBlock = true;
-                        reason = "找不到店鋪主金鑰授權";
-                    }
+                    const mSnap = await db.collection("LicenseKeys_Booking").where("salonId", "==", auth.id).where("role", "==", "admin").get();
+                    if (!mSnap.empty) {
+                        const mData = mSnap.docs[0].data();
+                        if (mData.expire && now > mData.expire) { isBlock = true; reason = "店鋪主授權試用期已滿"; }
+                    } else { isBlock = true; reason = "找不到店鋪主金鑰"; }
                 }
-
-                // 自身過期檢查
-                if (!isBlock && keyData.expire && now > keyData.expire) {
-                    isBlock = true;
-                    reason = "您的試用授權已屆滿";
-                }
-                
-                // 店號防盜檢查
-                if (!isBlock && auth.id !== keyData.salonId) {
-                    isBlock = true;
-                    reason = "安全驗證異常 (店號不符)";
-                }
+                // 💎 自身過期檢查
+                if (!isBlock && keyData.expire && now > keyData.expire) { isBlock = true; reason = "您的試用授權已屆滿"; }
+                // 💎 店號安全檢查
+                if (!isBlock && auth.id !== keyData.salonId) { isBlock = true; reason = "安全驗證異常 (店號不符)"; }
             }
 
-            // 執行邏輯判定
             if (isBlock) {
-                // 如果目前是違法狀態，直接啟動鎖定引擎
                 executeSystemLockdown(reason);
             } else {
-                // ✨ 重點：自動解鎖邏輯
-                // 如果偵測到合法，且螢幕上有黑幕存在，代表剛續費成功
+                // ✨ 重點：偵測恢復解鎖
                 if (document.getElementById('security-mask')) {
-                    console.log("💎 偵測到授權恢復，立即解鎖系統...");
-                    location.reload(); // 重新整理網頁即可恢復所有資料與 UI
+                    console.log("💎 偵測到授權恢復，執行數據強制回填...");
+                    window.IS_LOCKED_VACUUM = false; // 解除隔離鎖
+                    
+                    // 解鎖時先抓一次雲端，保證 reload 完資料是熱騰騰的
+                    if (typeof pullFromCloud === 'function') {
+                        await pullFromCloud(); 
+                    }
+                    location.reload(); 
                 }
             }
-        } catch (e) {
-            console.warn("🛡️ 安全監控巡邏中...");
-        }
-    }, 2000); // 👈 強制設定 2 秒，針感十足！
+        } catch (e) { console.warn("🛡️ 安全巡邏中..."); }
+    }, 2000); 
 }
 
 
