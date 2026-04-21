@@ -769,7 +769,7 @@ async function pullFromCloud() {
     }
 }
           
-// 🚀 V318 鋼鐵安全性監控：每 10 秒自動執行一次雲端巡邏 (主從連動 + 續費自動解鎖版)
+// 🚀 V318 鋼鐵安全性監控：增加「主從連動」檢查與自動解鎖功能
 function startSecurityHeartbeat() {
     console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
     
@@ -778,24 +778,25 @@ function startSecurityHeartbeat() {
         if (!auth || !auth.key) return;
 
         try {
-            // 🎯 1. 抓取目前這把鑰匙的最新狀態
+            // 🎯 1. 先抓取副鑰匙自己的最新資料
             const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             const now = new Date().getTime();
             
             let isBlock = false;
             let reason = "";
 
-            // --- 判斷 A：金鑰本身是否存在 (檢查是否被撤銷) ---
+            // --- 判斷 A：金鑰本身是否存在 ---
             if (!keySnap.exists) {
                 isBlock = true;
                 reason = "您的授權已被從雲端撤銷";
             } else {
                 const keyData = keySnap.data();
 
-                // --- 🚀 關鍵漏洞修補：如果是副鑰 (staff)，強制檢查「主店鋪」是否過期 ---
+                // --- 🚀 重點：判斷 B (主從連鎖處決) ---
+                // 如果是員工 (staff)，必須回頭檢查老闆 (admin) 的期限
                 if (keyData.role === 'staff') {
                     const masterSnap = await db.collection("LicenseKeys_Booking")
-                        .where("salonId", "==", auth.id)
+                        .where("salonId", "==", auth.id) // 確保店號一致
                         .where("role", "==", "admin")
                         .get();
 
@@ -804,39 +805,44 @@ function startSecurityHeartbeat() {
                         // 漏洞修正：如果老闆的主鑰過期，員工副鑰必須連帶鎖死
                         if (masterData.expire && now > masterData.expire) {
                             isBlock = true;
-                            reason = "店鋪主授權試用期已滿，請聯繫店長";
+                            reason = "店鋪主授權已失效，請聯繫店長續費";
                         }
+                    } else {
+                        isBlock = true;
+                        reason = "主授權異常，請重新驗證";
                     }
                 }
 
-                // --- 判斷 B：檢查自身試用期是否截止 ---
+                // --- 判斷 C：檢查自身試用期是否截止 ---
                 if (!isBlock && keyData.expire && now > keyData.expire) {
                     isBlock = true;
-                    reason = "試用期限已屆滿";
+                    reason = "您的授權期限已屆滿";
                 }
 
-                // --- 判斷 C：店號安全檢查 ---
+                // --- 判斷 D：店號安全檢查 ---
                 if (!isBlock && auth.id !== keyData.salonId) {
                     isBlock = true;
                     reason = "安全驗證異常 (店號不符)";
                 }
             }
 
-            // 🚀 關鍵邏輯：處決或解封
+            // 🚀 執行鎖死或「自動解除」
             if (isBlock) {
                 executeSystemLockdown(reason);
             } else {
-                // 🚀 如果沒被封鎖且畫面有遮罩，表示後台剛加完天數，立即解除鎖屏
+                // ✨ 核心升級：如果現在「合法」了（表示後台剛加完時間）
+                // 自動移除黑色的鎖定遮罩，恢復使用！
                 const mask = document.getElementById('security-mask');
                 if (mask) {
-                    console.log("✨ 檢測到續費成功，自動解除鎖定...");
-                    location.reload(); // 重新整理恢復所有功能
+                    console.log("✨ 授權已恢復，自動解鎖系統...");
+                    location.reload(); 
                 }
             }
+
         } catch (e) {
             console.warn("安全巡邏連線中...");
         }
-    }, 10000); 
+    }, 10000); // 10秒自動巡邏一次
 }
 // ==========================================================================
 // --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
@@ -2487,19 +2493,46 @@ if(adminTrigger) {
                     let displayDays = "永久授權";
 
                     if (role === 'trial') {
-                        const { value: days } = await Swal.fire({
-                            title: '設定試用天數',
-                            input: 'number',
-                            inputValue: 30,
-                            confirmButtonColor: '#1d1d1f'
-                        });
-                        if (!days) return;
-                        const d = new Date();
-                        d.setDate(d.getDate() + parseInt(days));
-                        expireTimestamp = d.getTime(); 
-                        displayDays = days + " 天試用期"; 
-                    }
+    // 🚀 1. 先選擇時間單位
+    const { value: unit } = await Swal.fire({
+        title: '選擇試用時間單位',
+        input: 'radio',
+        inputOptions: {
+            'day': '天 (正式發佈用)',
+            'hour': '小時 (快速測試用)',
+            'min': '分鐘 (極速開發用)'
+        },
+        inputValue: 'day',
+        confirmButtonColor: '#1d1d1f'
+    });
 
+    if (!unit) return;
+
+    // 🚀 2. 輸入數值
+    const { value: amount } = await Swal.fire({
+        title: `設定試用${unit === 'day' ? '天數' : (unit === 'hour' ? '小時' : '分鐘')}`,
+        input: 'number',
+        inputValue: unit === 'day' ? 30 : 1,
+        confirmButtonColor: '#1d1d1f'
+    });
+
+    if (!amount) return;
+
+    const d = new Date();
+    let ms = 0;
+    if (unit === 'day') {
+        ms = parseInt(amount) * 24 * 60 * 60 * 1000;
+        displayDays = amount + " 天試用期";
+    } else if (unit === 'hour') {
+        ms = parseInt(amount) * 60 * 60 * 1000;
+        displayDays = amount + " 小時試用期";
+    } else {
+        ms = parseInt(amount) * 60 * 1000;
+        displayDays = amount + " 分鐘試用期";
+    }
+    
+    expireTimestamp = d.getTime() + ms;
+}
                     const newKey = "BOK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
                     // 🚀 主鑰匙存檔：不預設 salonId，讓使用者在激活時自己定義
