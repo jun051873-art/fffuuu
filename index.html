@@ -83,9 +83,47 @@
 
 
 
-    :root { --primary: #1d1d1f; --gold: #D4AF37; --luxe-border: rgba(212, 175, 55, 0.4); --glass: rgba(255, 255, 255, 0.6); --round-pill: 40px; }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+   :root { 
+    --primary: #1d1d1f; 
+    --gold: #D4AF37; 
+    --luxe-border: rgba(212, 175, 55, 0.4); 
+    --glass: rgba(255, 255, 255, 0.6); 
+    --round-pill: 40px; 
     
+    /* 🚀 鷹眼引擎：縮放控制閥 */
+    --lane-w: 380px;      /* 預設跑道寬度 */
+    --lane-gap: 30px;     /* 預設跑道間距 */
+    --apt-scale: 1;       /* 預設卡片縮放 */
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+/* 🚀 修正：跑道容器（讓間距可動） */
+.lane-container { 
+    display: flex; 
+    overflow-x: auto; 
+    padding: 35px 45px; 
+    gap: var(--lane-gap) !important; 
+    transition: gap 0.4s ease;
+}
+
+/* 🚀 修正：跑道寬度（實現上帝視角的關鍵） */
+.lane { 
+    flex: 1; 
+    min-width: var(--lane-w) !important; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    transition: min-width 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
+}
+
+/* 🚀 修正：預約卡片（同步微縮內容） */
+.apt-card {
+    /* ... 你原本的樣式 ... */
+    transform: scale(var(--apt-scale));
+    transform-origin: top left;
+    transition: transform 0.4s ease;
+}
     /* --- Aether Flow: 物理釘子修正版 --- */
 html, body { 
     height: 100%; width: 100%; margin: 0; padding: 0; 
@@ -568,7 +606,7 @@ html, body {
         <div class="content-scroll"><div id="cal-grid" class="calendar-grid"></div></div>
     </div>
 
-    <div id="pg-day" class="page">
+<div id="pg-day" class="page">
         <div class="header">
             <div style="display:flex; align-items:center; gap:25px;">
                 <i class="fas fa-chevron-left luxe-btn" style="border:none;" onclick="showP('pg-res')"></i>
@@ -576,11 +614,16 @@ html, body {
                 <div id="day-title" style="font-weight:900; font-size:2rem;"></div>
                 <i class="fas fa-chevron-right luxe-btn" onclick="shiftDay(1)"></i>
             </div>
-            <div class="luxe-btn" onclick="goToday()">今天</div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="luxe-btn" onclick="toggleEagleEye()" id="eagle-eye-btn" style="background: rgba(255,255,255,0.4); border: 1px solid var(--luxe-border);">
+                    <i class="fas fa-expand-alt"></i> 一覽模式
+                </div>
+                <div class="luxe-btn" onclick="goToday()">今天</div>
+            </div>
         </div>
         <div class="lane-container" id="day-lanes"></div>
     </div>
-
     <div id="pg-cli" class="page">
        <div class="header">
             <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
@@ -3479,6 +3522,34 @@ function popStyleDrawer() {
         confirmButtonColor: '#1d1d1f'
     });
 }
+
+// 🔭 V318 一覽模式（上帝視角）切換控制
+let isEagleEye = false;
+function toggleEagleEye() {
+    const root = document.documentElement;
+    const btn = document.getElementById('eagle-eye-btn');
+
+    if (!isEagleEye) {
+        // 進入一覽模式：縮小跑道寬度、間距與內容比例
+        root.style.setProperty('--lane-w', '220px');     
+        root.style.setProperty('--lane-gap', '12px');    
+        root.style.setProperty('--apt-scale', '0.88');   
+        
+        btn.innerHTML = `<i class="fas fa-compress-alt"></i> 標準模式`;
+        btn.style.color = "#D4AF37"; // 變金色提醒
+        isEagleEye = true;
+    } else {
+        // 恢復標準模式
+        root.style.setProperty('--lane-w', '380px');
+        root.style.setProperty('--lane-gap', '30px');
+        root.style.setProperty('--apt-scale', '1');
+        
+        btn.innerHTML = `<i class="fas fa-expand-alt"></i> 一覽模式`;
+        btn.style.color = "#1d1d1f";
+        isEagleEye = false;
+    }
+}
+
 
 </script>
 </body>
