@@ -2374,101 +2374,88 @@ async function popPriceEdit(aptId, ds) {
 // --- S8: 鋼鐵門禁與金鑰生成 ---
 // ==========================================================================
 
-// --- 🚀 V318 鋼鐵門禁：【解決彈窗跳不出 + 報錯攔截】終極修正版 ---
+
+// --- 🚀 V318 以太門禁：【溫柔提醒版】 ---
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
 
-    // 🎯 修正核心：如果完全沒資料，或是資料欄位不齊全(key或id是空的)，就強制彈窗
-    if (!auth || !auth.key || !auth.id) {
-        console.log("🛡️ 安全門禁：偵測到未激活狀態，準備彈出視窗...");
+    // 如果沒有授權資料，才跳出提醒
+    if (!auth || !auth.key || !auth.id || auth.id === "未綁定") {
+        console.log("🛡️ 安全門禁：進入溫柔提醒模式...");
         
-        const { value: res } = await Swal.fire({
+        const { value: res, dismiss } = await Swal.fire({
             title: '歡迎使用 Aether V318',
             html: `
                 <div style="padding:10px;">
-                    <p style="font-size:0.9rem; color:#888; margin-bottom:15px;">請輸入授權金鑰以激活系統</p>
-                    <input id="sw-key" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="輸入 6-10 位授權金鑰">
-                    <input id="sw-id" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="輸入店號 (如：A01)">
+                    <p style="font-size:0.9rem; color:#888; margin-bottom:15px;">您目前處於「單機模式」，激活後可開啟雲端同步。</p>
+                    <input id="sw-key" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="輸入授權金鑰">
+                    <input id="sw-id" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="確認店號 (如：A01)">
                 </div>`,
-            allowOutsideClick: false, // 沒輸入不準走
+            showCancelButton: true, // 🚀 關鍵：顯示取消按鈕
+            cancelButtonText: '先體驗看看', // 🚀 讓你可以點掉
             confirmButtonColor: '#1d1d1f',
             confirmButtonText: '立即激活系統',
+            allowOutsideClick: true, // 🚀 點外面也可以關掉
             preConfirm: () => {
                 const key = document.getElementById('sw-key').value.trim();
                 const id = document.getElementById('sw-id').value.trim();
                 if (!key || !id) {
-                    Swal.showValidationMessage('金鑰與店號皆為必填！');
+                    Swal.showValidationMessage('欲激活請填寫完整，或點取消先進入。');
                     return false;
                 }
                 return { key, id };
             }
         });
 
+        // 🎯 情況 A：使用者選擇激活
         if (res && res.key) {
             try {
-                // 1. 雲端驗證開始
                 const doc = await db.collection("LicenseKeys_Booking").doc(res.key).get();
-                
                 if (doc.exists) {
                     const keyData = doc.data();
-
-                    // 檢查是否已被使用過
                     if (keyData.status !== "unused") {
-                        Swal.fire('激活失敗', '此金鑰已被佔用或已失效', 'error').then(() => checkLicense());
-                        return;
+                        await Swal.fire('激活失敗', '此金鑰已被佔用', 'error');
+                        return checkLicense();
                     }
                     
-                    let updateData = {
-                        status: "used",
-                        activatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    // 角色分流判定
+                    let updateData = { status: "used", activatedAt: firebase.firestore.FieldValue.serverTimestamp() };
                     if (keyData.role === 'staff') {
                         if (res.id !== keyData.salonId) {
-                            Swal.fire('店號不符', `此金鑰僅限店號「${keyData.salonId}」使用`, 'error').then(() => checkLicense());
-                            return;
+                            await Swal.fire('店號不符', `此金鑰僅限店號「${keyData.salonId}」`, 'error');
+                            return checkLicense();
                         }
                     } else {
-                        updateData.salonId = res.id; // 主鑰匙綁定店號
+                        updateData.salonId = res.id;
                     }
 
-                    // 寫入雲端激活狀態
                     await db.collection("LicenseKeys_Booking").doc(res.key).update(updateData);
 
-                    // 2. 存入本地
-                    const finalAuth = { 
-                        key: res.key, 
-                        id: res.id, 
-                        role: keyData.role || 'staff', 
-                        expire: keyData.expire || null 
-                    };
+                    const finalAuth = { key: res.key, id: res.id, role: keyData.role || 'staff', expire: keyData.expire || null };
                     localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
 
-                    // 3. 成功反饋
-                    Swal.fire({
-                        icon: 'success',
-                        title: '系統激活成功',
-                        text: '正在進入專屬空間...',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => location.reload());
-
+                    await Swal.fire({ icon: 'success', title: '系統激活成功', timer: 1500, showConfirmButton: false });
+                    location.reload(); 
                 } else {
-                    Swal.fire('驗證失敗', '找不到此授權代碼', 'error').then(() => checkLicense());
+                    await Swal.fire('驗證失敗', '找不到此授權代碼', 'error');
+                    return checkLicense();
                 }
             } catch(e) {
-                console.error("激活引擎崩潰:", e);
-                Swal.fire('連線錯誤', '請檢查網路後再試', 'error');
+                console.error("激活錯誤:", e);
+                await Swal.fire('連線異常', '請檢查店號是否重複或 Rules 設定。', 'error');
+                return checkLicense();
             }
+        } 
+        // 🎯 情況 B：使用者點取消或點外面
+        else if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.backdrop) {
+            console.log("🌙 使用者選擇暫不激活，進入單機模式");
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            Toast.fire({ icon: 'info', title: '已進入單機試用模式' });
         }
     } else {
-        // ✅ 只有在 localStorage 真的有正確 key 的情況下才跑同步
-        console.log("💎 偵測到有效授權，連接雲端資料庫...");
+        // ✅ 已激活狀態，才跑雲端搬運
         pullFromCloud(); 
     }
 }
-
 // --- 🚀 V318 管理員長按生成引擎 (漏洞修補版) ---
 let pressTimer;
 const adminTrigger = document.getElementById('admin-trigger');
@@ -2946,6 +2933,45 @@ function renderStats() {
             </div>
         </div>`;
 }
+
+// --- 🚀 V318 雲端數據搬運工：確保激活後才啟動同步 ---
+async function pullFromCloud() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    
+    // 🛡️ 安全鎖：如果沒有授權資料，或店號未綁定，絕對不跑同步
+    if (!auth || !auth.id || auth.id === "未綁定" || !auth.key) {
+        console.log("☁️ 雲端同步跳過：尚未激活或無效店號");
+        return; 
+    }
+
+    try {
+        console.log("☁️ 正在從雲端下載店鋪資料 (ID: " + auth.id + ")...");
+        const snap = await db.collection("Salons").doc(auth.id).get();
+        
+        if (snap.exists) {
+            const data = snap.data();
+            
+            // 🎯 覆蓋本地 store
+            store = data;
+            
+            // 🎯 同步回本機快取，防止下次開機沒網路
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+            
+            // 🎯 重新驅動 UI 渲染最新數據
+            updateStoreUI();
+            initMonth();
+            renderCli();
+            
+            console.log("✅ 雲端數據同步完成！");
+        } else {
+            console.log("ℹ️ 雲端尚無此店號資料，準備上傳初始化快取...");
+            saveS(); 
+        }
+    } catch (e) {
+        console.warn("⚠️ 雲端同步異常，請檢查資料庫 Rules 權限設定", e);
+    }
+}
+
 async function editPayTag(id, old) {
     const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
     if(n) { store.payTagsDef.find(x => x.id === id).name = n; await saveS(); renderSet(); }
