@@ -848,15 +848,18 @@ function startSecurityHeartbeat() {
 // --- 🛡️ V318 鋼鐵門禁：主動式防護引擎 (販售版專用) ---
 // ==========================================================================
 
-// 1. 執行系統全封鎖：清空資料 + 黑色遮罩遮斷所有操作
+// 🚀 V318 鋼鐵門禁：主動式防護引擎 (續費相容版)
 function executeSystemLockdown(reason) {
     console.error("🚨 安全攔截啟動: " + reason);
     
-    // A. 立即銷毀本地快取，確保他重整也進不來
-    localStorage.removeItem('v318_booking_auth');
-    localStorage.removeItem('SALON_LOCK_V318');
+    // 🚀 核心修正：只有在惡意情況下才銷毀本地快取
+    // 如果只是「過期」，我們必須保留 auth 資訊，心跳監控才能持續運作並在續費後自動解封
+    if (reason === "您的授權已被店長從雲端撤銷" || reason === "安全驗證異常 (店號不符)") {
+        localStorage.removeItem('v318_booking_auth');
+        localStorage.removeItem('SALON_LOCK_V318');
+    }
     
-    // B. 建立最高等級的黑色阻斷遮罩
+    // 建立最高等級的黑色阻斷遮罩
     if (!document.getElementById('security-mask')) {
         const mask = document.createElement('div');
         mask.id = 'security-mask';
@@ -865,82 +868,98 @@ function executeSystemLockdown(reason) {
             background: #1d1d1f; color: white; z-index: 999999999; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-family: 'Noto Sans TC', sans-serif; text-align: center; padding: 20px;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         `;
         mask.innerHTML = `
-            <i class="fas fa-shield-alt" style="font-size: 6rem; color: #ff4d4d; margin-bottom: 30px; animation: pulse 2s infinite;"></i>
-            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1px;">系統存取已終止</h1>
+            <i class="fas fa-clock" style="font-size: 6rem; color: #D4AF37; margin-bottom: 30px; animation: pulse 2s infinite;"></i>
+            <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing:-1px;">系統授權已屆滿</h1>
             <p style="color: #888; margin-top: 15px; font-size: 1.2rem; max-width: 300px;">原因：${reason}</p>
             <div style="margin-top: 40px; padding: 25px; border: 1.5px solid rgba(212,175,55,0.3); border-radius:30px; background:rgba(255,255,255,0.05);">
-                <p style="font-size: 0.95rem; color: #D4AF37; font-weight:900;">您的授權已失效<br>本機快取資料已同步銷毀</p>
+                <p style="font-size: 0.95rem; color: #D4AF37; font-weight:900;">後台正在監控授權狀態...<br>若您已完成續費，稍候將自動恢復使用。</p>
             </div>
-            <button onclick="location.reload()" style="margin-top: 50px; padding: 18px 50px; border-radius: 35px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer;">返回登入介面</button>
+            <button onclick="location.reload()" style="margin-top: 50px; padding: 18px 50px; border-radius: 35px; border: 2px solid #fff; background: transparent; color: white; font-weight:900; cursor:pointer;">手動檢查狀態</button>
             <style>@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }</style>
         `;
         document.body.appendChild(mask);
+        
+        // 移除內容區，防止規避
+        const mainPages = document.querySelectorAll('.page, .nav, .fab');
+        mainPages.forEach(p => p.remove());
     }
     
-    // C. 暴力停止：移除所有頁面內容，防止透過控制台修改 CSS 規避
-    const mainPages = document.querySelectorAll('.page, .nav, .fab');
-    mainPages.forEach(p => p.remove());
-
-    // D. 拋出錯誤強迫停止所有後續 JS 執行
-    throw new Error("ACCESS_DENIED");
+    throw new Error("ACCESS_DENIED_WAITING_FOR_RENEWAL");
 }
 
-// 2. 核心監控心跳：每 10 秒去雲端「點名」一次
+// 🚀 V318 安全心跳：主從連鎖 + 續費自動解鎖
 function startSecurityHeartbeat() {
-    console.log("🛡️ V318 安全守衛已上崗，每 10 秒執行巡邏...");
+    console.log("🛡️ V318 安全守衛已上崗，執行主從連動監控...");
     
     setInterval(async () => {
         const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-        
-        // 如果原本就沒登入，不執行監控
         if (!auth || !auth.key) return;
 
         try {
-            // 🎯 直接從 Firebase 獲取這把鑰匙的實時狀態
+            // 🎯 1. 獲取當前金鑰狀態
             const keySnap = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
             const now = new Date().getTime();
             
             let isBlock = false;
             let reason = "";
 
-            // --- 判斷 A：金鑰是否還存在 (店長是否點了撤銷) ---
             if (!keySnap.exists) {
                 isBlock = true;
-                reason = "您的授權已被店長從雲端撤銷";
+                reason = "您的授權已被從雲端撤銷";
             } else {
                 const keyData = keySnap.data();
-                
-                // --- 判斷 B：試用期是否突然截止 ---
-                if (keyData.expire && now > keyData.expire) {
+
+                // 🚀 【核心修正】：如果是副鑰 (staff)，必須檢查對應的「店長主金鑰」是否過期
+                if (keyData.role === 'staff') {
+                    const masterSnap = await db.collection("LicenseKeys_Booking")
+                        .where("salonId", "==", auth.id)
+                        .where("role", "==", "admin")
+                        .get();
+
+                    if (!masterSnap.empty) {
+                        const masterData = masterSnap.docs[0].data();
+                        // 如果主裝置過期，副裝置同步鎖死
+                        if (masterData.expire && now > masterData.expire) {
+                            isBlock = true;
+                            reason = "店鋪主授權試用期已滿，請聯繫店長";
+                        }
+                    } else {
+                        isBlock = true;
+                        reason = "找不到店鋪主金鑰授權";
+                    }
+                }
+
+                // 判斷自身過期 (主鑰或副鑰本身)
+                if (!isBlock && keyData.expire && now > keyData.expire) {
                     isBlock = true;
                     reason = "您的試用授權已屆滿";
                 }
                 
-                // --- 判斷 C：店號安全檢查 (防止本地數據偽造) ---
-                if (auth.id !== keyData.salonId) {
+                // 店號安全檢查
+                if (!isBlock && auth.id !== keyData.salonId) {
                     isBlock = true;
                     reason = "安全驗證異常 (店號不符)";
                 }
-
-                // --- 判斷 D：金鑰狀態被設為 unused (例如店長手動重置金鑰) ---
-                if (keyData.status !== 'used') {
-                     isBlock = true;
-                     reason = "授權狀態變更，請重新登入";
-                }
             }
 
-            // 🚀 如果偵測到任何異常，立即處決
+            // 🚀 執行處決或解鎖
             if (isBlock) {
                 executeSystemLockdown(reason);
+            } else {
+                // ✨ 續費解鎖邏輯：如果目前通過驗證且有遮罩，表示剛加完天數，直接恢復
+                const mask = document.getElementById('security-mask');
+                if (mask) {
+                    console.log("💎 偵測到授權恢復，自動解除鎖定...");
+                    location.reload(); 
+                }
             }
         } catch (e) {
-            // 只有在斷網時會報錯，這裡不處理，等待下一個 10 秒嘗試
-            console.warn("安全監控連線中...");
+            console.warn("安全監控巡邏中...");
         }
-    }, 10000); // 10秒一次，達到即時防禦與流量負載的平衡
+    }, 10000); 
 }
 
 // ==========================================================================
