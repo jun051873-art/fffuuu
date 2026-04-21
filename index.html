@@ -1255,19 +1255,37 @@ function searchStored(el, boxId) {
     } else box.style.display='none';
 }
 
-// --- 找到原本的 pickSug 函數並替換為此版本 ---
+// --- 🚀 pickSug 智慧分流引擎：搜尋後直接填表，不跳轉頁面 ---
 function pickSug(n, p, s, boxId) {
-    if(boxId === 'pop-box' || boxId === 'pop-box-p') {  // 🚀 同時支援姓名盒與電話盒
-        if(document.getElementById('pop-n')) document.getElementById('pop-n').value = n; 
-        if(document.getElementById('pop-p')) document.getElementById('pop-p').value = p;
+    // 🎯 關鍵判斷：如果是在預約彈窗 (pop-box) 或電話搜尋盒 (pop-box-p) 裡點擊
+    if(boxId === 'pop-box' || boxId === 'pop-box-p' || boxId === 'sw-box') { 
         
-        const sEl = document.getElementById('pop-s'); 
-        if(sEl) sEl.value = s;
+        // 1. 如果是在「新增預約」的彈窗內
+        const popN = document.getElementById('pop-n');
+        const popP = document.getElementById('pop-p');
+        const popS = document.getElementById('pop-s');
+
+        if (popN) popN.value = n; // 自動填入姓名
+        if (popP) popP.value = p; // 自動填入電話
+        if (popS && s) popS.value = s; // 自動選好上次幫他做的設計師
+
+        // 2. 關閉所有建議盒子，保持畫面純淨
+        const boxes = ['pop-box', 'pop-box-p', 'sw-box'];
+        boxes.forEach(id => {
+            const b = document.getElementById(id);
+            if(b) b.style.display = 'none';
+        });
+
+        // 🚀 如果是從主畫面的搜尋鈕 (sw-box) 進來的，填完後自動幫你打開預約單
+        if (boxId === 'sw-box') {
+            Swal.close(); // 關閉搜尋框
+            setTimeout(() => {
+                popBooking(n, p, s); // 帶著資料直接進入開單流程
+            }, 300);
+        }
         
-        // 關閉所有可能的建議盒
-        if(document.getElementById('pop-box')) document.getElementById('pop-box').style.display = 'none';
-        if(document.getElementById('pop-box-p')) document.getElementById('pop-box-p').style.display = 'none';
     } else {
+        // 原本名冊頁面的跳轉邏輯（保留給名冊頁面使用）
         cliKw = n; 
         Swal.close(); 
         showP('pg-cli', 1); 
