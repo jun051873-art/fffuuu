@@ -1002,6 +1002,7 @@ function startSecurityHeartbeat() {
 // ==========================================================================
 // --- S5: 預約表核心功能 (完整功能回歸 + 物理滑動修復版) ---
 // ==========================================================================
+
 async function popBooking(n="", p="", sId=null, editId=null) {
     const apt = editId ? store.appointments.find(a => String(a.id) === String(editId)) : null;
     tempTags = apt ? [...(apt.tags || [])] : [];
@@ -1014,7 +1015,7 @@ async function popBooking(n="", p="", sId=null, editId=null) {
             <div style="text-align:left; position:relative;">
                 <div style="position:relative; margin-bottom:18px; z-index:10001 !important;">
                     <input id="pop-n" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem; height:65px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')" autocomplete="off">
-                    <div id="pop-box" class="suggest-box" style="position:absolute !important; top:70px !important; left:0; width:100%; background:rgba(255,255,255,0.98); backdrop-filter:blur(25px); border:1.5px solid var(--gold); border-radius:25px; max-height:280px; overflow-y:auto !important; z-index:10002 !important; display:none; box-shadow:0 15px 45px rgba(0,0,0,0.3); -webkit-overflow-scrolling:touch !important;"></div>
+                    <div id="pop-box" class="suggest-box"></div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
@@ -1024,11 +1025,15 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                 <input type="hidden" id="pop-sex" value="${apt?.sex || 'F'}">
 
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
-                   <div style="flex:2; position:relative;">
-    <input id="pop-p" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; font-size:1.2rem;" 
-           value="${p}" placeholder="電話號碼" oninput="searchStored(this, 'pop-box-p')" autocomplete="off">
-    <div id="pop-box-p" class="suggest-box" style="position:absolute !important; top:65px !important; left:0; width:100%; background:rgba(255,255,255,0.98); backdrop-filter:blur(25px); border:1.5px solid var(--gold); border-radius:25px; max-height:280px; overflow-y:auto !important; z-index:10005 !important; display:none; box-shadow:0 15px 45px rgba(0,0,0,0.3); -webkit-overflow-scrolling:touch !important;"></div>
-</div>
+                    <div style="flex:2.5; position:relative;">
+                        <input id="pop-p" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; font-size:1.2rem;" 
+                               value="${p}" placeholder="電話號碼" oninput="searchStored(this, 'pop-box-p')" autocomplete="off">
+                        <div id="pop-box-p" class="suggest-box"></div>
+                    </div>
+                    <div style="flex:1; position:relative; display:flex; align-items:center; gap:5px; background:rgba(0,0,0,0.03); border-radius:25px; padding:0 15px; border:1px solid #f2f2f7;">
+                        <i class="fas fa-users" style="color:#aaa; font-size:0.8rem;"></i>
+                        <input id="pop-c" type="number" class="luxe-btn" style="width:100%; border:none; background:transparent; height:60px; text-align:center; font-size:1.2rem; padding:0;" value="${apt?.c || '1'}" placeholder="人數">
+                    </div>
                 </div>
 
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
