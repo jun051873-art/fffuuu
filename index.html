@@ -1252,16 +1252,26 @@ for (let i = start; i <= end; i++) {
     }
 }
 
+// --- 🚀 統一搜尋引擎：保證支援姓名與電話盒 ---
 function searchStored(el, boxId) {
-    const val = el.value.trim(); const box = document.getElementById(boxId);
+    const val = el.value.trim(); 
+    const box = document.getElementById(boxId);
     if(!val) { box.style.display='none'; return; }
+
     const ms = store.clients.filter(c => (c.n||"").includes(val) || (c.p||"").includes(val));
+
     if(ms.length) { 
         box.style.display='block'; 
-        box.innerHTML = ms.map(m => `<div class="suggest-item" style="padding:18px 25px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">${m.n} (${m.p})</div>`).join(''); 
-    } else box.style.display='none';
+        // 🎯 這裡一定要確保傳入的是變數 ${boxId}
+        box.innerHTML = ms.map(m => `
+            <div class="suggest-item" style="padding:15px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" 
+                 onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">
+                ${m.n} (${m.p})
+            </div>`).join(''); 
+    } else {
+        box.style.display='none';
+    }
 }
-
 // --- 🚀 pickSug 智慧分流引擎：搜尋後直接填表，不跳轉頁面 ---
 function pickSug(n, p, s, boxId) {
     // 🎯 關鍵判斷：如果是在預約彈窗 (pop-box) 或電話搜尋盒 (pop-box-p) 裡點擊
@@ -2796,26 +2806,6 @@ function popCliHistory(clientName) {
         hideClass: { popup: 'animated fadeOutUp faster' },
         scrollbarPadding: false 
     });
-}
-function searchStored(el, boxId) {
-    const val = el.value.trim(); const box = document.getElementById(boxId);
-    if(!val) { box.style.display='none'; return; }
-    const ms = store.clients.filter(c => (c.n||"").includes(val) || (c.p||"").includes(val));
-    if(ms.length) { 
-        box.style.display='block'; 
-        box.innerHTML = ms.map(m => `<div class="suggest-item" style="padding:15px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">${m.n} (${m.p})</div>`).join(''); 
-    } else box.style.display='none';
-}
-
-function pickSug(n, p, s, boxId) {
-    if(boxId === 'pop-box') { 
-        if(document.getElementById('pop-n')) document.getElementById('pop-n').value = n; 
-        if(document.getElementById('pop-p')) document.getElementById('pop-p').value = p;
-        if(document.getElementById('pop-s')) document.getElementById('pop-s').value = s;
-        document.getElementById('pop-box').style.display = 'none'; 
-    } else {
-        cliKw = n; Swal.close(); showP('pg-cli', 1); setTimeout(renderCli, 150);
-    }
 }
 
 function renderStats() {
