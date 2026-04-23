@@ -2405,11 +2405,67 @@ async function popPriceEdit(aptId, ds) {
 // ==========================================================================
 
 
-// --- 🚀 V318 以太門禁：【溫柔提醒版】 ---
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    const now = new Date().getTime();
 
-    // 如果沒有授權資料，才跳出提醒
+    // ---------------------------------------------------------
+    // 🛡️ 第一部分：針對「已激活」用戶的 24 小時強制連網檢查
+    // ---------------------------------------------------------
+    if (auth && auth.key && auth.id !== "未綁定") {
+        const lastCheck = parseInt(localStorage.getItem('v318_last_cloud_check') || 0);
+        const offlineLimit = 24 * 60 * 60 * 1000; // 🚀 正確設定：1 天 (24小時)
+
+        // 🎯 判斷：如果超過 1 天沒驗證，且現在處於離線狀態
+        if (now - lastCheck > offlineLimit && !window.navigator.onLine) {
+            executeSystemLockdown("安全保護：系統已超過 24 小時未連網驗證，請開啟網路以繼續使用。");
+            return;
+        }
+
+        // 🎯 判斷：如果有網路，主動去雲端刷新授權狀態
+        if (window.navigator.onLine) {
+            try {
+                const doc = await db.collection("LicenseKeys_Booking").doc(auth.key).get();
+                if (doc.exists) {
+                    const keyData = doc.data();
+                    
+                    // 1. 檢查是否已被撤銷或過期
+                    if (keyData.expire && now > keyData.expire) {
+                        executeSystemLockdown("您的授權已屆滿，請聯繫管理員續費。");
+                        return;
+                    }
+
+                    // 2. 驗證通過，存下這次成功驗證的時間
+                    localStorage.setItem('v318_last_cloud_check', now.toString());
+                    
+                    // 3. 如果原本被鎖著，現在自動解鎖
+                    const mask = document.getElementById('security-mask');
+                    if (mask) {
+                        mask.remove();
+                        document.querySelectorAll('.nav, .fab, .header').forEach(el => el.style.display = 'flex');
+                        window.IS_LOCKED_VACUUM = false;
+                    }
+
+                    // 4. 正常跑雲端同步
+                    pullFromCloud(); 
+                    return; // 驗證完畢，直接結束函數
+                } else {
+                    // 雲端找不到這把鑰匙（可能被你刪了）
+                    executeSystemLockdown("授權金鑰無效或已被撤銷。");
+                    return;
+                }
+            } catch(e) {
+                console.log("☁️ 雲端定期驗證靜默失敗，等待下次巡邏...");
+            }
+        } else {
+            // 有激活但還沒到 24 小時限制，且目前離線，則維持現狀繼續使用
+            return;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 🛡️ 第二部分：針對「未激活」用戶的溫柔提醒模式 (你原本的邏輯)
+    // ---------------------------------------------------------
     if (!auth || !auth.key || !auth.id || auth.id === "未綁定") {
         console.log("🛡️ 安全門禁：進入溫柔提醒模式...");
         
@@ -2421,11 +2477,11 @@ async function checkLicense() {
                     <input id="sw-key" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="輸入授權金鑰">
                     <input id="sw-id" class="swal2-input" style="width:80%; margin:10px auto;" placeholder="確認店號 (如：A01)">
                 </div>`,
-            showCancelButton: true, // 🚀 關鍵：顯示取消按鈕
-            cancelButtonText: '先體驗看看', // 🚀 讓你可以點掉
+            showCancelButton: true,
+            cancelButtonText: '先體驗看看',
             confirmButtonColor: '#1d1d1f',
             confirmButtonText: '立即激活系統',
-            allowOutsideClick: true, // 🚀 點外面也可以關掉
+            allowOutsideClick: true,
             preConfirm: () => {
                 const key = document.getElementById('sw-key').value.trim();
                 const id = document.getElementById('sw-id').value.trim();
@@ -2437,7 +2493,6 @@ async function checkLicense() {
             }
         });
 
-        // 🎯 情況 A：使用者選擇激活
         if (res && res.key) {
             try {
                 const doc = await db.collection("LicenseKeys_Booking").doc(res.key).get();
@@ -2460,6 +2515,9 @@ async function checkLicense() {
 
                     await db.collection("LicenseKeys_Booking").doc(res.key).update(updateData);
 
+                    // 🚀 激活成功，同步存下第一次驗證時間
+                    localStorage.setItem('v318_last_cloud_check', now.toString());
+
                     const finalAuth = { key: res.key, id: res.id, role: keyData.role || 'staff', expire: keyData.expire || null };
                     localStorage.setItem('v318_booking_auth', JSON.stringify(finalAuth));
 
@@ -2471,19 +2529,14 @@ async function checkLicense() {
                 }
             } catch(e) {
                 console.error("激活錯誤:", e);
-                await Swal.fire('連線異常', '請檢查店號是否重複或 Rules 設定。', 'error');
+                await Swal.fire('連線異常', '請檢查網路或 Firebase 設定。', 'error');
                 return checkLicense();
             }
         } 
-        // 🎯 情況 B：使用者點取消或點外面
         else if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.backdrop) {
-            console.log("🌙 使用者選擇暫不激活，進入單機模式");
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             Toast.fire({ icon: 'info', title: '已進入單機試用模式' });
         }
-    } else {
-        // ✅ 已激活狀態，才跑雲端搬運
-        pullFromCloud(); 
     }
 }
 // --- 🚀 V318 管理員長按生成引擎 (漏洞修補版) ---
