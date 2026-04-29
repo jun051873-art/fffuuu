@@ -615,14 +615,24 @@ html, body {
         <div style="font-size: 2.6rem; font-weight: 900; cursor:pointer;" onclick="cliKw=''; renderCli();">顧客名冊</div>
         
         <div style="display:flex; gap:15px; align-items:center; flex:1; justify-content:flex-end;">
-            <!-- 方案 A：直接顯示搜尋框 (iOS 簡約風) -->
-            <div style="position:relative; width:200px;">
-                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.5);"></i>
-                <input type="text" 
-                       placeholder="搜尋姓名/電話" 
-                       style="width:100%; padding:10px 10px 10px 35px; border-radius:12px; background:rgba(255,255,255,0.1); border:none; color:white; font-size:1.4rem;"
-                       oninput="cliKw=this.value; renderCli();">
-            </div>
+           <!-- 方案 A：直接顯示搜尋框 (iOS 簡約風) -->
+<div style="position:relative; width:220px; display:flex; align-items:center;">
+    <i class="fas fa-search" style="position:absolute; left:12px; color:rgba(0,0,0,0.3); font-size:1.2rem; z-index:1;"></i>
+    <input type="text" 
+           placeholder="搜尋姓名/電話" 
+           style="width:100%; 
+                  height:40px;           /* 1. 固定高度確保字不會被切掉 */
+                  line-height:20px;      /* 2. 確保行高正常 */
+                  padding:10px 10px 10px 38px; 
+                  border-radius:20px; 
+                  background:rgba(0,0,0,0.05); /* 3. 改用淡淡的黑色背景，因為你的頁面是白色的 */
+                  border:1px solid rgba(0,0,0,0.1); 
+                  color:#000000 !important;   /* 4. 因為你的底色是白的，字必須是黑的！ */
+                  font-size:1.4rem; 
+                  outline:none;
+                  box-sizing:border-box; /* 5. 重要：防止 padding 撐開框框 */"
+           oninput="cliKw=this.value; renderCli();">
+</div>
 
             <!-- 設計師篩選 -->
             <select id="cli-f-sty" class="luxe-btn" onchange="renderCli()" style="width:140px;"></select>
