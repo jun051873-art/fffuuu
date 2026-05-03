@@ -1266,79 +1266,100 @@ function toggleTempTag(tagName) {
 function renderDay(ds) {
     // 🚀 記憶空間：重畫前記住現在橫向滑動到哪裡
     const scrollContainer = document.getElementById('day-lanes');
-    const scrollPos = scrollContainer ? scrollContainer.scrollLeft : 0; 
+    const scrollPos = scrollContainer ? scrollContainer.scrollLeft : 0;
 
-    const days = ['日','一','二','三','四','五','六'];
+    const days = ['日', '一', '二', '三', '四', '五', '六'];
     const dayTitleEl = document.getElementById('day-title');
-    if(dayTitleEl) dayTitleEl.innerText = `${ds} (週${days[new Date(ds).getDay()]})`; 
-    const area = document.getElementById('day-lanes'); if(!area) return;
+    if (dayTitleEl) dayTitleEl.innerText = `${ds} (週${days[new Date(ds).getDay()]})`;
+
+    const area = document.getElementById('day-lanes');
+    if (!area) return;
     area.innerHTML = '';
-   // --- 修改後的跑道時段生成 ---
-const start = parseInt(store.startH || '0'); // 從 0 點開始（或維持妳設定的開始時間）
-const end = parseInt(store.endH || '23');   // 到 23 點結束
-const hours = [];
-for (let i = start; i <= end; i++) {
-    // 🚀 關鍵：確保顯示為 00:00, 01:00... 格式
-    hours.push(`${String(i).padStart(2, '0')}:00`); 
-}
+
+    // --- 修改後的跑道時段生成 ---
+    const start = parseInt(store.startH || '0'); 
+    const end = parseInt(store.endH || '23'); 
+    const hours = [];
+    for (let i = start; i <= end; i++) {
+        // 🚀 關鍵：確保顯示為 00:00, 01:00... 格式
+        hours.push(`${String(i).padStart(2, '0')}:00`);
+    }
+
     store.stylists.forEach(s => {
-        const lane = document.createElement('div'); lane.className = 'lane';
+        const lane = document.createElement('div');
+        lane.className = 'lane';
         lane.innerHTML = `<div style="text-align:center; font-weight:900; color:${s.color}; font-size:1.8rem; margin-bottom:20px;">${s.name}</div>`;
+
         hours.forEach(t => {
-            const row = document.createElement('div'); row.className = 'time-row-space'; row.style.position = "relative";
-            const matched = store.appointments.filter(a => a.date === ds && a.time.split(':')[0] === t.split(':')[0] && String(a.styId) === String(s.id));
+            const row = document.createElement('div');
+            row.className = 'time-row-space';
+            row.style.position = "relative";
+
+            const matched = store.appointments.filter(a => 
+                a.date === ds && 
+                a.time.split(':')[0] === t.split(':')[0] && 
+                String(a.styId) === String(s.id)
+            );
+
             const label = `<div style="position:absolute; left:-45px; top:12px; font-size:0.75rem; color:#bbb; font-weight:900;">${t}</div>`;
-            if(matched.length) {
+
+            if (matched.length) {
                 row.innerHTML = label + matched.map(a => {
                     const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
-                    return `<div class="apt-card ${a.done?'completed':''}" style="--c:${s.color}; margin-left:15px; width:calc(100% - 20px); padding:25px; border-radius:35px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
-                        <div class="tag-group" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;" onclick="event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
-                            <span style="font-size:1.3rem; display:flex; align-items:center;">
-                                ${a.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (a.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
-                            </span>
-                            ${selectedTags.length > 0 ? selectedTags.map(pt => `<span class="tag-pill" style="background:${pt.color}; color:#fff; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;">${pt.name}</span>`).join('') : '<span class="tag-pill" style="background:#f2f2f7; color:#aaa; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;">+ 狀態</span>'}
-                            <span class="tag-pill" style="border:1.5px solid var(--gold); color:${a.isVIP ? '#fff' : 'var(--gold)'}; background:${a.isVIP ? 'var(--gold)' : 'transparent'}; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;" onclick="event.stopPropagation(); toggleVIP('${a.id}','${ds}')">
-                                ${a.isVIP ? '⭐ 指定' : '不指定'}
-                            </span>
-                        </div>
+                    return `
+                        <div class="apt-card ${a.done ? 'completed' : ''}" style="--c:${s.color}; margin-left:15px; width:calc(100% - 20px); padding:25px; border-radius:35px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+                            <div class="tag-group" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;" onclick="event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
+                                <span style="font-size:1.3rem; display:flex; align-items:center;">
+                                    ${a.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (a.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
+                                </span>
+                                ${selectedTags.length > 0 ? selectedTags.map(pt => `<span class="tag-pill" style="background:${pt.color}; color:#fff; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;">${pt.name}</span>`).join('') : '<span class="tag-pill" style="background:#f2f2f7; color:#aaa; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;">+ 狀態</span>'}
+                                <span class="tag-pill" style="border:1.5px solid var(--gold); color:${a.isVIP ? '#fff' : 'var(--gold)'}; background:${a.isVIP ? 'var(--gold)' : 'transparent'}; border-radius:12px; padding:5px 12px; font-size:0.8rem; font-weight:900;" onclick="event.stopPropagation(); toggleVIP('${a.id}','${ds}')">
+                                    ${a.isVIP ? '⭐ 指定' : '不指定'}
+                                </span>
+                            </div>
 
-                        <div style="position:absolute; right:20px; top:20px; display:flex; gap:15px; align-items:center;">
-                            <i class="fas fa-pen" style="color:#ccc; font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); popBooking('${a.n}','${a.p}','${a.styId}','${a.id}')"></i>
-                            <i class="fas fa-trash-alt" style="color:rgba(255,0,0,0.15); font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); confirmDelApt('${a.id}','${ds}')"></i>
-                            <i class="fas fa-check-circle" style="color:${a.done?'var(--gold)':'#eee'}; font-size:1.8rem; cursor:pointer;" onclick="event.stopPropagation(); toggleAptDone('${a.id}','${ds}')"></i>
-                        </div>
+                            <div style="position:absolute; right:20px; top:20px; display:flex; gap:15px; align-items:center;">
+                                <i class="fas fa-pen" style="color:#ccc; font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); popBooking('${a.n}','${a.p}','${a.styId}','${a.id}')"></i>
+                                <i class="fas fa-trash-alt" style="color:rgba(255,0,0,0.15); font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); confirmDelApt('${a.id}','${ds}')"></i>
+                                <i class="fas fa-check-circle" style="color:${a.done ? 'var(--gold)' : '#eee'}; font-size:1.8rem; cursor:pointer;" onclick="event.stopPropagation(); toggleAptDone('${a.id}','${ds}')"></i>
+                            </div>
 
-                        <div style="font-weight:900; color:var(--gold); font-size:1rem; letter-spacing:1px; margin-bottom:5px;">${a.time}</div>
-                        <div style="font-weight:900; font-size:2rem; color:#1d1d1f; margin-bottom:12px; letter-spacing:-1px;">${a.n}</div>
+                            <div style="font-weight:900; color:var(--gold); font-size:1rem; letter-spacing:1px; margin-bottom:5px;">${a.time}</div>
+                            <div style="font-weight:900; font-size:2rem; color:#1d1d1f; margin-bottom:12px; letter-spacing:-1px;">${a.n}</div>
 
-                        <div onclick="event.stopPropagation(); popPriceEdit('${a.id}', '${ds}')" 
-                             style="display:inline-flex; align-items:center; gap:8px; background:rgba(212,175,55,0.08); padding:8px 18px; border-radius:18px; cursor:pointer; margin-bottom:15px; border:1px solid rgba(212,175,55,0.15);">
-                            <span style="font-weight:900; color:var(--gold); font-size:1.2rem;">$ ${a.price || "補填金額"}</span>
-                        </div>
+                            <div onclick="event.stopPropagation(); popPriceEdit('${a.id}', '${ds}')" 
+                                 style="display:inline-flex; align-items:center; gap:8px; background:rgba(212,175,55,0.08); padding:8px 18px; border-radius:18px; cursor:pointer; margin-bottom:15px; border:1px solid rgba(212,175,55,0.15);">
+                                <span style="font-weight:900; color:var(--gold); font-size:1.2rem;">$ ${a.price || "補填金額"}</span>
+                            </div>
 
-                        <div style="background:rgba(0,0,0,0.02); padding:15px; border-radius:20px; border-left:5px solid var(--gold);">
-                            <div style="font-weight:900; color:var(--gold); font-size:1rem; margin-bottom:5px;"> ${(a.tags || []).join(' + ') || '服務項目'}</div>
-                            <div onclick="event.stopPropagation(); popNoteEdit('${a.id}', '${ds}')" style="font-size:0.95rem; color:#444; font-weight:700; cursor:pointer;">${a.note_full || "點擊輸入備註..."}</div>
-                        </div>
+                            <div style="background:rgba(0,0,0,0.02); padding:15px; border-radius:20px; border-left:5px solid var(--gold);">
+                                <div style="font-weight:900; color:var(--gold); font-size:1rem; margin-bottom:5px;"> ${(a.tags || []).join(' + ') || '服務項目'}</div>
+                                <div onclick="event.stopPropagation(); popNoteEdit('${a.id}', '${ds}')" style="font-size:0.95rem; color:#444; font-weight:700; cursor:pointer;">${a.note_full || "點擊輸入備註..."}</div>
+                            </div>
 
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:15px; border-top:1px dashed #eee;">
-                            <div style="font-weight:900; color:#888; font-size:0.95rem;"><i class="fas fa-phone-alt"></i> ${a.p || "未留電話"}</div>
-                            <div style="font-weight:900; color:var(--gold); font-size:0.95rem;"><i class="fas fa-users"></i> ${a.c || 1} 人</div>
-                        </div>
-                    </div>`;
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:15px; border-top:1px dashed #eee;">
+                                <div style="font-weight:900; color:#888; font-size:0.95rem;"><i class="fas fa-phone-alt"></i> ${a.p || "未留電話"}</div>
+                                <div style="font-weight:900; color:var(--gold); font-size:0.95rem;"><i class="fas fa-users"></i> ${a.c || 1} 人</div>
+                            </div>
+                        </div>`;
                 }).join('');
-            } else row.innerHTML = label + `<div style="flex:1; height:40px; margin-left:15px; border-bottom:1px solid #f2f2f7;"></div>`;
+            } else {
+                row.innerHTML = label + `<div style="flex:1; height:40px; margin-left:15px; border-bottom:1px solid #f2f2f7;"></div>`;
+            }
             lane.appendChild(row);
-        }); area.appendChild(lane);
+        });
+        area.appendChild(lane);
     });
-    // 🚀 空間還原：重畫完後，瞬間閃回原本滑動的位置
+
+    // 🚀 空間還原：重畫完後，雙重幀同步閃回原本滑動的位置
     if (scrollContainer) {
         requestAnimationFrame(() => {
-            scrollContainer.scrollLeft = scrollPos;
+            requestAnimationFrame(() => {
+                scrollContainer.scrollLeft = scrollPos;
+            });
         });
     }
 }
-
 // --- 🚀 統一搜尋引擎：保證支援姓名與電話盒 ---
 function searchStored(el, boxId) {
     const val = el.value.trim(); 
@@ -1916,49 +1937,72 @@ async function loadSubKeys() {
     }
 }
 
-// B. 生成副鑰彈窗 (指定人員) - 旗艦穩定版
+// B. 生成副鑰彈窗 (限制上限 5 個) - 旗艦穩定版
 async function popCreateSubKey() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    
-    const { value: name } = await Swal.fire({
-        title: '生成副授權',
-        input: 'text',
-        inputLabel: '請輸入人員姓名 (如: 王小明)',
-        inputPlaceholder: '之後您可依姓名撤銷其權限',
-        confirmButtonColor: '#1d1d1f',
-        showCancelButton: true,
-        cancelButtonText: '取消',
-        reverseButtons: true
-    });
+    if (!auth || !auth.id) return;
 
-    if (name) {
-        // 生成 6 位大寫隨機碼
-        const newKey = "BOK-SUB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-        
-        // 🚀 寫入 Firebase
-        await db.collection("LicenseKeys_Booking").doc(newKey).set({
-            status: "unused",
-            role: "staff",          // 強制標記為員工副鑰
-            salonId: auth.id,       // 綁定主裝置的店號
-            ownerName: name,        // 記錄人員名稱
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    try {
+        // 🛡️ 數量檢查：先查詢雲端該店號下已生成的副授權數量
+        const snap = await db.collection("LicenseKeys_Booking")
+            .where("salonId", "==", auth.id)
+            .where("role", "==", "staff")
+            .get();
+
+        // 🚀 攔截邏輯：若數量已達 5 個則跳出警告並停止執行
+        if (snap.size >= 5) {
+            Swal.fire({
+                icon: 'warning',
+                title: '已達授權上限',
+                html: `<p style="font-weight:900; color:#888;">為了數據安全，每間店鋪最多僅能生成 <span style="color:#ff4d4d;">5</span> 把副授權。<br><br>請先撤銷不需要的人員權限後再行生成。</p>`,
+                confirmButtonColor: '#1d1d1f'
+            });
+            return; 
+        }
+
+        // --- 以下為原有的生成邏輯 ---
+        const { value: name } = await Swal.fire({
+            title: '生成副授權',
+            input: 'text',
+            inputLabel: '請輸入人員姓名 (如: 王小明)',
+            inputPlaceholder: '之後您可依姓名撤銷其權限',
+            confirmButtonColor: '#1d1d1f',
+            showCancelButton: true,
+            cancelButtonText: '取消',
+            reverseButtons: true
         });
 
-        // 🚀 顯示成功視窗 (賈伯斯金石配色)
-        Swal.fire({
-            title: '副授權生成成功',
-            html: `請讓 <b>${name}</b> 在其裝置輸入：<br><h2 style="color:#D4AF37; margin:15px 0; letter-spacing:2px; font-size:2.2rem; font-weight:900;">${newKey}</h2>`,
-            icon: 'success',
-            confirmButtonColor: '#1d1d1f'
-        });
+        if (name) {
+            // 生成 6 位大寫隨機碼
+            const newKey = "BOK-SUB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+            
+            // 🚀 寫入 Firebase
+            await db.collection("LicenseKeys_Booking").doc(newKey).set({
+                status: "unused",
+                role: "staff",          // 強制標記為員工副鑰
+                salonId: auth.id,       // 綁定主裝置的店號
+                ownerName: name,        // 記錄人員名稱
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-        // 🚀 關鍵修正：延遲 800 毫秒刷新列表，確保雲端資料已寫入成功
-        setTimeout(() => { 
-            if (typeof loadSubKeys === 'function') loadSubKeys(); 
-        }, 800); 
+            // 🚀 顯示成功視窗 (賈伯斯金石配色)
+            Swal.fire({
+                title: '副授權生成成功',
+                html: `請讓 <b>${name}</b> 在其裝置輸入：<br><h2 style="color:#D4AF37; margin:15px 0; letter-spacing:2px; font-size:2.2rem; font-weight:900;">${newKey}</h2>`,
+                icon: 'success',
+                confirmButtonColor: '#1d1d1f'
+            });
+
+            // 🚀 延遲刷新列表，確保雲端資料已寫入成功
+            setTimeout(() => { 
+                if (typeof loadSubKeys === 'function') loadSubKeys(); 
+            }, 800); 
+        }
+    } catch (e) {
+        console.error("生成檢查失敗", e);
+        Swal.fire('系統錯誤', '無法連接雲端驗證數量，請檢查網路。', 'error');
     }
 }
-
 // C. 單獨撤銷某位人員 - 旗艦穩定版
 async function revokeSubKey(keyId, name) {
     const res = await Swal.fire({
@@ -2853,22 +2897,36 @@ function renderCli() {
     const area = document.getElementById('cli-list');
     if (!area) return;
 
-    // 🎯 核心補丁 1：在重畫之前，先記住父層滾動區現在滑到哪了
-    // 這樣在修改、刪除或執行任何動作後，畫面會停在原地
+    // 🎯 核心補丁 1：在重畫之前，先捕捉父層滾動區的物理座標
     const scrollContainer = area.closest('.content-scroll');
     const savedScrollPos = scrollContainer ? scrollContainer.scrollTop : 0;
 
     const filterSty = document.getElementById('cli-f-sty').value;
     
-    // 1. 過濾邏輯
+    // 1. 過濾邏輯 (包含關鍵字與設計師篩選)
     const filteredClients = store.clients.filter(c => 
         ((c.n || "").includes(cliKw) || (c.p || "").includes(cliKw)) && 
         (!filterSty || String(c.lastSty) === String(filterSty))
     );
 
-    // 2. 畫出精緻卡片 (純顯示穩定版)
+    // 2. 處理搜尋無結果的情況 (直擊人心的操作體驗)
+    if (filteredClients.length === 0) {
+        area.innerHTML = `
+            <div style="text-align:center; padding:100px 20px; color:#ccc;">
+                <i class="fas fa-search" style="font-size:3rem; margin-bottom:20px; opacity:0.3;"></i>
+                <div style="font-weight:900; font-size:1.2rem;">找不到相關顧客</div>
+            </div>`;
+        return;
+    }
+
+    // 3. 畫出精緻卡片 (iOS 26 極簡風格)
     area.innerHTML = filteredClients.map(c => {
         const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
+        
+        // 格式化生日，確保永遠是兩位數 (例如 01/01)
+        const mm = String(c.bm || "01").padStart(2, '0');
+        const dd = String(c.bd || "01").padStart(2, '0');
+
         return `
             <div class="cli-luxe-card" style="border-left: 12px solid ${sty?.color || '#eee'}; background:#fff; padding:30px; border-radius:35px; margin-bottom:25px; box-shadow:0 10px 30px rgba(0,0,0,0.04);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -2897,8 +2955,8 @@ function renderCli() {
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px; padding-top:15px; border-top:1px solid #f2f2f7;">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-birthday-cake" style="color:var(--gold); font-size:1.2rem;"></i>
-                        <span style="font-weight:900; color:#bbb;">${c.bm || "01"}/${c.bd || "01"}</span>
+                        <i class="fas fa-birthday-cake" style="color:#D4AF37; font-size:1.2rem;"></i>
+                        <span style="font-weight:900; color:#bbb;">${mm}/${dd}</span>
                     </div>
                     <div style="display:flex; gap:25px;">
                         <i class="fas fa-pen-nib" style="color:#ccc; font-size:1.3rem; cursor:pointer;" onclick="editCli('${c.n}')"></i>
@@ -2908,10 +2966,12 @@ function renderCli() {
             </div>`;
     }).join('');
 
-    // 🎯 核心補丁 2：畫面畫好後，利用 requestAnimationFrame 在瀏覽器渲染下一幀前閃回原位
+    // 🎯 核心補丁 2：雙重幀同步還原滾動高度，解決所有閃跳問題
     if (scrollContainer) {
         requestAnimationFrame(() => {
-            scrollContainer.scrollTop = savedScrollPos;
+            requestAnimationFrame(() => {
+                scrollContainer.scrollTop = savedScrollPos;
+            });
         });
     }
 }
