@@ -718,26 +718,36 @@ const db = firebase.firestore();
 // ==========================================================================
 // --- 🚀 V318 鋼鐵核心：視覺統一 Toast 版 ---
 // ==========================================================================
-// --- 🚀 V318 鋼鐵存檔守門員：保留原功能 + 即時權限封鎖版 ---
 async function saveS() { 
+    // 🛡️ 鋼鐵保險：如果系統處於隔離鎖定狀態 (IS_LOCKED_VACUUM)，禁止任何存檔動作
+    // 這是為了防止斷網或授權異常時，誤將「空資料」上傳覆蓋雲端
+    if (window.IS_LOCKED_VACUUM === true) {
+        console.error("🚨 數據隔離保護中，攔截非法存檔請求！");
+        return; 
+    }
+
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.key) return;
 
     try {
+        // 🚀 核心補丁：加入最後更新時間戳記 (Timestamp)
+        // 這能讓系統在多裝置同步時，自動辨識哪份資料才是最新的，防止「吃掉」預約
+        store.lastUpdate = Date.now(); 
+
         // 先將資料存入本機，保證第一時間不卡頓
         localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
         // 雲端同步 (如果店號正確)
         if (auth.id && auth.id !== "未綁定") {
-            // 這裡使用 update 或是 set 取決於你是否要覆蓋整個文件
+            // 使用 set 覆蓋整個文件，並帶入最新的時間版本
             await db.collection("Salons").doc(auth.id).set({
                 ...store,
                 syncCode: auth.key 
             });
 
-            console.log("雲端同步成功:", auth.id);
+            console.log("✅ 雲端同步成功 (版本: " + store.lastUpdate + ")", auth.id);
 
-            // 只有存檔成功才跳 Toast
+            // 只有存檔成功才跳 Toast (賈伯斯精品黑白風格)
             const Toast = Swal.mixin({
                 toast: true,
                 position: 'top-end',
@@ -749,10 +759,9 @@ async function saveS() {
             Toast.fire({ icon: 'success', title: '雲端同步成功' });
         }
     } catch (e) {
-        console.error("同步報錯，但不影響本機運作", e);
+        console.error("⚠️ 同步報錯，但不影響本機運作", e);
     }
 }
-          
 // 🚀 V318 鋼鐵安全性監控：【2秒頻率版】主從連動 + 離線瞬時封鎖
 function startSecurityHeartbeat() {
     console.log("🛡️ V318 安全守衛已上崗，執行 2 秒/次 鋼鐵監控...");
@@ -3076,44 +3085,56 @@ function renderStats() {
         </div>`;
 }
 
-// --- 🚀 V318 雲端數據搬運工：確保激活後才啟動同步 ---
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
-    // 🛡️ 安全鎖：如果沒有授權資料，或店號未綁定，絕對不跑同步
+    // 🛡️ 鋼鐵檢查：若尚未激活或店號未綁定，不執行同步以保護本地數據
     if (!auth || !auth.id || auth.id === "未綁定" || !auth.key) {
         console.log("☁️ 雲端同步跳過：尚未激活或無效店號");
-        return; 
+        return;
     }
 
     try {
-        console.log("☁️ 正在從雲端下載店鋪資料 (ID: " + auth.id + ")...");
+        console.log("☁️ 正在檢查雲端數據版本 (ID: " + auth.id + ")...");
         const snap = await db.collection("Salons").doc(auth.id).get();
         
         if (snap.exists) {
-            const data = snap.data();
-            
-            // 🎯 覆蓋本地 store
-            store = data;
-            
-            // 🎯 同步回本機快取，防止下次開機沒網路
-            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-            
-            // 🎯 重新驅動 UI 渲染最新數據
-            updateStoreUI();
-            initMonth();
-            renderCli();
-            
-            console.log("✅ 雲端數據同步完成！");
+            const cloudData = snap.data();
+            // 抓取本地目前的快取資料
+            const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
+
+            // 🚀 核心版本門禁：
+            // 1. 本地完全沒資料 (!localData.lastUpdate)
+            // 2. 雲端的時間戳記比本地新 (cloudData.lastUpdate > localData.lastUpdate)
+            if (!localData.lastUpdate || (cloudData.lastUpdate > localData.lastUpdate)) {
+                console.log("✅ 偵測到雲端有較新版本 (TS: " + cloudData.lastUpdate + ")，執行同步...");
+                
+                // 覆蓋本地變數與快取
+                store = cloudData;
+                localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+                
+                // 立即更新所有 UI 介面，確保內容是最新的
+                updateStoreUI();  // 更新店名與標題
+                initMonth();      // 刷新預約日曆
+                renderCli();      // 刷新顧客清單
+                
+                // 若目前在「預約跑道」頁面，也同步更新
+                if (typeof renderDay === 'function' && curD) {
+                    renderDay(curD.toLocaleDateString('sv'));
+                }
+                
+                console.log("💎 數據同步成功，已更新至最新狀態。");
+            } else {
+                // 雲端資料比較舊，或是版本一致，則不動作以保護目前的修改
+                console.log("💎 本地資料已是最新 (TS: " + (localData.lastUpdate || 0) + ")，跳過覆蓋。");
+            }
         } else {
-            console.log("ℹ️ 雲端尚無此店號資料，準備上傳初始化快取...");
-            saveS(); 
+            console.log("ℹ️ 雲端尚未建立此店號資料。");
         }
-    } catch (e) {
-        console.warn("⚠️ 雲端同步異常，請檢查資料庫 Rules 權限設定", e);
+    } catch (e) { 
+        console.warn("⚠️ 雲端拉取異常，請檢查網路連線或 Firebase 權限", e); 
     }
 }
-
 async function editPayTag(id, old) {
     const {value: n} = await Swal.fire({ title: '修改標籤名稱', input: 'text', inputValue: old });
     if(n) { store.payTagsDef.find(x => x.id === id).name = n; await saveS(); renderSet(); }
