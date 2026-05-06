@@ -1111,7 +1111,7 @@ function renderDay(ds) {
         lane.className = 'lane';
         lane.innerHTML = `<div style="text-align:center; font-weight:900; color:${s.color}; font-size:1.8rem; margin-bottom:20px;">${s.name}</div>`;
 
-        hours.forEach(t => {
+       hours.forEach(t => {
             const row = document.createElement('div');
             row.className = 'time-row-space';
             row.style.position = "relative";
@@ -1122,13 +1122,14 @@ function renderDay(ds) {
                 String(a.styId) === String(s.id)
             );
 
-            const label = `<div style="position:absolute; left:-45px; top:12px; font-size:0.75rem; color:#bbb; font-weight:900;">${t}</div>`;
+            // 🚀 物理空間修正：將時間標籤向左平移並加強字體顯示，確保在滑動時清晰可見
+            const label = `<div style="position:absolute; left:-55px; top:12px; font-size:0.85rem; color:#bbb; font-weight:900; width:45px; text-align:right;">${t}</div>`;
 
             if (matched.length) {
                 row.innerHTML = label + matched.map(a => {
                     const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
                     return `
-                        <div class="apt-card ${a.done ? 'completed' : ''}" style="--c:${s.color}; margin-left:15px; width:calc(100% - 20px); padding:25px; border-radius:35px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+                        <div class="apt-card ${a.done ? 'completed' : ''}" style="--c:${s.color}; margin-left:10px; width:280px; padding:25px; border-radius:35px; box-shadow:0 10px 30px rgba(0,0,0,0.05); flex-shrink:0;">
                             <div class="tag-group" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;" onclick="event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
                                 <span style="font-size:1.3rem; display:flex; align-items:center;">
                                     ${a.sex === 'M' ? '<i class="fas fa-mars" style="color:#007AFF;"></i>' : (a.sex === 'F' ? '<i class="fas fa-venus" style="color:#FF2D55;"></i>' : '')}
@@ -1165,7 +1166,8 @@ function renderDay(ds) {
                         </div>`;
                 }).join('');
             } else {
-                row.innerHTML = label + `<div style="flex:1; height:40px; margin-left:15px; border-bottom:1px solid #f2f2f7;"></div>`;
+                // 🚀 確保沒預約時，時間標籤依然在左側對齊
+                row.innerHTML = label + `<div style="width:280px; height:40px; margin-left:10px; border-bottom:1px solid #f2f2f7; flex-shrink:0;"></div>`;
             }
             lane.appendChild(row);
         });
