@@ -207,14 +207,25 @@ background: #f9f9fb !important;
     font-weight: 800 !important;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
-/* 🚀 Aether V318: 極限物理縮放樣式 */
+/* 🚀 修正時間標籤被吃掉的問題 */
 .lane-container {
     display: flex;
     overflow-x: auto;
-    padding: 20px !important; /* 👈 縮小邊距，把更多空間留給內容 */
-    gap: var(--lane-gap) !important;
-    transition: none !important; /* 👈 確保手指捏的時候零延遲 */
+    overflow-y: hidden;
+    padding: 20px 20px 100px 60px !important; /* 👈 加大左邊距(60px)，給時間留位置 */
+    gap: 30px;
     align-items: flex-start;
+    -webkit-overflow-scrolling: touch; /* 讓滑動更順手 */
+}
+
+.time-row-space::before {
+    content: attr(data-time); /* 利用屬性顯示時間 */
+    position: absolute;
+    left: -50px; /* 固定在跑道左邊 */
+    top: 12px;
+    font-size: 0.85rem;
+    color: #bbb;
+    font-weight: 900;
 }
 
 .lane {
@@ -1997,6 +2008,43 @@ function initAll() {
     initMonth(); renderCli(); fillStySelect(); renderSet(); 
 }
 
+async function checkSubscription() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id) return;
+
+    try {
+        // 從 Firebase 抓取最新的店號資訊
+        const doc = await db.collection("Salons").doc(auth.id).get();
+        
+        if (doc.exists) {
+            const data = doc.data();
+            const now = Date.now();
+            const expiry = data.expiryDate || 0; // 這裡是你在雲端設定的到期時間戳
+
+            // 🚀 如果現在時間超過了到期時間
+            if (now > expiry) {
+                showExpiryAlert();
+            }
+        }
+    } catch (e) {
+        console.error("授權檢查失敗", e);
+    }
+}
+
+function showExpiryAlert() {
+    Swal.fire({
+        title: '授權已到期',
+        text: '請聯繫管理員續費以繼續使用系統。',
+        icon: 'error',
+        allowOutsideClick: false,
+        confirmButtonText: '聯絡開發者',
+        confirmButtonColor: '#ff3b30' // iOS 警示紅
+    }).then(() => {
+        // 點擊後可以引導到你的 LINE 或通話
+        window.location.href = "https://line.me/ti/p/你的ID";
+    });
+}
+
 // ==========================================================================
 // --- 🚀 V318 預約紀錄大腦：今日戰報總結版 (不減反增版) ---
 // ==========================================================================
@@ -2126,7 +2174,7 @@ async function checkLicense() {
     if (!auth || !auth.id || auth.id === "未綁定") {
         const { value: shopID } = await Swal.fire({
             title: '歡迎使用 專屬空間',
-            text: '請輸入您的專屬店號以啟用啟用',
+            text: '請輸入您的專屬店號以啟用',
             input: 'text',
             confirmButtonColor: '#1d1d1f',
             allowOutsideClick: false,
@@ -2181,6 +2229,11 @@ async function checkLicense() {
 // --- 🚀 V318 旗艦開機程序：含背景安全監控與防護攔截 ---
 // ==========================================================================
 window.addEventListener('load', async () => {
+    // 0. 啟動網路安全巡邏 (防斷網操作，若無此函數會自動跳過不報錯)
+    if (typeof initNetworkGuard === 'function') {
+        initNetworkGuard();
+    }
+
     // 1. 先刷出本地資料 (確保離線時也能看見最後快取)
     updateStoreUI(); 
     initMonth();
@@ -2188,21 +2241,31 @@ window.addEventListener('load', async () => {
     
     // 初始化月份選擇器
     const mPicker = document.getElementById('m-picker');
-    if(mPicker) mPicker.value = new Date().toISOString().slice(0,7);
+    if (mPicker) mPicker.value = new Date().toISOString().slice(0, 7);
     
     // 2. 背景去雲端搬最新資料 (確保資料一致性)
-    await pullFromCloud(); 
+    try {
+        if (window.navigator.onLine) {
+            await pullFromCloud(); 
+        }
+    } catch (e) {
+        console.warn("⚠️ 雲端同步跳過 (離線或網路不穩)");
+    }
     
     // 3. 搬完資料後，再次刷新 UI 呈現最新狀態
     updateStoreUI();
     initMonth();
     
-    // 4. 最後檢查金鑰，若無授權則彈出強制登入
-    checkLicense();
+    // 🚀 執行員工模式檢查 (在 UI 刷新後立即執行遮蔽)
+    checkAndApplyStaffMask();
 
-   // --- 【以太流：精準防禦攔截器 - 彈窗輸入徹底解鎖版】 ---
+    // 4. 最後檢查金鑰，若無授權則彈出強制登入
+    if (typeof checkLicense === 'function') {
+        checkLicense();
+    }
+
+    // --- 【以太流：精準防禦攔截器 - 彈窗輸入徹底解鎖版】 ---
     document.body.addEventListener('touchmove', function(e) {
-        // 🚀 核心解鎖：如果摸到的是彈窗內容、輸入框、或滾動區，允許操作
         if (e.target.closest('.swal2-container') || 
             e.target.closest('.content-scroll') || 
             e.target.closest('.lane-container') ||
@@ -2211,38 +2274,49 @@ window.addEventListener('load', async () => {
             e.target.tagName === 'SELECT') {
             return; 
         }
-        // 其餘空白處禁止 iOS 彈跳與亂滑
         if (e.cancelable) e.preventDefault();
     }, { passive: false });
 
     console.log("Aether V318 系統核心啟動成功...");
+});
 
-// 🚀 V318 員工模式金額遮蔽補丁
-const authData = JSON.parse(localStorage.getItem('v318_booking_auth'));
-if (authData && authData.role === 'staff') {
-    applyStaffMask();
+// ==========================================================================
+// --- 🛠️ V318 核心補丁函數庫 (放在監聽器外，確保全局可用) ---
+// ==========================================================================
+
+// 🚀 員工模式判定
+function checkAndApplyStaffMask() {
+    const authData = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (authData && authData.role === 'staff') {
+        applyStaffMask();
+    }
 }
 
+// 🛡️ 執行金額遮蔽 CSS 注入
 function applyStaffMask() {
+    // 檢查是否已經注入過，避免重複添加
+    if (document.getElementById('staff-mask-style')) return;
+
     const maskStyle = document.createElement('style');
+    maskStyle.id = 'staff-mask-style';
     maskStyle.innerHTML = `
         /* 1. 隱藏預約卡片上的金額 */
         [onclick*="popPriceEdit"] { display: none !important; } 
         
         /* 2. 隱藏今日紀錄 (HistoryLog) 裡面的業績與金額 */
-        .swal2-html-container [style*="color:#06C755"] { display: none !important; } /* 金額 */
-        .swal2-html-container [style*="linear-gradient"] { display: none !important; } /* 今日業績戰報板 */
+        .swal2-html-container [style*="color:#06C755"] { display: none !important; } 
+        .swal2-html-container [style*="linear-gradient"] { display: none !important; } 
         
-        /* 3. 隱藏導航列的數據按鈕（選配，若想徹底不讓他點） */
+        /* 3. 隱藏導航列的數據按鈕 */
         #n-stat { display: none !important; }
-        #nav-aether-mover { width: calc(33.3% - 12px) !important; } /* 重新計算滑塊寬度 */
-        .nav-item { flex: 1; }
+        
+        /* 4. 如果數據按鈕隱藏，重新調整導航滑塊與寬度 */
+        .nav-item { flex: 1 !important; }
+        #nav-aether-mover { width: calc(33.33% - 12px) !important; } 
     `;
     document.head.appendChild(maskStyle);
     console.log("🛡️ 員工模式啟動：已自動隱藏全站金額數據。");
 }
-
-});
 // ==========================================================================
 // --- 【V318 數據分析大腦：時段、週熱度與標籤全自動統計】 ---
 // ==========================================================================
@@ -3068,69 +3142,6 @@ function popStyleDrawer() {
         confirmButtonColor: '#1d1d1f'
     });
 }
-
-// ==========================================================================
-// 📱 Aether V318: Quantum Zoom 旗艦縮放引擎 (iOS 原生手感版)
-// ==========================================================================
-(function() {
-    const laneArea = document.getElementById('day-lanes');
-    if (!laneArea) return;
-
-    let scale = 1;
-    let startDist = 0;
-    let initialScale = 1;
-
-    // 🚀 設定縮放中心與平滑過渡
-    laneArea.style.transformOrigin = "center top"; 
-    laneArea.style.transition = "transform 0.05s linear"; // 極短暫的緩衝，消除抖動
-
-    laneArea.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            // 抓取初始距離
-            startDist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
-            initialScale = scale;
-        }
-    }, { passive: false });
-
-    laneArea.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
-            e.preventDefault(); 
-            
-            const currentDist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
-
-            // 計算新的縮放值
-            const zoomFactor = currentDist / startDist;
-            scale = initialScale * zoomFactor;
-
-            // 🎯 限制範圍：最小縮到 0.3 (看全景)，最大 1.5 (看細節)
-            if (scale < 0.3) scale = 0.3;
-            if (scale > 1.5) scale = 1.5;
-
-            // 🚀 核心物理變革：直接縮放整個容器畫布
-            // 這樣文字、圓角、間距會完美等比例縮放，不會有佈局崩壞感
-            laneArea.style.transform = `scale(${scale})`;
-            
-            // 補償寬度：防止縮小時右邊出現大片空白，讓滾動條依然有效
-            laneArea.style.width = `${100 / scale}%`;
-        }
-    }, { passive: false });
-
-    // 🚀 雙擊重置功能 (賈伯斯式的直覺：點兩下回到最舒服的比例)
-    laneArea.addEventListener('dblclick', () => {
-        scale = 1;
-        laneArea.style.transition = "transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)";
-        laneArea.style.transform = `scale(1)`;
-        laneArea.style.width = `100%`;
-        setTimeout(() => { laneArea.style.transition = "transform 0.05s linear"; }, 400);
-    });
-})();
-
 
 </script>
 </body>
