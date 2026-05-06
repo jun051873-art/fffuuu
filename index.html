@@ -1029,6 +1029,15 @@ function startSecurityHeartbeat() {
     if(window.navigator.vibrate) window.navigator.vibrate(10);
 }
 
+
+// 🎯 核心修正：獨立處理數據頁面的月份切換
+function handleStatsMonthChange(newVal) {
+    console.log("📅 數據頁面切換月份至:", newVal);
+    statsMonth = newVal; // 更新全域變數
+    renderStats();      // 重新執行渲染數據
+}
+
+
     function initMonth() {
         const grid = document.getElementById('cal-grid'); grid.innerHTML = '';
         const pick = document.getElementById('m-picker').value ? new Date(document.getElementById('m-picker').value + "-01") : new Date();
@@ -3130,7 +3139,7 @@ function renderStats() {
                 </div>
             </div>
             
-            <input type="month" class="month-selector" value="${statsMonth}" onchange="window.statsMonth=this.value; renderStats();">
+            <input type="month" class="month-selector" value="${statsMonth}" onchange="handleStatsMonthChange(this.value)">
 
             <div style="position:relative;">
                 ${!isPro ? `<div style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:100; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.3); border-radius:40px;"><i class="fas fa-lock" style="font-size:3rem; color:var(--gold); margin-bottom:10px;"></i><p style="font-weight:900;">Pro 版開啟趨勢分析</p></div>` : ''}
