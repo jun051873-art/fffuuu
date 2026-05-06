@@ -274,6 +274,22 @@ background: #f9f9fb !important;
     /* 防止卡片內的文字因為縮小而換行亂掉 */
     overflow: hidden;
 }
+
+/* 🚀 手動新增：生日輸入框樣式 */
+.shield-input {
+    width: 90px !important;
+    height: 60px !important;
+    font-size: 1.5rem !important;
+    font-weight: 900;
+    text-align: center;
+    border-radius: 20px !important;
+    border: 2px solid #f2f2f7 !important;
+    background: #f2f2f7 !important;
+    color: #1d1d1f;
+    outline: none;
+    display: inline-block; /* 確保尺寸生效 */
+}
+
         /* --- 【Aether Flow 美學語言：比例優化版】 --- */
         /* --- Aether Flow: 核心導航整合 --- */
        .nav {
@@ -2303,6 +2319,37 @@ function checkAndApplyStaffMask() {
     }
 }
 
+// ==========================================================================
+// --- 🚀 斷網巡邏兵：防止斷網期間非法操作 (確保副裝置安全) ---
+// ==========================================================================
+function initNetworkGuard() {
+    window.addEventListener('offline', () => {
+        const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+        // 如果是員工(副裝置)，斷網瞬間立刻阻斷操作
+        if (auth && auth.role === 'staff') {
+            Swal.fire({
+                icon: 'error',
+                title: '網路連線中斷',
+                text: '安全偵測：副裝置必須保持連網以維持授權。',
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                backdrop: `rgba(29,29,31,0.95)`
+            });
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            // 店長裝置斷網，僅跳出提示，不鎖定
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            Toast.fire({ icon: 'warning', title: '目前處於離線狀態' });
+        }
+    });
+
+    window.addEventListener('online', () => {
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        Toast.fire({ icon: 'success', title: '恢復網路連線，資料同步中' });
+        pullFromCloud(); // 恢復連線自動抓取最新雲端資料
+    });
+}
+
 // 🛡️ 執行金額遮蔽 CSS 注入
 function applyStaffMask() {
     // 檢查是否已經注入過，避免重複添加
@@ -2592,8 +2639,7 @@ async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
     // 🛡️ 鋼鐵檢查：若尚未激活或店號未綁定，不執行同步以保護本地數據
-    if (!auth || !auth.id || auth.id === "未綁定" || !auth.key) {
-        console.log("☁️ 雲端同步跳過：尚未激活或無效店號");
+if (!auth || !auth.id || auth.id === "未綁定") {        console.log("☁️ 雲端同步跳過：尚未激活或無效店號");
         return;
     }
 
@@ -3037,10 +3083,9 @@ async function editCli(oldName) {
                 ${store.stylists.map(s => `<option value="${s.id}" ${String(s.id) === String(c.lastSty) ? 'selected' : ''}>${s.name}</option>`).join('')}
             </select>
             <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
-                <span style="font-weight:900; color:#888;">🎂 生日：</span>
-                <input id="edit-cm" class="shield-input" type="text" value="${c.bm || ''}" placeholder="月"> / 
-                <input id="edit-cd" class="shield-input" type="text" value="${c.bd || ''}" placeholder="日">
-            </div>
+<input id="edit-cm" class="shield-input" type="tel" value="${c.bm || ''}" placeholder="月" maxlength="2" inputmode="numeric"> 
+<span style="font-weight:900; color:#ccc; font-size:1.5rem; margin:0 5px;">/</span>
+<input id="edit-cd" class="shield-input" type="tel" value="${c.bd || ''}" placeholder="日" maxlength="2" inputmode="numeric">            </div>
         `,
         preConfirm: () => ({
             n: document.getElementById('edit-cn').value,
@@ -3076,26 +3121,6 @@ function setSexCli(s) {
     g.classList.remove('active-girl');
     if(s === 'M') b.classList.add('active-boy');
     if(s === 'F') g.classList.add('active-girl');
-}
-
-// --- 🚀 店長權限：撤銷全店授權 (重置雲端同步鎖) ---
-async function reAuthMaster() {
-    const res = await Swal.fire({
-        title: '確定要撤銷全店授權？',
-        text: "這會讓所有拿副金鑰的設計師立即斷線，妳也需要重新激活！",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff4d4d',
-        confirmButtonText: '確定撤銷',
-        cancelButtonText: '取消',
-        reverseButtons: true
-    });
-
-    if (res.isConfirmed) {
-        // 刪除本地授權，讓 pullFromCloud 偵測到代碼不符，強迫重新登入
-        localStorage.removeItem('v318_booking_auth');
-        location.reload(); 
-    }
 }
 
 // ==========================================================================
