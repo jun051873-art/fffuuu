@@ -207,38 +207,47 @@ background: #f9f9fb !important;
     font-weight: 800 !important;
 }
         .suggest-item { padding: 15px 20px; border-bottom: 0.5px solid #eee; font-weight: 900; font-size: 1.2rem; cursor: pointer; color: var(--primary); }
-/* 🚀 修正時間標籤被吃掉的問題 */
+/* 🚀 物理空間：確保可以自由上下左右滑動，並為左側時間留白 */
 .lane-container {
     display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 20px 20px 100px 60px !important; /* 👈 加大左邊距(60px)，給時間留位置 */
+    overflow-x: auto !important; /* 強制開啟橫向滑動 */
+    overflow-y: auto !important; /* 強制開啟上下滑動 */
+    padding: 20px 20px 150px 70px !important; /* 左側留空間給時間標籤 */
     gap: 30px;
     align-items: flex-start;
-    -webkit-overflow-scrolling: touch; /* 讓滑動更順手 */
+    -webkit-overflow-scrolling: touch; /* iOS 絲滑滾動手感 */
+    height: calc(100vh - 100px); /* 確保高度足以滾動 */
+}
+
+/* 🚀 時間跑道：改用更穩定的結構，確保時間標籤不會跑掉 */
+.time-row-space { 
+    min-height: 240px; 
+    display: flex; 
+    flex-direction: row; 
+    gap: 12px; 
+    align-items: stretch; 
+    position: relative; 
 }
 
 .time-row-space::before {
-    content: attr(data-time); /* 利用屬性顯示時間 */
+    content: attr(data-time);
     position: absolute;
-    left: -50px; /* 固定在跑道左邊 */
-    top: 12px;
-    font-size: 0.85rem;
+    left: -60px; /* 往左移到 padding 區，不擋到預約卡片 */
+    top: 10px;
+    font-size: 0.9rem;
     color: #bbb;
     font-weight: 900;
 }
 
+/* 🚀 跑道寬度：固定寬度才能撐開橫向滑動區 */
 .lane {
     flex: 1;
-    min-width: var(--lane-w) !important;
+    min-width: 300px !important; 
     display: flex;
     flex-direction: column;
     gap: 20px;
-    transform-origin: top left; /* 👈 縮放原點，保證放大時不跑偏 */
     transition: none !important;
-    white-space: nowrap; /* 👈 縮小時名字不換行，維持上帝視角的整潔 */
 }
- 
      .time-row-space { min-height: 240px; display: flex; flex-direction: row; gap: 12px; align-items: stretch; }
     .apt-card {
     padding: 30px;
