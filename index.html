@@ -767,76 +767,143 @@ async function recordDeviceStatus(salonId) {
         console.warn("⚠️ 獨立報到失敗", e);
     }
 }
+
 // ==========================================================================
-// 🛡️ AETHER V318 最終門禁補丁：【亂碼鑰匙配對版】
+// 🛡️ AETHER V318 最終門禁系統 (裝置獨立卡片版)
 // ==========================================================================
 async function checkLicense() {
     let auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    
+    // 🚀 為這台裝置抽一張號碼牌 (UUID)，永久存在這台機器裡
+    let devID = localStorage.getItem('v318_dev_id');
+    if(!devID) {
+        devID = 'DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem('v318_dev_id', devID);
+    }
 
-    // 1. 如果是第一次使用，或者沒綁過鑰匙，強制跳出詢問
-    if (!auth || !auth.id || !auth.licenseKey) {
+    if (!auth || !auth.id) {
         const { value: shopID } = await Swal.fire({
             title: '啟動 AETHER V318',
-            text: '請輸入您的店號',
             input: 'text',
+            inputPlaceholder: '請輸入店號...',
             allowOutsideClick: false,
-            confirmButtonColor: '#1d1d1f'
+            backdrop: `rgba(0,0,0,0.9)`
         });
 
         if (shopID) {
-            const { value: lk } = await Swal.fire({
-                title: '身分驗證',
-                text: '請輸入您從控制台產生的「副鑰匙 ID」',
-                input: 'text',
-                placeholder: '例如: KEY-ABC12345',
-                allowOutsideClick: false,
-                confirmButtonColor: '#1d1d1f'
+            const cleanID = shopID.trim().toUpperCase();
+            const fullID = `${cleanID}-${devID}`; // 🚀 重點：店號-裝置ID (例如 051873-DEV-K92J)
+            auth = { id: cleanID, fullID: fullID };
+            localStorage.setItem('v318_booking_auth', JSON.stringify(auth));
+            
+            // 🚀 向雲端報到：建立獨立的裝置授權文件
+            await db.collection("LicenseKeys_Booking").doc(fullID).set({
+                salonId: cleanID,
+                ownerName: "新裝置",
+                deviceID: devID,
+                status: "active",
+                expire: null,
+                model: navigator.userAgent.includes("iPhone") ? "iPhone" : 
+                       (navigator.userAgent.includes("iPad") ? "iPad" : "PC/Mac"),
+                createdAt: Date.now()
             });
-
-            if (lk) {
-                const cleanKey = lk.trim().toUpperCase();
-                const cleanShop = shopID.trim().toUpperCase();
-
-                // 🚀 關鍵：去雲端找那張「獨立的亂碼卡片」
-                const snap = await db.collection("LicenseKeys_Booking").doc(cleanKey).get();
-                
-                if (snap.exists && snap.data().salonId === cleanShop) {
-                    // 驗證成功，把鑰匙跟店號鎖進這台手機
-                    localStorage.setItem('v318_booking_auth', JSON.stringify({
-                        id: cleanShop,
-                        licenseKey: cleanKey
-                    }));
-                    Swal.fire('驗證成功', '鑰匙已配對', 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    await Swal.fire('驗證失敗', '鑰匙不存在或與店號不符', 'error');
-                    location.reload();
-                }
-            }
+            location.reload();
         }
         return;
     }
 
-    // 2. 正常使用中，每秒盯著這把鑰匙的狀態
+    // 🚀 封鎖監控：只盯著這台裝置自己的文件
     if (window.navigator.onLine) {
         try {
-            const snap = await db.collection("LicenseKeys_Booking").doc(auth.licenseKey).get();
+            const snap = await db.collection("LicenseKeys_Booking").doc(auth.fullID).get();
             if (snap.exists) {
                 const cfg = snap.data();
-                // 🛑 封鎖功能：只要你在後台那張「亂碼卡片」按封鎖，這裡就跳黑畫面
+                // 🛑 如果你在後台按了封鎖，這台機器會立刻跳黑畫面
                 if (cfg.status === "blocked") {
-                    executeSystemLockdown("🚫 此鑰匙(授權)已被管理員封鎖");
+                    executeSystemLockdown("此裝置已被封鎖，請聯繫管理員。");
                     return;
                 }
-            } else {
-                executeSystemLockdown("❌ 找不到授權檔案 (鑰匙無效)");
-                return;
+                // ⏳ 檢查這台裝置的到期日
+                if (cfg.expire && Date.now() > cfg.expire) {
+                    executeSystemLockdown("此裝置授權已過期。");
+                    return;
+                }
             }
-        } catch (e) { console.error("驗證通訊異常"); }
+        } catch (e) { console.error("門禁校驗失敗"); }
     }
-    
-    // 通過檢查，去拉營業資料
     pullFromCloud();
+}
+
+// ==========================================================================
+// --- S3: 資料核心與 Firebase 雲端同步模組 ---
+// ==========================================================================
+    let curD = new Date();
+    let tempTags = [];
+    let cliKw = "";
+    
+    // 優先從本機抓取，若無則初始化
+    let store = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {
+        startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
+        stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
+        tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
+        // --- 這是新增的自定義標籤籃子 ---
+        payTagsDef: [
+            {id: 'L', name: 'Line', color: '#06C755'},
+            {id: 'J', name: '街口', color: '#ED1C24'},
+            {id: 'C', name: '現金', color: '#8B4513'}
+        ],
+        appointments: [], clients: [], offDays: []
+    };
+// 尋找你代碼中的 saveS 函數並替換：
+async function saveS() { 
+    if (window.IS_LOCKED_VACUUM === true) {
+        console.error("🚨 數據隔離保護中，攔截非法存檔請求！");
+        return; 
+    }
+
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id || auth.id === "未綁定") return;
+
+    try {
+        store.lastUpdate = Date.now(); 
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
+
+        if (window.navigator.onLine) {
+            // 🚀 改為 update，這樣就不會動到後台設定的 status 或 expiryDate
+            await db.collection("Salons").doc(auth.id).update({
+                appointments: store.appointments,
+                clients: store.clients,
+                stylists: store.stylists,
+                tags: store.tags,
+                storeName: store.storeName,
+                lastUpdate: store.lastUpdate,
+                startH: store.startH,
+                endH: store.endH,
+                offDays: store.offDays,
+                offColor: store.offColor,
+                payTagsDef: store.payTagsDef
+            });
+
+            console.log("✅ 雲端同步成功", auth.id);
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1000,
+                background: '#fff',
+                color: '#1d1d1f'
+            });
+            Toast.fire({ icon: 'success', title: '雲端同步成功' });
+        }
+    } 
+    catch (e) {
+        // 如果是新店號尚未建立文件，update 會報錯，此時才用 set 建立
+        if (e.code === 'not-found') {
+            await db.collection("Salons").doc(auth.id).set(store);
+        }
+        console.error("⚠️ 同步處理中", e);
+    }
 }
 // ==========================================================================
 // 🚀 第一部分：封鎖引擎 (隔離數據但不 reload，保留背景巡邏能力)
