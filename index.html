@@ -768,81 +768,70 @@ async function recordDeviceStatus(salonId) {
     }
 }
 
-// 🛡️ 授權守門員：完整版 (含多裝置紀錄與安全封鎖)
+// ==========================================================================
+// 🛡️ AETHER V318 最終門禁系統 (裝置獨立卡片版)
 // ==========================================================================
 async function checkLicense() {
-    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    let auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
-    // 1. 若完全沒有綁定資訊，彈出輸入框
-    if (!auth || !auth.id || auth.id === "未綁定") {
+    // 🚀 為這台裝置抽一張號碼牌 (UUID)，永久存在這台機器裡
+    let devID = localStorage.getItem('v318_dev_id');
+    if(!devID) {
+        devID = 'DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem('v318_dev_id', devID);
+    }
+
+    if (!auth || !auth.id) {
         const { value: shopID } = await Swal.fire({
-            title: '歡迎使用 專屬空間',
-            text: '請輸入您的專屬店號以啟用',
+            title: '啟動 AETHER V318',
             input: 'text',
-            confirmButtonColor: '#1d1d1f',
+            inputPlaceholder: '請輸入店號...',
             allowOutsideClick: false,
             backdrop: `rgba(0,0,0,0.9)`
         });
 
         if (shopID) {
-            const cleanID = shopID.trim();
-            const newAuth = { key: 'PERMANENT', id: cleanID, role: 'admin' };
-            localStorage.setItem('v318_booking_auth', JSON.stringify(newAuth));
+            const cleanID = shopID.trim().toUpperCase();
+            const fullID = `${cleanID}-${devID}`; // 🚀 重點：店號-裝置ID (例如 051873-DEV-K92J)
+            auth = { id: cleanID, fullID: fullID };
+            localStorage.setItem('v318_booking_auth', JSON.stringify(auth));
             
-            // 新店號登入時立即紀錄裝置
-            await recordDeviceStatus(cleanID); 
+            // 🚀 向雲端報到：建立獨立的裝置授權文件
+            await db.collection("LicenseKeys_Booking").doc(fullID).set({
+                salonId: cleanID,
+                ownerName: "新裝置",
+                deviceID: devID,
+                status: "active",
+                expire: null,
+                model: navigator.userAgent.includes("iPhone") ? "iPhone" : 
+                       (navigator.userAgent.includes("iPad") ? "iPad" : "PC/Mac"),
+                createdAt: Date.now()
+            });
             location.reload();
         }
         return;
     }
 
-    // 2. 在線狀態下的「權限」校驗與「裝置」紀錄
+    // 🚀 封鎖監控：只盯著這台裝置自己的文件
     if (window.navigator.onLine) {
         try {
-            // 🚀 執行多裝置同步 (重要！)
-            recordDeviceStatus(auth.id); 
-
-            // 讀取授權表
-            const licenseSnap = await db.collection("LicenseKeys_Booking")
-                                        .where("salonId", "==", auth.id)
-                                        .get();
-            
-            if (!licenseSnap.empty) {
-                // 假設一個店號只對應一個授權文件
-                const config = licenseSnap.docs[0].data();
-                const now = Date.now();
-
-                // 🛑 檢查封鎖狀態
-                if (config.status === "blocked") {
-                    executeSystemLockdown("此店號已被管理員封鎖，請聯繫小刀。");
+            const snap = await db.collection("LicenseKeys_Booking").doc(auth.fullID).get();
+            if (snap.exists) {
+                const cfg = snap.data();
+                // 🛑 如果你在後台按了封鎖，這台機器會立刻跳黑畫面
+                if (cfg.status === "blocked") {
+                    executeSystemLockdown("此裝置已被封鎖，請聯繫管理員。");
                     return;
                 }
-
-                // 🛑 檢查過期時間 (expire 欄位)
-                if (config.expire && now > config.expire) {
-                    executeSystemLockdown("您的系統使用期限已屆滿，請聯繫續費。");
+                // ⏳ 檢查這台裝置的到期日
+                if (cfg.expire && Date.now() > cfg.expire) {
+                    executeSystemLockdown("此裝置授權已過期。");
                     return;
-                }
-
-                // 解除 UI 鎖定 (如果之前被鎖過)
-                const mask = document.getElementById('security-mask');
-                if (mask) {
-                    mask.remove();
-                    document.querySelectorAll('.nav, .fab, .header').forEach(el => el.style.display = 'flex');
-                    window.IS_LOCKED_VACUUM = false;
                 }
             }
-            
-            // 權限通過，執行資料同步
-            pullFromCloud(); 
-
-        } catch(e) {
-            console.error("🔒 權限校驗異常", e);
-            pullFromCloud(); // 異常時保守執行
-        }
-    } else {
-        pullFromCloud(); // 離線模式，直接讀取本機快取
+        } catch (e) { console.error("門禁校驗失敗"); }
     }
+    pullFromCloud();
 }
 
 // ==========================================================================
