@@ -2195,74 +2195,121 @@ async function popPriceEdit(aptId, ds) {
 }
 
 
-    // ==========================================================================
-// 🚀 V318 授權守門員：【自動開墾通關版】
+// ==========================================================================
+// 🚀 V318 授權守門員：【恢復 BOO 金鑰邏輯】
 // ==========================================================================
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
-    // 1. 若完全沒有綁定資訊，彈出輸入框
+    // 1. 如果沒綁定店號，要求輸入
     if (!auth || !auth.id || auth.id === "未綁定") {
         const { value: shopID } = await Swal.fire({
-            title: '歡迎使用 專屬空間',
-            text: '請輸入您的專屬店號以啟用 (新店號將自動初始化)',
+            title: '請輸入授權店號',
             input: 'text',
             confirmButtonColor: '#1d1d1f',
             allowOutsideClick: false,
             backdrop: `rgba(0,0,0,0.9)`
         });
-
         if (shopID) {
-            // 直接過濾並存入，不在此處檢查是否存在，交給後續 pullFromCloud 處理
-            const newAuth = { key: 'PERMANENT', id: shopID.trim().toUpperCase(), role: 'admin' };
-            localStorage.setItem('v318_booking_auth', JSON.stringify(newAuth));
+            localStorage.setItem('v318_booking_auth', JSON.stringify({ id: shopID.trim().toUpperCase() }));
             location.reload();
         }
         return;
     }
 
-    // 2. 在線狀態下的安全性巡邏
+    // 2. 雲端驗證：去 LicenseKeys_Booking 找這把鑰匙
     if (window.navigator.onLine) {
         try {
-            const snap = await db.collection("Salons").doc(auth.id).get();
+            // 🎯 這裡改回用 salonId 查詢，這樣不管文件 ID 是 REC 還是店號都能通
+            const snap = await db.collection("LicenseKeys_Booking").where("salonId", "==", auth.id).get();
             
-            if (snap.exists) {
-                const cloudControl = snap.data();
+            if (!snap.empty) {
+                const config = snap.docs[0].data(); 
+                const docId = snap.docs[0].id;
                 const now = Date.now();
 
-                // 🛑 A. 檢查封鎖狀態
-                if (cloudControl.status === "blocked") {
-                    executeSystemLockdown("店鋪授權已停用，請聯繫管理員。");
+                // 🛑 A. 封鎖檢查 (這就是你要的剔除功能)
+                if (config.status === "blocked") {
+                    executeSystemLockdown("此授權店號已被管理員剔除。");
                     return;
                 }
 
-                // 🛑 B. 檢查過期時間
-                if (cloudControl.expiryDate && now > cloudControl.expiryDate) {
-                    executeSystemLockdown("您的系統使用期限已屆滿，請聯繫續費。");
+                // 🛑 B. 過期檢查
+                if (config.expire && now > config.expire) {
+                    executeSystemLockdown("系統使用期限已屆滿，請聯繫管理員。");
                     return;
                 }
 
-                // 🔓 C. 通過安全檢查，解除 UI 鎖定
-                const mask = document.getElementById('security-mask');
-                if (mask) {
-                    mask.remove();
-                    document.querySelectorAll('.nav, .fab, .header').forEach(el => el.style.display = 'flex');
-                    window.IS_LOCKED_VACUUM = false;
-                }
-            } 
+                // 🚀 C. 裝置監控：回傳名片到後台
+                const ua = navigator.userAgent.toLowerCase();
+                let deviceName = "未知裝置";
+                if (ua.includes('iphone')) deviceName = "iPhone";
+                else if (ua.includes('android')) deviceName = "Android Phone";
+                else if (ua.includes('macintosh')) deviceName = "MacBook";
+                else if (ua.includes('windows')) deviceName = "PC / Windows";
+
+                await db.collection("LicenseKeys_Booking").doc(docId).update({
+                    lastSeenDevice: deviceName,
+                    lastSeenTime: new Date().toISOString(),
+                    // 自動同步店名到後台名單，讓你後台好看
+                    ownerName: store.storeName || config.ownerName || "未命名店舖"
+                });
+
+            } else {
+                // 如果後台根本沒建立這個店號
+                executeSystemLockdown("資料庫中找不到此店號之授權。");
+                return;
+            }
             
-            // 🚀 重要修正：不論 snap 是否存在，最後都必須執行 pullFromCloud()
-            // 這樣「全新的店號」才能觸發自動建立資料的邏輯
+            // 通過驗證，開始抓資料
             pullFromCloud(); 
 
         } catch(e) {
-            console.log("☁️ 驗證通訊異常，暫以本地模式運行");
-            // 即使通訊異常，為了不跳白屏，依然嘗試執行拉取/渲染
+            console.error("安全校驗異常", e);
             pullFromCloud(); 
         }
     } else {
-        // 離線狀態下直接執行拉取（會從本地快取抓資料）
-        pullFromCloud();
+        pullFromCloud(); 
+    }
+}
+
+// ==========================================================================
+// ☁️ V318 雲端數據同步：【純淨版，不再亂寫後台資料】
+// ==========================================================================
+async function pullFromCloud() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id) return;
+
+    try {
+        const snap = await db.collection("Salons").doc(auth.id).get();
+        let cloudData;
+
+        if (!snap.exists) {
+            // 新店號自動初始化
+            cloudData = {
+                storeName: "我的新空間",
+                stylists: [{id: 1, name: '主設計師', color: '#1d1d1f'}],
+                appointments: [], clients: [], lastUpdate: Date.now(), status: "active"
+            };
+            await db.collection("Salons").doc(auth.id).set(cloudData);
+        } else {
+            cloudData = snap.data();
+        }
+
+        // 比較版本，更新本機
+        const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
+        if (!localData.lastUpdate || (cloudData.lastUpdate > localData.lastUpdate)) {
+            store = cloudData;
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+            
+            // 執行渲染
+            updateStoreUI();  
+            initMonth();      
+            if (typeof renderCli === 'function') renderCli();
+            if (curD && typeof renderDay === 'function') renderDay(curD.toLocaleDateString('sv'));
+        }
+    } catch (e) { 
+        console.error("同步失敗", e); 
     }
 }
 // ==========================================================================
@@ -2642,11 +2689,7 @@ function renderStats() {
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
-    // 🛡️ 鋼鐵檢查：若尚未激活，不執行同步
-    if (!auth || !auth.id || auth.id === "未綁定") {
-        console.log("☁️ 雲端同步跳過：尚未激活");
-        return;
-    }
+    if (!auth || !auth.id || auth.id === "未綁定") return;
 
     try {
         console.log("☁️ 正在檢查雲端數據 (店號: " + auth.id + ")...");
@@ -2654,16 +2697,13 @@ async function pullFromCloud() {
         
         let cloudData;
 
-        // 🌟 核心邏輯：如果雲端「完全沒有」這個店號文檔
+        // 🌟 邏輯 A：雲端完全沒資料 (新店號)
         if (!snap.exists || !snap.data().stylists || snap.data().stylists.length === 0) {
-            console.log("✨ 偵測到全新店號，正在執行【自動開墾 + 後台登記】...");
+            console.log("✨ 執行【自動開墾】...");
             
-            // 1. 建立店鋪基礎內容 (Salons 集合)
-            const defaultStructure = {
+            cloudData = {
                 storeName: "我的專屬空間",
-                startH: "11:00",
-                endH: "20:00",
-                offColor: "#e5e5ea",
+                startH: "11:00", endH: "20:00",
                 stylists: [{id: 1, name: '設計師A', color: '#1d1d1f'}], 
                 tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
                 payTagsDef: [
@@ -2671,36 +2711,25 @@ async function pullFromCloud() {
                     {id: 'J', name: '街口', color: '#ED1C24'},
                     {id: 'C', name: '現金', color: '#8B4513'}
                 ],
-                appointments: [],
-                clients: [],
-                offDays: [],
-                lastUpdate: Date.now(),
-                status: "active" 
+                appointments: [], clients: [], offDays: [],
+                lastUpdate: Date.now()
             };
-
-            // 🚀 A. 寫入 Salons (讓主程式有資料可用)
-            await db.collection("Salons").doc(auth.id).set(defaultStructure, { merge: true });
-
-            // 🚀 B. 同步登記到 LicenseKeys_Booking (這就是讓你後台看得到的關鍵！)
-            // 使用店號作為金鑰 ID，方便管理
-            await db.collection("LicenseKeys_Booking").doc(auth.id).set({
-                key: auth.id,
-                salonName: "新自動開墾: " + auth.id,
-                owner: "自動註冊用戶",
-                status: "active",
-                createdAt: new Date().toISOString(),
-                expiryDate: Date.now() + (365 * 24 * 60 * 60 * 1000) // 預設給一年授權
-            }, { merge: true });
-
-            cloudData = defaultStructure;
-            console.log("✅ 店鋪已創立，並成功掛號至管理後台！");
-            
+            // 寫入營業資料
+            await db.collection("Salons").doc(auth.id).set(cloudData, { merge: true });
         } else {
-            // 雲端已有資料，正常讀取
+            // 讀取現有資料
             cloudData = snap.data();
         }
 
-        // 🚀 執行本地覆蓋邏輯 (保持原本功能)
+        // 🚀 關鍵補丁：強制將店名同步到「管理後台名單」
+        // 這樣你在管理後台的 LicenseKeys_Booking 就能看到這家店叫什麼名字
+        await db.collection("LicenseKeys_Booking").doc(auth.id).set({
+            key: auth.id,
+            salonName: cloudData.storeName || "未命名店鋪",
+            lastSeen: new Date().toISOString()
+        }, { merge: true }); // 使用 merge 避免覆蓋掉後台設好的 status 或 expiryDate
+
+        // 🚀 執行本地覆蓋邏輯
         const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
         if (!localData.lastUpdate || (cloudData.lastUpdate > localData.lastUpdate)) {
             store = cloudData;
@@ -2713,7 +2742,7 @@ async function pullFromCloud() {
             }
         }
     } catch (e) { 
-        console.warn("⚠️ 雲端同步或後台登記異常", e); 
+        console.warn("⚠️ 同步程序異常", e); 
     }
 }
 async function editPayTag(id, old) {
