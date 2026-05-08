@@ -713,6 +713,123 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ==========================================================================
+// 🚀 [多裝置監測補丁]：自動紀錄目前登入的設備資訊 (不覆蓋他人)
+// ==========================================================================
+async function recordDeviceStatus(salonId) {
+    if (!window.navigator.onLine) return; // 離線則不執行
+
+    // 1. 產生裝置唯一 ID (基於瀏覽器指紋，確保手機和平板 ID 不同)
+    const deviceId = btoa(navigator.userAgent).slice(0, 12); 
+    
+    // 2. 辨識型號
+    let model = "行動裝置";
+    if (navigator.userAgent.includes("iPhone")) model = "iPhone";
+    else if (navigator.userAgent.includes("iPad")) model = "iPad";
+    else if (navigator.userAgent.includes("Macintosh")) model = "Mac/PC";
+    else if (navigator.userAgent.includes("Windows")) model = "Windows PC";
+
+    // 3. 設定更新路徑：使用 devices.ID 確保多裝置並存
+    const deviceKey = `devices.${deviceId}`;
+
+    try {
+        // 更新 LicenseKeys_Booking 集合
+        const snap = await db.collection("LicenseKeys_Booking")
+                            .where("salonId", "==", salonId)
+                            .get();
+        
+        snap.forEach(doc => {
+            doc.ref.update({
+                [deviceKey]: {
+                    model: model,
+                    lastSeen: Date.now()
+                }
+            });
+        });
+        console.log("📡 設備連線已同步: " + model);
+    } catch (e) {
+        console.warn("⚠️ 設備狀態更新失敗", e);
+    }
+}
+
+// ==========================================================================
+// 🛡️ 授權守門員：完整版 (含多裝置紀錄與安全封鎖)
+// ==========================================================================
+async function checkLicense() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    
+    // 1. 若完全沒有綁定資訊，彈出輸入框
+    if (!auth || !auth.id || auth.id === "未綁定") {
+        const { value: shopID } = await Swal.fire({
+            title: '歡迎使用 專屬空間',
+            text: '請輸入您的專屬店號以啟用',
+            input: 'text',
+            confirmButtonColor: '#1d1d1f',
+            allowOutsideClick: false,
+            backdrop: `rgba(0,0,0,0.9)`
+        });
+
+        if (shopID) {
+            const cleanID = shopID.trim();
+            const newAuth = { key: 'PERMANENT', id: cleanID, role: 'admin' };
+            localStorage.setItem('v318_booking_auth', JSON.stringify(newAuth));
+            
+            // 新店號登入時立即紀錄裝置
+            await recordDeviceStatus(cleanID); 
+            location.reload();
+        }
+        return;
+    }
+
+    // 2. 在線狀態下的「權限」校驗與「裝置」紀錄
+    if (window.navigator.onLine) {
+        try {
+            // 🚀 執行多裝置同步 (重要！)
+            recordDeviceStatus(auth.id); 
+
+            // 讀取授權表
+            const licenseSnap = await db.collection("LicenseKeys_Booking")
+                                        .where("salonId", "==", auth.id)
+                                        .get();
+            
+            if (!licenseSnap.empty) {
+                // 假設一個店號只對應一個授權文件
+                const config = licenseSnap.docs[0].data();
+                const now = Date.now();
+
+                // 🛑 檢查封鎖狀態
+                if (config.status === "blocked") {
+                    executeSystemLockdown("此店號已被管理員封鎖，請聯繫小刀。");
+                    return;
+                }
+
+                // 🛑 檢查過期時間 (expire 欄位)
+                if (config.expire && now > config.expire) {
+                    executeSystemLockdown("您的系統使用期限已屆滿，請聯繫續費。");
+                    return;
+                }
+
+                // 解除 UI 鎖定 (如果之前被鎖過)
+                const mask = document.getElementById('security-mask');
+                if (mask) {
+                    mask.remove();
+                    document.querySelectorAll('.nav, .fab, .header').forEach(el => el.style.display = 'flex');
+                    window.IS_LOCKED_VACUUM = false;
+                }
+            }
+            
+            // 權限通過，執行資料同步
+            pullFromCloud(); 
+
+        } catch(e) {
+            console.error("🔒 權限校驗異常", e);
+            pullFromCloud(); // 異常時保守執行
+        }
+    } else {
+        pullFromCloud(); // 離線模式，直接讀取本機快取
+    }
+}
+
+// ==========================================================================
 // --- S3: 資料核心與 Firebase 雲端同步模組 ---
 // ==========================================================================
     let curD = new Date();
@@ -2201,60 +2318,81 @@ async function popPriceEdit(aptId, ds) {
 async function checkLicense() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     
+    // 1. 若完全沒有綁定資訊，彈出輸入框
     if (!auth || !auth.id || auth.id === "未綁定") {
         const { value: shopID } = await Swal.fire({
-            title: '請輸入授權店號',
+            title: '歡迎使用 專屬空間',
+            text: '請輸入您的專屬店號以啟用 (新店號將自動初始化)',
             input: 'text',
             confirmButtonColor: '#1d1d1f',
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            backdrop: `rgba(0,0,0,0.9)`
         });
-        if (shopID) {
-            localStorage.setItem('v318_booking_auth', JSON.stringify({ id: shopID.trim().toUpperCase() }));
+
+       if (shopID) {
+            // 1. 標準化店號（去空白、轉大寫）
+            const cleanID = shopID.trim().toUpperCase();
+            
+            // 2. 建立本地授權物件
+            const newAuth = { 
+                key: 'PERMANENT', 
+                id: cleanID, 
+                role: 'admin' 
+            };
+            
+            // 3. 存入瀏覽器快取
+            localStorage.setItem('v318_booking_auth', JSON.stringify(newAuth));
+            
+            // 🚀 關鍵動作：在跳轉前先發送裝置訊號給雲端
+            // 使用 await 確保雲端收到後才執行 reload
+            await recordDeviceStatus(cleanID); 
+
+            // 4. 重新整理頁面，啟動系統
             location.reload();
         }
         return;
     }
 
+    // 2. 在線狀態下的「權限」校驗（盯著管理後台集合）
     if (window.navigator.onLine) {
         try {
-            // 🚀 恢復關鍵：去 LicenseKeys_Booking 找這家店的鑰匙紀錄
-            // 假設你的文件 ID 就是店號，或者你有一個欄位叫 salonId
-            const snap = await db.collection("LicenseKeys_Booking").where("salonId", "==", auth.id).get();
+            // 🚀 關鍵：讀取 LicenseKeys_Booking 而不是 Salons
+            const licenseSnap = await db.collection("LicenseKeys_Booking").doc(auth.id).get();
             
-            if (!snap.empty) {
-                const config = snap.docs[0].data(); // 抓第一把符合的鑰匙
+            if (licenseSnap.exists) {
+                const config = licenseSnap.data();
                 const now = Date.now();
 
-                // 🛑 封鎖檢查
+                // 🛑 檢查封鎖狀態 (你在後台按禁止，這裡就會觸發)
                 if (config.status === "blocked") {
-                    executeSystemLockdown("此授權已被管理員封鎖。");
+                    executeSystemLockdown("此店號已被管理員封鎖，請聯繫小刀。");
                     return;
                 }
 
-                // 🛑 過期檢查 (恢復使用 expire 欄位)
-                if (config.expire && now > config.expire) {
-                    executeSystemLockdown("您的系統使用期限已屆滿。");
+                // 🛑 檢查過期時間
+                if (config.expiryDate && now > config.expiryDate) {
+                    executeSystemLockdown("您的系統使用期限已屆滿，請聯繫續費。");
                     return;
                 }
 
-                // 🚀 裝置監控補丁：每次登入更新裝置資訊到鑰匙上
-                const device = /iphone|android|macintosh|windows/.exec(navigator.userAgent.toLowerCase());
-                await db.collection("LicenseKeys_Booking").doc(snap.docs[0].id).update({
-                    lastDevice: device ? device[0] : "未知設備",
-                    lastActive: new Date().toISOString()
-                });
-            } else {
-                // 如果連鑰匙紀錄都沒有
-                executeSystemLockdown("找不到此店號的授權紀錄。");
-                return;
+                // 解除 UI 鎖定 (如果之前被鎖過)
+                const mask = document.getElementById('security-mask');
+                if (mask) {
+                    mask.remove();
+                    document.querySelectorAll('.nav, .fab, .header').forEach(el => el.style.display = 'flex');
+                    window.IS_LOCKED_VACUUM = false;
+                }
             }
+            
+            // 權限通過，執行資料同步
             pullFromCloud(); 
+
         } catch(e) {
-            console.error("驗證異常", e);
-            pullFromCloud(); 
+            console.error("🔒 權限校驗異常", e);
+            pullFromCloud(); // 異常時保守執行
         }
     } else {
-        pullFromCloud(); 
+        pullFromCloud(); // 離線模式
     }
 }
 // ==========================================================================
