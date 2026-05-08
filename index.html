@@ -712,16 +712,21 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ============// ==========================================================================
-// 📡 [多裝置同步補丁]：自動紀錄設備，不覆蓋他人，支援後台清單顯示
+// ==========================================================================
+// 📡 [多裝置獨立報到系統]：讓每一台設備在後台都有獨立門牌
 // ==========================================================================
 async function recordDeviceStatus(salonId) {
     if (!window.navigator.onLine || !salonId) return;
 
-    // 1. 產生裝置唯一 ID (確保手機和平板 ID 不同)
-    const deviceId = btoa(navigator.userAgent).slice(0, 8); 
+    // 🚀 關鍵核心：為這台裝置產生一個這輩子固定的「身分證字號」
+    // 儲存在本機，確保這台手機不管重新整理幾次，在後台都是同一個位置
+    let deviceUUID = localStorage.getItem('v318_device_uuid');
+    if (!deviceUUID) {
+        deviceUUID = 'DEV-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        localStorage.setItem('v318_device_uuid', deviceUUID);
+    }
     
-    // 2. 精確辨識型號
+    // 辨識型號
     let model = "行動裝置";
     const ua = navigator.userAgent;
     if (ua.includes("iPhone")) model = "iPhone";
@@ -729,36 +734,37 @@ async function recordDeviceStatus(salonId) {
     else if (ua.includes("Macintosh")) model = "Mac/PC";
     else if (ua.includes("Windows NT")) model = "Windows PC";
 
+    // 🚀 設定門牌路徑：devices.DEV-XXXXXX
+    // 這樣在 Firebase 裡會變成一個清單，不會互相覆蓋
+    const devicePath = `devices.${deviceUUID}`;
+
     try {
-        // 3. 搜尋該店號對應的授權文件
         const snap = await db.collection("LicenseKeys_Booking")
                             .where("salonId", "==", salonId)
                             .get();
         
-        if (snap.empty) {
-            console.warn("⚠️ 找不到對應店號的授權文件，無法同步裝置狀態");
-            return;
-        }
+        if (snap.empty) return;
 
-        // 4. 使用 set(..., {merge: true}) 確保 devices 物件存在且不覆蓋舊裝置
-        snap.forEach(async (doc) => {
-            const updateData = {
-                devices: {
-                    [deviceId]: {
-                        model: model,
-                        lastSeen: Date.now()
-                    }
+        // 執行「路徑式更新」：只更新自己這台裝置的格子
+        const now = Date.now();
+        const batch = db.batch();
+        
+        snap.forEach(doc => {
+            batch.update(doc.ref, {
+                [devicePath]: {
+                    id: deviceUUID,
+                    model: model,
+                    lastSeen: now
                 },
-                // 保留一個全局最後活動時間，方便後台快速排序
-                lastSeenGlobal: Date.now() 
-            };
-
-            await doc.ref.set(updateData, { merge: true });
+                // 全域最後更新時間（讓後台知道這間店有人在用）
+                lastSeenGlobal: now 
+            });
         });
 
-        console.log(`📡 設備已在雲端報到: ${model}`);
+        await batch.commit();
+        console.log(`📡 裝置 [${deviceUUID}] 已獨立報到: ${model}`);
     } catch (e) {
-        console.warn("⚠️ 設備狀態更新失敗", e);
+        console.warn("⚠️ 獨立報到失敗", e);
     }
 }
 
