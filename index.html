@@ -771,43 +771,47 @@ async function recordDeviceStatus(salonId) {
 // ==========================================================================
 // 🛡️ AETHER V318 最終門禁系統 (裝置獨立卡片版)
 // ==========================================================================
+// 🛡️ AETHER V318 雙門禁：店號 + 鑰匙
 async function checkLicense() {
     let auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    
-    // 🚀 為這台裝置抽一張號碼牌 (UUID)，永久存在這台機器裡
-    let devID = localStorage.getItem('v318_dev_id');
-    if(!devID) {
-        devID = 'DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        localStorage.setItem('v318_dev_id', devID);
-    }
 
-    if (!auth || !auth.id) {
-        const { value: shopID } = await Swal.fire({
+    if (!auth || !auth.id || !auth.licenseKey) {
+        const { value: formValues } = await Swal.fire({
             title: '啟動 AETHER V318',
-            input: 'text',
-            inputPlaceholder: '請輸入店號...',
+            html: `
+                <div style="text-align:left; padding:10px;">
+                    <p style="font-weight:900; color:#888; margin-bottom:5px;">請輸入店號</p>
+                    <input id="swal-shop-id" class="swal2-input" style="margin:0 0 20px 0; width:100%; border-radius:15px;" placeholder="例如: 051873">
+                    <p style="font-weight:900; color:#888; margin-bottom:5px;">請輸入授權鑰匙</p>
+                    <input id="swal-license-key" class="swal2-input" style="margin:0; width:100%; border-radius:15px;" placeholder="KEY-XXXXXX">
+                </div>
+            `,
+            focusConfirm: false,
             allowOutsideClick: false,
-            backdrop: `rgba(0,0,0,0.9)`
+            confirmButtonText: '驗證並啟動',
+            confirmButtonColor: '#1d1d1f',
+            preConfirm: () => {
+                const id = document.getElementById('swal-shop-id').value.trim().toUpperCase();
+                const key = document.getElementById('swal-license-key').value.trim().toUpperCase();
+                if (!id || !key) { Swal.showValidationMessage('店號與鑰匙皆為必填'); return false; }
+                return { id, key };
+            }
         });
 
-        if (shopID) {
-            const cleanID = shopID.trim().toUpperCase();
-            const fullID = `${cleanID}-${devID}`; // 🚀 重點：店號-裝置ID (例如 051873-DEV-K92J)
-            auth = { id: cleanID, fullID: fullID };
-            localStorage.setItem('v318_booking_auth', JSON.stringify(auth));
-            
-            // 🚀 向雲端報到：建立獨立的裝置授權文件
-            await db.collection("LicenseKeys_Booking").doc(fullID).set({
-                salonId: cleanID,
-                ownerName: "新裝置",
-                deviceID: devID,
-                status: "active",
-                expire: null,
-                model: navigator.userAgent.includes("iPhone") ? "iPhone" : 
-                       (navigator.userAgent.includes("iPad") ? "iPad" : "PC/Mac"),
-                createdAt: Date.now()
-            });
-            location.reload();
+        if (formValues) {
+            // 驗證鑰匙是否存在且店號匹配
+            const snap = await db.collection("LicenseKeys_Booking").doc(formValues.key).get();
+            if (snap.exists && snap.data().salonId === formValues.id) {
+                localStorage.setItem('v318_booking_auth', JSON.stringify({
+                    id: formValues.id,
+                    licenseKey: formValues.key
+                }));
+                Swal.fire('驗證成功', '同步資料中...', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                await Swal.fire('驗證失敗', '鑰匙不存在或店號錯誤', 'error');
+                location.reload();
+            }
         }
         return;
     }
@@ -1484,52 +1488,86 @@ function renderSet() {
             </div>
         </div>`;
 
-    // 🎯 2. 核心修正：使用 setTimeout 確保 HTML 渲染後才綁定事件，防止失效
-    setTimeout(() => {
-        // 綁定所有抽屜按鈕
-        const list = document.getElementById('set-main-list');
-        if (list) {
-            list.onclick = (e) => {
-                const item = e.target.closest('.set-drawer-trigger');
-                if (!item) return;
-                const action = item.dataset.action;
-                
-                // 直接執行對應功能，不設門檻
-                if (action === 'rename') popRenameStore();
-                if (action === 'time') popTimeDrawer();
-                if (action === 'sty') popStyDrawer();
-                if (action === 'tag') popTagDrawer();
-                if (action === 'paytag') popPayTagDrawer();
-                if (action === 'style') popStyleDrawer();
-                if (action === 'offday') popOffDayDrawer();
-            };
-        }
+    // 🎯 2. 核心修正：包含「設定」大標題長按 3 秒進入管理員後台的完整邏輯
+setTimeout(() => {
+    // --- A. 處理「設定」大標題長按 3 秒 (密碼 518) ---
+    const adminTrigger = document.getElementById('admin-trigger');
+    let adminTimer;
 
-        // 綁定登出/重新激活按鈕
-        const reBtn = document.getElementById('btn-reauth-real');
-        if (reBtn) {
-            reBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                Swal.fire({
-                    title: '確定要解除綁定嗎？',
-                    text: '這將清除目前的本機快取並重新驗證店號。',
-                    icon: 'warning',
-                    showCancelButton: true,
+    if (adminTrigger) {
+        adminTrigger.style.cursor = "pointer"; // 提示可點擊
+        
+        // 監聽觸控與滑鼠長按
+        const startAdminTimer = () => {
+            adminTimer = setTimeout(async () => {
+                const { value: pw } = await Swal.fire({
+                    title: '管理員認證',
+                    input: 'password',
+                    inputPlaceholder: '請輸入管理密碼',
                     confirmButtonColor: '#1d1d1f',
-                    confirmButtonText: '確定解除',
-                    cancelButtonText: '取消'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        localStorage.removeItem('v318_booking_auth');
-                        localStorage.removeItem('SALON_LOCK_V318');
-                        location.reload();
-                    }
+                    confirmButtonText: '進入後台'
                 });
-            };
-        }
-    }, 60);
-}
+                
+                // 驗證密碼是否為 518
+                if (pw === '518') {
+                    popAdminKeyConsole(); 
+                } else if (pw) {
+                    Swal.fire('驗證失敗', '密碼不正確', 'error');
+                }
+            }, 3000); // 🚀 長按 3 秒
+        };
+
+        const clearAdminTimer = () => clearTimeout(adminTimer);
+
+        adminTrigger.onmousedown = adminTrigger.ontouchstart = startAdminTimer;
+        adminTrigger.onmouseup = adminTrigger.ontouchend = adminTrigger.onmouseleave = clearAdminTimer;
+    }
+
+    // --- B. 綁定所有抽屜按鈕 ---
+    const list = document.getElementById('set-main-list');
+    if (list) {
+        list.onclick = (e) => {
+            const item = e.target.closest('.set-drawer-trigger');
+            if (!item) return;
+            const action = item.dataset.action;
+            
+            // 執行對應功能
+            if (action === 'rename') popRenameStore();
+            if (action === 'time') popTimeDrawer();
+            if (action === 'sty') popStyDrawer();
+            if (action === 'tag') popTagDrawer();
+            if (action === 'paytag') popPayTagDrawer();
+            if (action === 'style') popStyleDrawer();
+            if (action === 'offday') popOffDayDrawer();
+        };
+    }
+
+    // --- C. 綁定登出 / 重新激活按鈕 ---
+    const reBtn = document.getElementById('btn-reauth-real');
+    if (reBtn) {
+        reBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            Swal.fire({
+                title: '確定要解除綁定嗎？',
+                text: '這將清除目前的本機快取並重新驗證店號。',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#1d1d1f',
+                confirmButtonText: '確定解除',
+                cancelButtonText: '取消',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('v318_booking_auth');
+                    localStorage.removeItem('SALON_LOCK_V318');
+                    localStorage.removeItem('v318_dev_id'); // 同步清除設備 ID
+                    location.reload();
+                }
+            });
+        };
+    }
+}, 100);
 // --- 【Aether Flow：排休抽屜旗艦版 - 恢復黑灰按鈕美學】 ---
 function popOffDayDrawer() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
@@ -3325,6 +3363,38 @@ function popStyleDrawer() {
             </div>`,
         confirmButtonText: '我知道了',
         confirmButtonColor: '#1d1d1f'
+    });
+}
+
+async function popAdminKeyConsole() {
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    // 生成一組隨機鑰匙
+    const newKey = 'KEY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    await Swal.fire({
+        title: '🔑 鑰匙控制台',
+        html: `
+            <div style="text-align:left;">
+                <p>店號 <b>${auth.id}</b> 的專屬副鑰匙：</p>
+                <div style="background:#f2f2f7; padding:25px; border-radius:25px; text-align:center; margin:15px 0;">
+                    <span id="copy-text" style="font-size:1.8rem; font-weight:900; color:#1d1d1f; letter-spacing:2px;">${newKey}</span>
+                </div>
+                <button onclick="navigator.clipboard.writeText('${newKey}'); Swal.showValidationMessage('已複製！');" 
+                        style="width:100%; height:60px; border-radius:30px; background:#1d1d1f; color:#fff; border:none; font-weight:900;">
+                    點擊複製鑰匙傳給老婆
+                </button>
+            </div>
+        `,
+        confirmButtonText: '存檔並發放',
+        confirmButtonColor: '#D4AF37',
+        preConfirm: async () => {
+            // 存入 Firebase 的鑰匙庫，鎖定店號
+            await db.collection("LicenseKeys_Booking").doc(newKey).set({
+                salonId: auth.id,
+                status: "active",
+                createdAt: Date.now()
+            });
+        }
     });
 }
 
