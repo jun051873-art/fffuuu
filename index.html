@@ -859,53 +859,21 @@ async function checkLicense() {
     };
 // 尋找你代碼中的 saveS 函數並替換：
 async function saveS() { 
-    if (window.IS_LOCKED_VACUUM === true) {
-        console.error("🚨 數據隔離保護中，攔截非法存檔請求！");
-        return; 
-    }
-
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    if (!auth || !auth.id || auth.id === "未綁定") return;
+    if (!auth || !auth.id) return;
 
+    const docName = auth.id.includes("預約表") ? auth.id : auth.id + "預約表";
+    
     try {
         store.lastUpdate = Date.now(); 
         localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
         if (window.navigator.onLine) {
-            // 🚀 改為 update，這樣就不會動到後台設定的 status 或 expiryDate
-            await db.collection("Salons").doc(auth.id).update({
-                appointments: store.appointments,
-                clients: store.clients,
-                stylists: store.stylists,
-                tags: store.tags,
-                storeName: store.storeName,
-                lastUpdate: store.lastUpdate,
-                startH: store.startH,
-                endH: store.endH,
-                offDays: store.offDays,
-                offColor: store.offColor,
-                payTagsDef: store.payTagsDef
-            });
-
-            console.log("✅ 雲端同步成功", auth.id);
-
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1000,
-                background: '#fff',
-                color: '#1d1d1f'
-            });
-            Toast.fire({ icon: 'success', title: '雲端同步成功' });
+            await db.collection("Salons").doc(docName).set(store, { merge: true });
+            console.log("✅ 成功同步至：" + docName);
         }
-    } 
-    catch (e) {
-        // 如果是新店號尚未建立文件，update 會報錯，此時才用 set 建立
-        if (e.code === 'not-found') {
-            await db.collection("Salons").doc(auth.id).set(store);
-        }
-        console.error("⚠️ 同步處理中", e);
+    } catch (e) {
+        console.error("⚠️ 存檔失敗", e);
     }
 }
 // ==========================================================================
@@ -2769,42 +2737,24 @@ function renderStats() {
 // ==========================================================================
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    
-    // 🎯 關鍵：這裡必須讀取 auth.id (店號)，若無則直接跳出，防止載入中卡死
     if (!auth || !auth.id || auth.id === "未綁定") return;
 
     try {
-        console.log("☁️ 正在檢查雲端數據 (店號: " + auth.id + ")...");
-        const snap = await db.collection("Salons").doc(auth.id).get();
+        // 🚀 關鍵修正：確保這裡的文件路徑跟 Firebase 一模一樣
+        // 如果你的 Firebase 文件名叫 "051873預約表"，這裡就要加這三個字
+        const docName = auth.id.includes("預約表") ? auth.id : auth.id + "預約表";
+        const snap = await db.collection("Salons").doc(docName).get();
         
-        let cloudData;
-
-        // 🌟 邏輯 A：雲端完全沒資料 (新店號初始化)
-        if (!snap.exists || !snap.data().stylists || snap.data().stylists.length === 0) {
-            console.log("✨ 執行【自動開墾】...");
-            cloudData = {
-                storeName: "我的專屬空間",
-                startH: "11:00", endH: "20:00",
-                stylists: [{id: 1, name: '設計師A', color: '#1d1d1f'}], 
-                tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
-                appointments: [], clients: [], offDays: [],
-                lastUpdate: Date.now()
-            };
-            await db.collection("Salons").doc(auth.id).set(cloudData, { merge: true });
-        } else {
-            cloudData = snap.data();
-        }
-
-        // 🚀 執行本地覆蓋邏輯：如果雲端資料比較新，才更新本地 store
-        const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
-        if (!localData.lastUpdate || (cloudData.lastUpdate > localData.lastUpdate)) {
-            store = cloudData;
+        if (snap.exists) {
+            store = snap.data();
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-            
-            // 更新 UI 顯示，這會讓「載入中」消失
             updateStoreUI();  
             initMonth();      
             renderCli();      
+        } else {
+            console.log("找不到雲端文件：" + docName);
+            // 如果找不到，強迫顯示一次介面，不要讓它一直卡在載入中
+            document.getElementById('main-store-name').innerText = "新店舖已就位";
         }
     } catch (e) { 
         console.warn("⚠️ 同步程序異常", e); 
