@@ -2735,29 +2735,63 @@ function renderStats() {
 // ==========================================================================
 // 🚀 修正版：雲端資料拉取大腦
 // ==========================================================================
+// ==========================================================================
+// 📡 [資料核心]：確保雲端路徑不再鬼打牆 (051873 <-> 051873預約表)
+// ==========================================================================
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.id || auth.id === "未綁定") return;
 
     try {
-        // 🚀 關鍵修正：確保這裡的文件路徑跟 Firebase 一模一樣
-        // 如果你的 Firebase 文件名叫 "051873預約表"，這裡就要加這三個字
-        const docName = auth.id.includes("預約表") ? auth.id : auth.id + "預約表";
+        // 🚀 關鍵核心補丁：強制對齊店號路徑
+        // 不論你輸入的是 051873 還是 051873預約表，程式會自動修正為資料庫中的真實 ID
+        const cleanID = auth.id.replace("預約表", ""); 
+        const docName = cleanID + "預約表"; 
+
         const snap = await db.collection("Salons").doc(docName).get();
         
         if (snap.exists) {
             store = snap.data();
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+            
+            // 立即刷新所有 UI
             updateStoreUI();  
             initMonth();      
             renderCli();      
+            console.log("✅ 雲端數據已對齊：" + docName);
         } else {
-            console.log("找不到雲端文件：" + docName);
-            // 如果找不到，強迫顯示一次介面，不要讓它一直卡在載入中
-            document.getElementById('main-store-name').innerText = "新店舖已就位";
+            console.warn("📡 新店號開墾中：" + docName);
+            // 如果是全新店號，強迫顯示一次介面，不要卡死在載入中
+            document.getElementById('main-store-name').innerText = "新店舖： " + cleanID;
+            initMonth(); 
         }
     } catch (e) { 
-        console.warn("⚠️ 同步程序異常", e); 
+        console.error("❌ 同步程序崩潰，檢查 Rules 權限", e); 
+    }
+}
+
+async function saveS() { 
+    const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+    if (!auth || !auth.id) return;
+
+    // 🚀 存檔路徑同步修正
+    const cleanID = auth.id.replace("預約表", "");
+    const docName = cleanID + "預約表";
+    
+    try {
+        store.lastUpdate = Date.now(); 
+        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
+
+        if (window.navigator.onLine) {
+            await db.collection("Salons").doc(docName).set(store, { merge: true });
+            console.log("✅ 同步成功：" + docName);
+            
+            // 噴出你喜歡的綠色小提示
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
+            Toast.fire({ icon: 'success', title: '雲端同步完成' });
+        }
+    } catch (e) {
+        console.error("⚠️ 雲端寫入失敗", e);
     }
 }
 async function editPayTag(id, old) {
