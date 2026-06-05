@@ -2834,23 +2834,25 @@ async function pullFromCloud() {
         const localUpdateTime = localData.lastUpdate || 0;
         const cloudUpdateTime = cloudData.lastUpdate || 0;
 
-        if (cloudUpdateTime > localUpdateTime || !localData.lastUpdate || window.FORCE_REFRESH === true) {
-            console.log("📥 偵測到雲端新數據，強制對齊本地畫面。");
+       // 🚀 物理對齊核心：只要雲端時間跟本地不一致，就強制下載並刷新，確保「新增、修改、刪除」全部秒級同步
+        if (cloudUpdateTime !== localUpdateTime || window.FORCE_REFRESH === true) {
+            console.log("📥 📡 背景巡邏兵：偵測到數據變更（含刪除），正在強制重繪全站畫面...");
             store = cloudData;
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
             
-            // 確保介面即時動態刷新
+            // 1. 刷新主日曆數字與顏色
             updateStoreUI();  
             initMonth();      
             renderCli();      
             
-            // 如果當前停留在日預約跑道頁面，立刻重新刷新跑道卡片
-            const dayPage = document.getElementById('pg-day');
-            if (dayPage && dayPage.classList.contains('active')) {
+            // 2. 🚀 關鍵補丁：無論當前在哪個頁面，都強制刷新當天的跑道，讓刪除的卡片立刻消失
+            if (typeof renderDay === 'function' && curD) {
                 renderDay(curD.toLocaleDateString('sv'));
             }
+            
             window.FORCE_REFRESH = false;
         }
+      
     } catch (e) { 
         console.warn("⚠️ 同步程序異常", e); 
     }
