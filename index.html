@@ -866,10 +866,27 @@ async function saveS() {
 
     try {
         store.lastUpdate = Date.now(); 
-        localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
 
         if (window.navigator.onLine) {
-            // 🚀 改為 update，這樣就不會動到後台設定的 status 或 expiryDate
+            // 🔒【鋼鐵防禦】：存檔前先抓取雲端，防止舊畫面覆蓋別台裝置剛打好的新單
+            const currentSnap = await db.collection("Salons").doc(auth.id).get();
+            if (currentSnap.exists) {
+                const cloudSnapData = currentSnap.data();
+                // 如果雲端最後更新時間大於本地這台裝置此時的 store 時間，說明別台裝置剛寫入新資料
+                if (cloudSnapData.lastUpdate > store.lastUpdate) {
+                    console.warn("🚨 偵測到雲端有其他裝置剛寫入的新資料！主動執行合併，防止吃單。");
+                    const localAptsMap = new Map(store.appointments.map(a => [a.id, a]));
+                    // 撈出雲端有、但本地沒有的預約單，自動塞進去，保證卡片不消失
+                    (cloudSnapData.appointments || []).forEach(a => {
+                        if (!localAptsMap.has(a.id)) {
+                            store.appointments.push(a);
+                        }
+                    });
+                    store.lastUpdate = Date.now();
+                }
+            }
+
+            // 執行同步更新
             await db.collection("Salons").doc(auth.id).update({
                 appointments: store.appointments,
                 clients: store.clients,
@@ -884,27 +901,27 @@ async function saveS() {
                 payTagsDef: store.payTagsDef
             });
 
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
             console.log("✅ 雲端同步成功", auth.id);
 
             const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1000,
-                background: '#fff',
-                color: '#1d1d1f'
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 1000,
+                background: '#fff', color: '#1d1d1f'
             });
             Toast.fire({ icon: 'success', title: '雲端同步成功' });
+        } else {
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
         }
     } 
     catch (e) {
-        // 如果是新店號尚未建立文件，update 會報錯，此時才用 set 建立
         if (e.code === 'not-found') {
             await db.collection("Salons").doc(auth.id).set(store);
+            localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
         }
         console.error("⚠️ 同步處理中", e);
     }
 }
+
 // ==========================================================================
 // 🚀 第一部分：封鎖引擎 (隔離數據但不 reload，保留背景巡邏能力)
 // ==========================================================================
@@ -2426,7 +2443,9 @@ window.addEventListener('load', async () => {
     updateStoreUI();
     initMonth();
     renderCli(); 
-
+    // 啟動背景巡邏對齊
+    startCloudPatrol();
+    
     // 4. 【安全掃描】網路守門員與員工模式檢查
     if (typeof initNetworkGuard === 'function') initNetworkGuard();
     checkAndApplyStaffMask();
@@ -2776,7 +2795,6 @@ function renderStats() {
 
 async function pullFromCloud() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
-    
     if (!auth || !auth.id || auth.id === "未綁定") return;
 
     try {
@@ -2785,10 +2803,8 @@ async function pullFromCloud() {
         
         let cloudData;
 
-        // 🌟 邏輯 A：雲端完全沒資料 (新店號)
         if (!snap.exists || !snap.data().stylists || snap.data().stylists.length === 0) {
             console.log("✨ 執行【自動開墾】...");
-            
             cloudData = {
                 storeName: "我的專屬空間",
                 startH: "11:00", endH: "20:00",
@@ -2802,32 +2818,38 @@ async function pullFromCloud() {
                 appointments: [], clients: [], offDays: [],
                 lastUpdate: Date.now()
             };
-            // 寫入營業資料
             await db.collection("Salons").doc(auth.id).set(cloudData, { merge: true });
         } else {
-            // 讀取現有資料
             cloudData = snap.data();
         }
 
-        // 🚀 關鍵補丁：強制將店名同步到「管理後台名單」
-        // 這樣你在管理後台的 LicenseKeys_Booking 就能看到這家店叫什麼名字
         await db.collection("LicenseKeys_Booking").doc(auth.id).set({
             key: auth.id,
             salonName: cloudData.storeName || "未命名店鋪",
             lastSeen: new Date().toISOString()
-        }, { merge: true }); // 使用 merge 避免覆蓋掉後台設好的 status 或 expiryDate
+        }, { merge: true });
 
-        // 🚀 執行本地覆蓋邏輯
+        // 🚀 強制校驗對齊：只要雲端時間比本機新，或是冷啟動狀態，強制同步覆蓋並重繪畫面
         const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
-        if (!localData.lastUpdate || (cloudData.lastUpdate > localData.lastUpdate)) {
+        const localUpdateTime = localData.lastUpdate || 0;
+        const cloudUpdateTime = cloudData.lastUpdate || 0;
+
+        if (cloudUpdateTime > localUpdateTime || !localData.lastUpdate || window.FORCE_REFRESH === true) {
+            console.log("📥 偵測到雲端新數據，強制對齊本地畫面。");
             store = cloudData;
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
+            
+            // 確保介面即時動態刷新
             updateStoreUI();  
             initMonth();      
             renderCli();      
-            if (typeof renderDay === 'function' && curD) {
+            
+            // 如果當前停留在日預約跑道頁面，立刻重新刷新跑道卡片
+            const dayPage = document.getElementById('pg-day');
+            if (dayPage && dayPage.classList.contains('active')) {
                 renderDay(curD.toLocaleDateString('sv'));
             }
+            window.FORCE_REFRESH = false;
         }
     } catch (e) { 
         console.warn("⚠️ 同步程序異常", e); 
@@ -3326,6 +3348,30 @@ function popStyleDrawer() {
         confirmButtonText: '我知道了',
         confirmButtonColor: '#1d1d1f'
     });
+}
+
+// 🚀 背景自動巡邏兵：每 20~30 秒安靜地去雲端檢查有沒有新進度，防止多裝置時間落後被吃單
+function startCloudPatrol() {
+    setInterval(async () => {
+        if (window.navigator.onLine && !window.IS_LOCKED_VACUUM) {
+            const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
+            if (!auth || !auth.id || auth.id === "未綁定") return;
+            
+            try {
+                const snap = await db.collection("Salons").doc(auth.id).get();
+                if (snap.exists) {
+                    const cloudTime = snap.data().lastUpdate || 0;
+                    const localTime = store.lastUpdate || 0;
+                    
+                    // 如果發現雲端時間大於本地，代表別台手機打資料了，立刻背景自動更新！
+                    if (cloudTime > localTime) {
+                        console.log("📡 背景巡邏兵：發現雲端有新戰報，正在自動對齊...");
+                        await pullFromCloud();
+                    }
+                }
+            } catch (e) { console.log("巡邏兵開小差了...", e); }
+        }
+    }, 25000); // 25秒自動巡邏一次
 }
 
 </script>
