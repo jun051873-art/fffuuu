@@ -1292,6 +1292,11 @@ function renderDay(ds) {
             if (matched.length) {
                 row.innerHTML = label + matched.map(a => {
                     const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
+                    
+                    // 🚀 頂級色彩連動大腦：抓取當前卡片設計師的專屬代表色
+                    const currentSty = store.stylists.find(st => String(st.id) === String(a.styId));
+                    const styColor = currentSty ? currentSty.color : '#D4AF37';
+
                     return `
                         <div class="apt-card ${a.done ? 'completed' : ''}" style="--c:${s.color}; margin-left:10px; width:280px; padding:25px; border-radius:35px; box-shadow:0 10px 30px rgba(0,0,0,0.05); flex-shrink:0;">
                             <div class="tag-group" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px;" onclick="event.stopPropagation(); popTagPicker('${a.id}', '${ds}')">
@@ -1304,10 +1309,12 @@ function renderDay(ds) {
                                 </span>
                             </div>
 
-                            <div style="position:absolute; right:20px; top:20px; display:flex; gap:15px; align-items:center;">
-                                <i class="fas fa-pen" style="color:#ccc; font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); popBooking('${a.n}','${a.p}','${a.styId}','${a.id}')"></i>
-                                <i class="fas fa-trash-alt" style="color:rgba(255,0,0,0.15); font-size:1.1rem; cursor:pointer;" onclick="event.stopPropagation(); confirmDelApt('${a.id}','${ds}')"></i>
-                                <i class="fas fa-check-circle" style="color:${a.done ? 'var(--gold)' : '#eee'}; font-size:1.8rem; cursor:pointer;" onclick="event.stopPropagation(); toggleAptDone('${a.id}','${ds}')"></i>
+                            <div style="position:absolute; right:20px; top:20px; display:flex; gap:12px; align-items:center; z-index:999 !important;">
+                                <i class="fas fa-pen" style="color:#1d1d1f; font-size:1.2rem; cursor:pointer; padding:6px; background:rgba(0,0,0,0.03); border-radius:10px;" onclick="event.stopPropagation(); popBooking('${a.n}','${a.p}','${a.styId}','${a.id}')"></i>
+                                
+                                <i class="fas fa-trash-alt" style="color:#ff3b30 !important; font-size:1.2rem; cursor:pointer; padding:6px; background:rgba(255,59,48,0.1); border-radius:10px;" onclick="event.stopPropagation(); confirmDelApt('${a.id}','${ds}')"></i>
+                                
+                                <i class="fas fa-check-circle" style="color:${a.done ? styColor : '#b0b0b3'}; font-size:1.9rem; cursor:pointer; padding:2px; transition:color 0.3s;" onclick="event.stopPropagation(); toggleAptDone('${a.id}','${ds}')"></i>
                             </div>
 
                             <div style="font-weight:900; color:var(--gold); font-size:1rem; letter-spacing:1px; margin-bottom:5px;">${a.time}</div>
