@@ -832,34 +832,48 @@ async function checkLicense() {
                     return;
                 }
             }
-        } catch (e) { console.error("門禁校驗失敗"); }
-    }
-    pullFromCloud();
+       } catch (e) { console.error("門禁校驗失敗"); }
+  }
+  pullFromCloud();
+} // 👈 補上這顆大括號，把 checkLicense 完美結束掉！
 
-    // 關鍵字：新增此函數，專門在背景水管式監聽雲端變動
+// ==========================================================================
+// 📡 以太即時監聽流：負責讓「新增、修改、刪除」不滑動螢幕就原地自動更新消失
+// ==========================================================================
 function initRealtimeSync() {
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     if (!auth || !auth.id) return;
 
     db.collection("Salons").doc(auth.id).onSnapshot((doc) => {
+        // 🔒【防回殺保護】：如果這台裝置自己正在執行上傳存檔，攔截監聽器，防止雲端舊訊號回殺吃單
+        if (window.isSyncing === true) {
+            console.log("📡 監聽器察覺本地正在存檔，主動迴避，防止回殺吃單。");
+            return;
+        }
+
         if (doc.exists) {
             const cloudData = doc.data();
             const localData = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {};
+            const localUpdateTime = localData.lastUpdate || 0;
+            const cloudUpdateTime = cloudData.lastUpdate || 0;
 
-            // 只有雲端時間戳 > 本地時間戳才更新，避免死循環
-            if (cloudData.lastUpdate > (localData.lastUpdate || 0)) {
-                console.log("⚡ 監聽到雲端更新，自動同步中...");
+            // 🚀 核心：只要雲端跟本地時間戳不一樣（新增、修改、刪除），就強制重繪全站
+            if (cloudUpdateTime !== localUpdateTime) {
+                console.log("⚡ 📡 以太即時流：偵測到數據異動（含刪除），主動強制重繪全站畫面...");
                 store = cloudData;
                 localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store));
-                // 同步後立即重繪 UI，保證不閃跳
+                
+                // 強制執行全站大重繪，不碰螢幕，卡片也會在 0.1 秒內自動原地增減或消失！
+                updateStoreUI();
                 initMonth();
-                if(document.getElementById('pg-day').classList.contains('active')) renderDay(curD.toLocaleDateString('sv'));
+                if (typeof renderCli === 'function') renderCli();
+                if (typeof renderDay === 'function' && curD) {
+                    renderDay(curD.toLocaleDateString('sv'));
+                }
             }
         }
     });
-  }
 }
-
 // ==========================================================================
 // --- S3: 資料核心與 Firebase 雲端同步模組 ---
 // ==========================================================================
@@ -2455,39 +2469,42 @@ async function checkLicense() {
     }
 }
 // ==========================================================================
-// --- 🚀 V318 旗艦開機程序：含背景安全監控與防護攔截 ---
+// --- 🚀 V318 旗艦開機程序：極簡絲滑對齊版 ---
 // ==========================================================================
 window.addEventListener('load', async () => {
     console.log("🚀 Aether V318 引擎發動中...");
 
-    // 1. 初始化基礎 UI (先畫出來，讓使用者感覺系統瞬間開啟)
+    // 1. 【極簡視覺預熱】月份選擇器預設當月，並用最快速度劃出本地快取基礎框架
+    const mPicker = document.getElementById('m-picker');
+    if (mPicker) mPicker.value = new Date().toISOString().slice(0, 7);
+    
     updateStoreUI(); 
     initMonth();
     renderCli();
-    
-    // 初始化月份選擇器數值
-    const mPicker = document.getElementById('m-picker');
-    if (mPicker) mPicker.value = new Date().toISOString().slice(0, 7);
 
-    // 2. 啟動 Firebase 即時同步監聽 (這是防止吃單的核心)
-    // 我們必須先啟動監聽，再去拉取雲端資料
+    // 2. 🚀 【即時水管掛載】優先啟動即時同步監聽，讓系統一發動就進入全時巡邏狀態
     if (typeof initRealtimeSync === 'function') {
         initRealtimeSync();
     }
 
-    // 3. 【核心授權與資料拉取】
+    // 3. 🛡️ 【門禁驗證與強制數據對齊】
     try {
-        await checkLicense(); // 內含 pullFromCloud，保證登入後拉到最新狀態
+        // 確保檢查通過、且雲端最新正本安全落地
+        await checkLicense(); 
+        
+        // 落地瞬間，強制再刷新一次今日跑道，保證一開機看到的資料百分之百是最新最準的
+        if (typeof renderDay === 'function' && curD) {
+            renderDay(curD.toLocaleDateString('sv'));
+        }
     } catch (e) {
-        console.error("❌ 授權驗證異常", e);
+        console.error("❌ 授權驗證或冷啟動異常", e);
     }
 
-    // 4. 【安全與防彈跳補丁】
-    if (typeof startSecurityHeartbeat === 'function') startSecurityHeartbeat();
+    // 4. 🛠️ 【安全防護補丁】移除了未定義的心跳，只保留穩定的網路守門員與員工遮罩
     if (typeof initNetworkGuard === 'function') initNetworkGuard();
     checkAndApplyStaffMask();
 
-    // 5. iOS 觸控防彈跳 (只放行互動區塊)
+    // 5. 📱 【iOS 物理防滑補丁】完美保留，解決橡皮筋回彈，只放行滾動互動區塊
     document.body.addEventListener('touchmove', function(e) {
         if (e.target.closest('.swal2-container') || 
             e.target.closest('.content-scroll') || 
@@ -2500,7 +2517,7 @@ window.addEventListener('load', async () => {
         if (e.cancelable) e.preventDefault();
     }, { passive: false });
 
-    console.log("✅ 系統渲染完成：即時同步引擎運作中");
+    console.log("✅ 系統冷啟動程序完成：以太流 (Aether Flow) 即時監聽引擎已就位");
 });
 // ==========================================================================
 // --- 🛠️ V318 核心補丁函數庫 (放在監聽器外，確保全局可用) ---
