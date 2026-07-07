@@ -1201,12 +1201,25 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         preConfirm: () => {
             const n = document.getElementById('pop-n').value.trim();
             const d = document.getElementById('pop-d').value;
+            const t = document.getElementById('pop-t').value;
+            const s = document.getElementById('pop-s').value;
 
-            // 🚀 【視窗內動態防禦】：如果使用者手動在彈窗內切換成休假日，送出時同樣會被精準攔截
+            // 🚀 【原本的整天店舖排休防禦】
             if (store.offDays && store.offDays.includes(d)) {
-                Swal.showValidationMessage('選取的日期為排休日，無法建立預約');
+                Swal.showValidationMessage('選取的日期為店舖排休日，無法建立預約');
                 return false;
             }
+
+            // 🚀 【全新進化：時段熔斷特定設計師攔截補丁】
+            const checkTimeStr = t.split(':')[0] + ':00';
+            const slotKey = `${d}_${checkTimeStr}_${s}`;
+            if (store.slotOffDays && store.slotOffDays[d] && store.slotOffDays[d].includes(slotKey)) {
+                const targetSty = store.stylists.find(st => String(st.id) === String(s));
+                const styName = targetSty ? targetSty.name : "該設計師";
+                Swal.showValidationMessage(`很抱歉，${styName} 在 ${checkTimeStr} 此時段已被劃掉排休`);
+                return false;
+            }
+
             if (!n) {
                 Swal.showValidationMessage('請輸入顧客姓名');
                 return false;
@@ -1216,11 +1229,11 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                 sex: document.getElementById('pop-sex').value,
                 p: document.getElementById('pop-p')?.value || "",
                 c: document.getElementById('pop-c')?.value || "1", 
-                styId: document.getElementById('pop-s').value,
+                styId: s,
                 price: document.getElementById('pop-price')?.value || "0",
                 note: document.getElementById('pop-note')?.value || "",
                 d: d,
-                t: document.getElementById('pop-t').value,
+                t: t,
                 saveCli: document.getElementById('pop-save-cli').checked
             };
         }
@@ -1292,19 +1305,21 @@ function toggleTagDrawer() {
     }
 }
 
+// 🚀 性別切換器
 function setSexPop(s) {
     document.getElementById('pop-sex').value = s;
     document.getElementById('pop-boy').classList.toggle('active-boy', s === 'M');
     document.getElementById('pop-girl').classList.toggle('active-girl', s === 'F');
 }
 
+// 🚀 服務標籤暫存控制
 function toggleTempTag(tagName) {
     const idx = tempTags.indexOf(tagName);
     if(idx > -1) tempTags.splice(idx, 1); else tempTags.push(tagName);
 }
 
 // ==========================================================================
-// --- S6: 跑道渲染與顧客搜尋 (以太精緻版 + 老婆門禁 + 功能全開) ---
+// --- S6: 跑道渲染與顧客搜尋 (以太精緻版 + 老婆門禁 + 功能全開 + 時段一鍵熔斷通電版) ---
 // ==========================================================================
 function renderDay(ds) {
     // 🚀 記憶空間：重畫前記住現在橫向滑動到哪裡
@@ -1318,6 +1333,10 @@ function renderDay(ds) {
     const area = document.getElementById('day-lanes');
     if (!area) return;
     area.innerHTML = '';
+
+    // 初始化時段排休資料結構（防呆）
+    if (!store.slotOffDays) store.slotOffDays = {};
+    const daySlotOffs = store.slotOffDays[ds] || [];
 
     // --- 修改後的跑道時段生成 ---
     const start = parseInt(store.startH || '0'); 
@@ -1337,6 +1356,11 @@ function renderDay(ds) {
             row.className = 'time-row-space';
             row.style.position = "relative";
 
+            // 🚀 複合鍵標記：這名設計師在這個日期的這個時段，是否被熔斷劃掉？
+            // 格式定義為："日期_時間_設計師ID" (例如: "2026-07-07_15:00_1")
+            const slotKey = `${ds}_${t}_${s.id}`;
+            const isSlotBlocked = daySlotOffs.includes(slotKey);
+
             const matched = store.appointments.filter(a => 
                 a.date === ds && 
                 a.time.split(':')[0] === t.split(':')[0] && 
@@ -1346,7 +1370,17 @@ function renderDay(ds) {
             // 🚀 物理空間修正：將時間標籤向左平移並加強字體顯示
             const label = `<div style="position:absolute; left:-55px; top:12px; font-size:0.85rem; color:#bbb; font-weight:900; width:45px; text-align:right;">${t}</div>`;
 
-            if (matched.length) {
+            if (isSlotBlocked) {
+                // ⛔️ 【新增功能】：呈現被劃掉、禁止預約的奢華毛玻璃卡片（一目了然）
+                row.innerHTML = label + `
+                    <div class="blocked-slot-card" onclick="handleSlotBlockClick('${ds}', '${t}', '${s.id}', true)"
+                         style="margin-left:10px; width:280px; padding:15px 25px; border-radius:35px; background:rgba(0,0,0,0.04); border:1.5px dashed #ccc; box-shadow:none; flex-shrink:0; cursor:pointer; display:flex; align-items:center; min-height:100px; box-sizing:border-box;">
+                        <div style="color:#666; font-weight:900; font-size:1.1rem; letter-spacing:1px; line-height:1.4;">
+                            <i class="fas fa-ban" style="color:var(--gold); margin-right:8px; font-size:1.2rem;"></i>店舖排休<br>
+                            <span style="font-size:0.85rem; color:#999; font-weight:700;">此時段禁止預約</span>
+                        </div>
+                    </div>`;
+            } else if (matched.length) {
                 row.innerHTML = label + matched.map(a => {
                     const selectedTags = (a.payTags || []).map(tid => store.payTagsDef.find(pt => pt.id === tid)).filter(x => x);
                     
@@ -1394,7 +1428,8 @@ function renderDay(ds) {
                         </div>`;
                 }).join('');
             } else {
-                row.innerHTML = label + `<div style="width:280px; height:40px; margin-left:10px; border-bottom:1px solid #f2f2f7; flex-shrink:0;"></div>`;
+                // ✨ 【優化空白處】：點擊空白處時觸發時段選擇面板
+                row.innerHTML = label + `<div onclick="handleSlotBlockClick('${ds}', '${t}', '${s.id}', false)" style="width:280px; height:60px; margin-left:10px; border-bottom:1px solid #f2f2f7; flex-shrink:0; cursor:pointer; display:flex; align-items:center; color:#ccc; font-size:0.85rem; font-weight:700; padding-left:10px;">+ 安排預約 / 劃掉時段</div>`;
             }
             lane.appendChild(row);
         });
@@ -1410,6 +1445,77 @@ function renderDay(ds) {
         });
     }
 }
+
+// ==========================================================================
+// --- 🚀 新增：跑道特定設計師時段熔斷核心處理器 ---
+// ==========================================================================
+async function handleSlotBlockClick(dateStr, timeStr, stylistId, isBlocked) {
+    if (!store.slotOffDays) store.slotOffDays = {};
+    if (!store.slotOffDays[dateStr]) store.slotOffDays[dateStr] = [];
+    
+    const slotKey = `${dateStr}_${timeStr}_${stylistId}`;
+    const targetSty = store.stylists.find(st => String(st.id) === String(stylistId));
+    const styName = targetSty ? targetSty.name : "設計師";
+
+    if (isBlocked) {
+        // 如果原本已經是劃掉的，點擊直接彈窗解除
+        Swal.fire({
+            title: `${timeStr} 恢復營業？`,
+            text: `確定要取消 ${styName} 在此時段的排休，重新開放預約嗎？`,
+            showCancelButton: true,
+            confirmButtonText: '開放預約',
+            cancelButtonText: '保持休假',
+            confirmButtonColor: '#1d1d1f',
+            cancelButtonColor: '#e5e5ea'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                store.slotOffDays[dateStr] = store.slotOffDays[dateStr].filter(key => key !== slotKey);
+                await saveS(); // 同步至雲端與 local儲存
+                renderDay(dateStr); // 重新整理當天跑道
+            }
+        });
+    } else {
+        // 如果是空白時段，彈出選單：看是要新增預約，還是把這個時段劃掉
+        Swal.fire({
+            title: `管理 ${timeStr} 時段 (${styName})`,
+            text: '請選擇您要在此時段建立新預約，還是將此時段劃掉排休？',
+            icon: 'question',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '👤 新增顧客預約',
+            denyButtonText: '⛔ 劃掉此時段（排休）',
+            cancelButtonText: '取消',
+            confirmButtonColor: '#1d1d1f',
+            denyButtonColor: '#8e8e93',
+            cancelButtonColor: '#e5e5ea'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                // 1. 新增預約：帶入資訊開啟預約窗
+                curD = new Date(dateStr); 
+                popBooking("", "", stylistId, null); 
+                // 自動帶入點擊的時間
+                setTimeout(() => {
+                    const timeInput = document.getElementById('pop-t');
+                    if(timeInput) timeInput.value = timeStr;
+                }, 100);
+            } else if (result.isDenied) {
+                // 2. 劃掉此時段：存入陣列上傳
+                store.slotOffDays[dateStr].push(slotKey);
+                await saveS(); // 同步雲端
+                renderDay(dateStr); // 刷新跑道
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: `${styName} ${timeStr} 已成功鎖定排休`,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            }
+        });
+    }
+}
+
 // --- 🚀 統一搜尋引擎：保證支援姓名與電話盒 ---
 function searchStored(el, boxId) {
     const val = el.value.trim(); 
