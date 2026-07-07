@@ -1088,6 +1088,18 @@ function handleStatsMonthChange(newVal) {
 // ==========================================================================
 
 async function popBooking(n="", p="", sId=null, editId=null) {
+    // 🚀 【旗艦排休防禦】：如果本日已被設為休假，且不是在「修改舊單」狀態，直接物理阻斷！
+    const targetDateStr = editId ? store.appointments.find(a => String(a.id) === String(editId))?.date : curD.toLocaleDateString('sv');
+    if (!editId && store.offDays && store.offDays.includes(targetDateStr)) {
+        Swal.fire({
+            icon: 'info',
+            title: '店舖休假中',
+            text: `本日 (${targetDateStr}) 已設定為店舖排休日，無法填入新的預約單喔。`,
+            confirmButtonColor: '#1d1d1f'
+        });
+        return; // 🎯 直接中斷，不彈出預約視窗
+    }
+
     // 🚀 鋼鐵防禦：副裝置(員工)離線攔截補丁
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth'));
     const isOnline = window.navigator.onLine;
@@ -1111,20 +1123,17 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         padding: '2rem 1.5rem',
         html: `
             <div style="text-align:left; position:relative;">
-                <!-- 姓名搜尋框 -->
                 <div style="position:relative; margin-bottom:18px; z-index:10001 !important;">
                     <input id="pop-n" class="luxe-btn" style="width:100%; border-radius:25px; font-size:1.4rem; height:65px;" value="${n}" placeholder="顧客姓名" oninput="searchStored(this, 'pop-box')" autocomplete="off">
                     <div id="pop-box" class="suggest-box"></div>
                 </div>
 
-                <!-- 性別切換 -->
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
                     <div id="pop-boy" class="gender-btn ${apt?.sex==='M'?'active-boy':''}" style="height:55px; font-size:1.1rem;" onclick="setSexPop('M')">♂ 男</div>
                     <div id="pop-girl" class="gender-btn ${(!apt || apt?.sex==='F')?'active-girl':''}" style="height:55px; font-size:1.1rem;" onclick="setSexPop('F')">♀ 女</div>
                 </div>
                 <input type="hidden" id="pop-sex" value="${apt?.sex || 'F'}">
 
-                <!-- 電話號碼 與 人數 -->
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
                     <div style="flex:2.5; position:relative;">
                         <input id="pop-p" class="luxe-btn" style="width:100%; border-radius:25px; height:60px; font-size:1.2rem;" 
@@ -1137,7 +1146,6 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                     </div>
                 </div>
 
-                <!-- 設計師與金額 -->
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
                     <select id="pop-s" class="luxe-btn" style="flex:1.5; border-radius:25px; height:60px; font-size:1.2rem;">
                         ${store.stylists.map(s => `<option value="${s.id}" ${String(sId||apt?.styId)===String(s.id)?'selected':''}>${s.name}</option>`).join('')}
@@ -1145,7 +1153,6 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                     <input id="pop-price" type="number" class="luxe-btn" style="flex:1; border-radius:25px; height:60px; text-align:center; font-size:1.2rem;" value="${apt?.price || ''}" placeholder="金額 $">
                 </div>
 
-                <!-- 服務項目抽屜 -->
                 <div style="margin-bottom:18px;">
                     <div id="tag-drawer-trigger" onclick="toggleTagDrawer()" style="background:rgba(212,175,55,0.1); border:1.5px solid var(--gold); padding:18px 25px; border-radius:25px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight:900; color:var(--gold); font-size:1.1rem;"> 選擇服務項目</span>
@@ -1160,7 +1167,6 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                     </div>
                 </div>
 
-                <!-- 日期與時間 -->
                 <div style="display:flex; gap:12px; margin-bottom:18px;">
                     <input id="pop-d" type="date" class="luxe-btn" style="flex:1.2; border-radius:25px; height:60px;" value="${apt?.date || curD.toLocaleDateString('sv')}">
                     <input id="pop-t" type="time" class="luxe-btn" style="flex:1; border-radius:25px; height:60px;" value="${apt?.time || '11:00'}">
@@ -1194,6 +1200,13 @@ async function popBooking(n="", p="", sId=null, editId=null) {
         },
         preConfirm: () => {
             const n = document.getElementById('pop-n').value.trim();
+            const d = document.getElementById('pop-d').value;
+
+            // 🚀 【視窗內動態防禦】：如果使用者手動在彈窗內切換成休假日，送出時同樣會被精準攔截
+            if (store.offDays && store.offDays.includes(d)) {
+                Swal.showValidationMessage('選取的日期為排休日，無法建立預約');
+                return false;
+            }
             if (!n) {
                 Swal.showValidationMessage('請輸入顧客姓名');
                 return false;
@@ -1202,12 +1215,11 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                 n: n,
                 sex: document.getElementById('pop-sex').value,
                 p: document.getElementById('pop-p')?.value || "",
-                // 🚀 修正：從 pop-c 取得實際人數數值
                 c: document.getElementById('pop-c')?.value || "1", 
                 styId: document.getElementById('pop-s').value,
                 price: document.getElementById('pop-price')?.value || "0",
                 note: document.getElementById('pop-note')?.value || "",
-                d: document.getElementById('pop-d').value,
+                d: d,
                 t: document.getElementById('pop-t').value,
                 saveCli: document.getElementById('pop-save-cli').checked
             };
@@ -1235,7 +1247,7 @@ async function popBooking(n="", p="", sId=null, editId=null) {
 
         // 如果不是 Pro 且預約已達 2 筆，攔截！
         if (!isPro && store.appointments.length >= 2 && !editId) {
-            Swal.fire({ icon: 'lock', title: 'Aether Pro 專屬', text: '試用版預約上限為 2 筆，請聯繫管理員激活系統。', confirmButtonColor: '#1d1d1f' });
+            Swal.fire({ icon: 'lock', title: 'Aether Pro 專專屬', text: '試用版預約上限為 2 筆，請聯繫管理員激活系統。', confirmButtonColor: '#1d1d1f' });
             return;
         }
 
@@ -1457,7 +1469,7 @@ function pickSug(n, p, s, boxId) {
 }
 
 // ==========================================================================
-// --- 【V318 設定頁面：極簡穩定版（全功能開放）】 ---
+// --- 【V318 設定頁面：極簡穩定版（排休色彩與風格完美對齊版）】 ---
 // ==========================================================================
 function renderSet() {
     const container = document.getElementById('set-content-container');
@@ -1466,10 +1478,9 @@ function renderSet() {
     // 獲取目前店號資訊
     const auth = JSON.parse(localStorage.getItem('v318_booking_auth')) || { id: "未綁定" };
 
-    // 1. 渲染純粹的 HTML 結構（移除所有 admin 判斷門檻）
+    // 1. 渲染純粹的 HTML 結構（已加入完美對齊的金色排休按鈕）
     container.innerHTML = `
         <div style="padding-top:20px;" id="set-main-list">
-            <!-- 品牌與識別 -->
             <div class="set-drawer-trigger" data-action="rename">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-signature"></i></div>
@@ -1483,7 +1494,6 @@ function renderSet() {
                 </div>
             </div>
 
-            <!-- 營業時間 -->
             <div class="set-drawer-trigger" data-action="time">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box" style="background:var(--gold);"><i class="fas fa-clock"></i></div>
@@ -1495,7 +1505,20 @@ function renderSet() {
                 <div style="color:var(--gold); font-weight:900; font-size:1.3rem;">${store.startH || '11:00'} - ${store.endH || '19:00'}</div>
             </div>
 
-            <!-- 人員管理 -->
+            <div class="set-drawer-trigger" data-action="offday">
+                <div style="display:flex; align-items:center; pointer-events:none;">
+                    <div class="set-icon-box" style="background:var(--gold); box-shadow: 0 8px 20px rgba(212,175,55,0.2);"><i class="fas fa-calendar-times"></i></div>
+                    <div>
+                        <div style="font-weight:900; font-size:1.2rem; color:var(--primary);">店舖排休設定</div>
+                        <div style="font-size:0.8rem; color:#aaa; font-weight:700; letter-spacing:1px;">SHOP OFF DAYS</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; pointer-events:none;">
+                    <div style="width:20px; height:20px; border-radius:50%; background:${store.offColor || '#e5e5ea'}; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.2);"></div>
+                    <div style="color:var(--gold); font-weight:900; font-size:1.2rem;">${(store.offDays || []).length} 天已排休</div>
+                </div>
+            </div>
+
             <div class="set-drawer-trigger" data-action="sty">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-user-tie"></i></div>
@@ -1507,7 +1530,6 @@ function renderSet() {
                 <div style="color:#aaa; font-weight:700;">${store.stylists.length} 位</div>
             </div>
 
-            <!-- 服務管理 -->
             <div class="set-drawer-trigger" data-action="tag">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-concierge-bell"></i></div>
@@ -1519,7 +1541,6 @@ function renderSet() {
                 <div style="color:#aaa; font-weight:700;">${store.tags.length} 個</div>
             </div>
 
-            <!-- 支付標籤 -->
             <div class="set-drawer-trigger" data-action="paytag">
                 <div style="display:flex; align-items:center; pointer-events:none;">
                     <div class="set-icon-box"><i class="fas fa-wallet"></i></div>
@@ -1531,7 +1552,6 @@ function renderSet() {
                 <div style="color:#aaa; font-weight:700;">${(store.payTagsDef || []).length} 種</div>
             </div>
 
-            <!-- 雲端同步區塊 -->
             <div style="margin-top:60px; padding-top:30px; border-top:1px dashed #eee;">
                 <p style="font-weight:900; color:#888; margin-bottom:20px;"># 雲端同步與數據安全</p>
                 <div style="background:rgba(212,175,55,0.05); border:1px solid rgba(212,175,55,0.2); border-radius:30px; padding:25px;">
@@ -1545,7 +1565,6 @@ function renderSet() {
                 </div>
             </div>
 
-            <!-- 聯絡創作者 -->
             <div style="margin-top:50px; padding:40px 20px; text-align:center;">
                 <div style="font-weight:900; font-size:1.1rem; color:#1d1d1f;">AETHER V318 QUANTUM</div>
                 <p style="font-size:0.8rem; color:#ccc;">© 2026 小刀工作室 版權所有</p>
@@ -1562,14 +1581,13 @@ function renderSet() {
                 if (!item) return;
                 const action = item.dataset.action;
                 
-                // 直接執行對應功能，不設門檻
                 if (action === 'rename') popRenameStore();
                 if (action === 'time') popTimeDrawer();
                 if (action === 'sty') popStyDrawer();
                 if (action === 'tag') popTagDrawer();
                 if (action === 'paytag') popPayTagDrawer();
                 if (action === 'style') popStyleDrawer();
-                if (action === 'offday') popOffDayDrawer();
+                if (action === 'offday') popOffDayDrawer(); // 🚀 完美通電點擊
             };
         }
 
