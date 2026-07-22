@@ -2728,25 +2728,28 @@ function applyStaffMask() {
 let statsMonth = new Date().toISOString().slice(0,7); // 預設當月
 
 // ==========================================================================
-// 🚀 V318 顧客名冊：滾動位置記憶版 (完整樣式不減少)
+// 🚀 V318 顧客名冊：滾動位置記憶版 (修復畫面跳到頂部問題)
 // ==========================================================================
+// 全域記憶變數，隨時記錄顧客頁面的滾動高度
+window.cliScrollLockPos = 0;
+
 function renderCli() {
     const area = document.getElementById('cli-list');
     if (!area) return;
 
-    // 🎯 核心補丁 1：在重畫之前，先捕捉父層滾動區的物理座標
-    const scrollContainer = area.closest('.content-scroll');
-    const savedScrollPos = scrollContainer ? scrollContainer.scrollTop : 0;
-
-    const filterSty = document.getElementById('cli-f-sty').value;
+    const scrollContainer = document.querySelector('#pg-cli .content-scroll');
     
-    // 1. 過濾邏輯 (包含關鍵字與設計師篩選)
+    // 🎯 1. 優先取全域鎖定的滾動高度，若無則取當前容器高度
+    const savedScrollPos = window.cliScrollLockPos || (scrollContainer ? scrollContainer.scrollTop : 0);
+
+    const filterSty = document.getElementById('cli-f-sty') ? document.getElementById('cli-f-sty').value : '';
+    
+    // 過濾邏輯
     const filteredClients = store.clients.filter(c => 
         ((c.n || "").includes(cliKw) || (c.p || "").includes(cliKw)) && 
         (!filterSty || String(c.lastSty) === String(filterSty))
     );
 
-    // 2. 處理搜尋無結果的情況 (直擊人心的操作體驗)
     if (filteredClients.length === 0) {
         area.innerHTML = `
             <div style="text-align:center; padding:100px 20px; color:#ccc;">
@@ -2756,11 +2759,9 @@ function renderCli() {
         return;
     }
 
-    // 3. 畫出精緻卡片 (iOS 26 極簡風格)
+    // 畫出卡片
     area.innerHTML = filteredClients.map(c => {
         const sty = store.stylists.find(s => String(s.id) === String(c.lastSty));
-        
-        // 格式化生日，確保永遠是兩位數 (例如 01/01)
         const mm = String(c.bm || "01").padStart(2, '0');
         const dd = String(c.bd || "01").padStart(2, '0');
 
@@ -2786,7 +2787,7 @@ function renderCli() {
                     </div>
                     
                     <div style="background:${sty?.color || '#eee'}; color:#fff; padding:10px 20px; border-radius:18px; font-weight:900; font-size:1rem; box-shadow: 0 4px 12px ${sty?.color}33;">
-                       👤 ${sty?.name || "未指定"}
+                        👤 ${sty?.name || "未指定"}
                     </div>
                 </div>
 
@@ -2803,21 +2804,20 @@ function renderCli() {
             </div>`;
     }).join('');
 
-    // 🎯 核心補丁 2：雙重幀同步還原滾動高度，解決所有閃跳問題
+    // 🎯 2. 強制歸位：設定延遲還原，規避 SweetAlert 關閉時的網頁重繪衝撞
     if (scrollContainer) {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                scrollContainer.scrollTop = savedScrollPos;
-            });
-        });
+        setTimeout(() => {
+            scrollContainer.scrollTop = savedScrollPos;
+            // 歸位完畢後釋放鎖定
+            setTimeout(() => { window.cliScrollLockPos = 0; }, 200);
+        }, 50);
     }
 }
-
-// 🚀 歷史消費紀錄彈窗 (完整記錄版：移除 3 筆限制 + 加上筆數總結)
+// 🚀 歷史消費紀錄彈窗 (修復關閉後跳回頂部)
 function popCliHistory(clientName) {
     const history = store.appointments
         .filter(a => (a.n === clientName || a.name === clientName) && a.done)
-        .sort((a, b) => new Date(b.date) - new Date(a.date)); // 👈 移除 .slice(0, 3)，解除筆數限制！
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 
     let historyHtml = history.length ? history.map(h => `
         <div style="background:rgba(0,0,0,0.03); padding:20px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid var(--gold);">
@@ -2828,7 +2828,7 @@ function popCliHistory(clientName) {
             <div style="font-weight:800; color:#1d1d1f; margin-bottom:5px;">✂️ ${(h.tags || []).join(' + ') || '服務項目'}</div>
             <div style="font-size:0.95rem; color:#666; line-height:1.5;">💬 ${h.note_full || "無備註"}</div>
         </div>
-    `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-text-align:center;">尚無成交紀錄</div>';
+    `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-align:center;">尚無成交紀錄</div>';
 
     Swal.fire({
         title: `<span style="font-weight:900;">${clientName}</span><br><span style="font-size:0.8rem; color:#aaa;">共 ${history.length} 次消費紀錄</span>`,
@@ -2837,9 +2837,8 @@ function popCliHistory(clientName) {
         confirmButtonColor: '#1d1d1f',
         background: 'rgba(255,255,255,0.98)',
         backdrop: `blur(10px)`,
-        showClass: { popup: 'animated fadeInDown faster' }, 
-        hideClass: { popup: 'animated fadeOutUp faster' },
-        scrollbarPadding: false 
+        scrollbarPadding: false, // 防止彈窗開啟時改變右側捲軸影響高度
+        heightAuto: false        // 防止 SweetAlert 自動計算 body 高度導致彈跳
     });
 }
 
@@ -3421,15 +3420,22 @@ async function confirmDelSty(id) {
         if(typeof renderSet === 'function') renderSet();
     }
 }
-// --- 【以太流：顧客資料修改引擎】 ---
+// --- 【以太流：顧客資料修改引擎 (防閃跳歸位修正版)】 ---
 async function editCli(oldName) {
-    // 1. 找到該位顧客的原有資料
     const c = store.clients.find(x => x.n === oldName);
     if (!c) return;
+
+    // 🎯 1. 點擊編輯按鈕的「最第一時間」精準鎖定滾動座標
+    const scrollContainer = document.querySelector('#pg-cli .content-scroll');
+    if (scrollContainer) {
+        window.cliScrollLockPos = scrollContainer.scrollTop;
+    }
 
     const { value: res } = await Swal.fire({
         title: '修改顧客資料',
         width: '85%',
+        heightAuto: false, // 🚀 關鍵：禁止 SweetAlert2 自動修改 body/html 高度導致畫面跳頂
+        scrollbarPadding: false,
         html: `
             <input id="edit-cn" class="luxe-btn" style="width:100%;margin-bottom:15px;border-radius:30px;" value="${c.n}" placeholder="姓名">
             <div style="display:flex; gap:10px; margin-bottom:15px;">
@@ -3442,9 +3448,10 @@ async function editCli(oldName) {
                 ${store.stylists.map(s => `<option value="${s.id}" ${String(s.id) === String(c.lastSty) ? 'selected' : ''}>${s.name}</option>`).join('')}
             </select>
             <div style="display:flex; gap:5px; justify-content:center; align-items:center;">
-<input id="edit-cm" class="shield-input" type="tel" value="${c.bm || ''}" placeholder="月" maxlength="2" inputmode="numeric"> 
-<span style="font-weight:900; color:#ccc; font-size:1.5rem; margin:0 5px;">/</span>
-<input id="edit-cd" class="shield-input" type="tel" value="${c.bd || ''}" placeholder="日" maxlength="2" inputmode="numeric">            </div>
+                <input id="edit-cm" class="shield-input" type="tel" value="${c.bm || ''}" placeholder="月" maxlength="2" inputmode="numeric"> 
+                <span style="font-weight:900; color:#ccc; font-size:1.5rem; margin:0 5px;">/</span>
+                <input id="edit-cd" class="shield-input" type="tel" value="${c.bd || ''}" placeholder="日" maxlength="2" inputmode="numeric">
+            </div>
         `,
         preConfirm: () => ({
             n: document.getElementById('edit-cn').value,
@@ -3457,7 +3464,6 @@ async function editCli(oldName) {
     });
 
     if (res && res.n) {
-        // 2. 更新資料庫（連同歷史紀錄的名字也要考慮到，這裡先做顧客檔更新）
         c.n = res.n;
         c.p = res.p;
         c.sex = res.sex;
@@ -3465,13 +3471,23 @@ async function editCli(oldName) {
         c.bm = res.m;
         c.bd = res.d;
 
-        await saveS();   // 同步雲端
-        renderCli();     // 立即重新渲染顧客清單
-        Swal.fire({ icon: 'success', title: '修改成功', timer: 800, showConfirmButton: false });
+        // 🎯 2. 先重繪 UI 鎖定位置，最後才執行遠端 saveS，避免雲端監聽器回殺
+        renderCli();
+        await saveS();
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1000
+        });
+        Toast.fire({ icon: 'success', title: '修改成功' });
+    } else {
+        // 若使用者取消，解鎖記憶位置
+        window.cliScrollLockPos = 0;
     }
 }
-
-// 輔助：顧客修改視窗專用的性別切換器
+// 輔助：顧客修改視窗專用的性別切換器 (原封不動完整保留)
 function setSexCli(s) {
     document.getElementById('edit-pop-sex').value = s;
     const b = document.getElementById('boy-btn-cli');
