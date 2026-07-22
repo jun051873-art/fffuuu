@@ -1516,7 +1516,7 @@ async function handleSlotBlockClick(dateStr, timeStr, stylistId, isBlocked) {
     }
 }
 
-// --- 🚀 統一搜尋引擎：保證支援姓名與電話盒 ---
+// --- 🚀 修正後程式碼：顯示「姓名 (電話) - 👤 設計師」 ---
 function searchStored(el, boxId) {
     const val = el.value.trim(); 
     const box = document.getElementById(boxId);
@@ -1526,12 +1526,23 @@ function searchStored(el, boxId) {
 
     if(ms.length) { 
         box.style.display='block'; 
-        // 🎯 這裡一定要確保傳入的是變數 ${boxId}
-        box.innerHTML = ms.map(m => `
-            <div class="suggest-item" style="padding:15px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer;" 
-                 onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">
-                ${m.n} (${m.p})
-            </div>`).join(''); 
+        box.innerHTML = ms.map(m => {
+            // 🚀 動態查找該顧客最後服務的設計師名字與代表色
+            const sty = store.stylists.find(s => String(s.id) === String(m.lastSty));
+            const styTag = sty 
+                ? `<span style="font-size:0.85rem; color:${sty.color}; background:rgba(0,0,0,0.04); padding:3px 10px; border-radius:12px; margin-left:8px; font-weight:900;">👤 ${sty.name}</span>` 
+                : `<span style="font-size:0.85rem; color:#aaa; margin-left:8px;">(未指定)</span>`;
+
+            return `
+                <div class="suggest-item" style="padding:15px 20px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" 
+                     onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}')">
+                    <div>
+                        <span style="color:#1d1d1f; font-size:1.2rem;">${m.n}</span>
+                        <span style="color:#888; font-size:0.95rem; margin-left:6px;">(${m.p || '無電話'})</span>
+                    </div>
+                    ${styTag}
+                </div>`;
+        }).join(''); 
     } else {
         box.style.display='none';
     }
@@ -2802,12 +2813,11 @@ function renderCli() {
     }
 }
 
-// 🚀 歷史消費紀錄彈窗 (賈伯斯美學：毛玻璃背景 + 滾動限制)
+// 🚀 歷史消費紀錄彈窗 (完整記錄版：移除 3 筆限制 + 加上筆數總結)
 function popCliHistory(clientName) {
     const history = store.appointments
         .filter(a => (a.n === clientName || a.name === clientName) && a.done)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 3);
+        .sort((a, b) => new Date(b.date) - new Date(a.date)); // 👈 移除 .slice(0, 3)，解除筆數限制！
 
     let historyHtml = history.length ? history.map(h => `
         <div style="background:rgba(0,0,0,0.03); padding:20px; border-radius:25px; margin-bottom:15px; text-align:left; border-left:6px solid var(--gold);">
@@ -2815,20 +2825,18 @@ function popCliHistory(clientName) {
                 <span style="font-weight:900; font-size:1.1rem; color:#1d1d1f;">📅 ${h.date}</span>
                 <span style="font-weight:900; color:var(--gold);">$${h.price || 0}</span>
             </div>
-            <div style="font-weight:800; color:#1d1d1f; margin-bottom:5px;">✂️ ${(h.tags || []).join(' + ')}</div>
+            <div style="font-weight:800; color:#1d1d1f; margin-bottom:5px;">✂️ ${(h.tags || []).join(' + ') || '服務項目'}</div>
             <div style="font-size:0.95rem; color:#666; line-height:1.5;">💬 ${h.note_full || "無備註"}</div>
         </div>
-    `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-align:center;">尚無成交紀錄</div>';
+    `).join('') : '<div style="padding:40px; color:#ccc; font-weight:700; text-text-align:center;">尚無成交紀錄</div>';
 
-   Swal.fire({
-        title: `<span style="font-weight:900;">${clientName}</span><br><span style="font-size:0.8rem; color:#aaa;">最近三次消費紀錄</span>`,
+    Swal.fire({
+        title: `<span style="font-weight:900;">${clientName}</span><br><span style="font-size:0.8rem; color:#aaa;">共 ${history.length} 次消費紀錄</span>`,
         html: `<div style="padding:10px; max-height:450px; overflow-y:auto; -webkit-overflow-scrolling:touch;">${historyHtml}</div>`,
         confirmButtonText: '關閉視窗',
         confirmButtonColor: '#1d1d1f',
         background: 'rgba(255,255,255,0.98)',
         backdrop: `blur(10px)`,
-        
-        // 🚀 關鍵修正：防止殘影與跳動
         showClass: { popup: 'animated fadeInDown faster' }, 
         hideClass: { popup: 'animated fadeOutUp faster' },
         scrollbarPadding: false 
