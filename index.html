@@ -892,7 +892,7 @@ function initRealtimeSync() {
             {id: 'J', name: '街口', color: '#ED1C24'},
             {id: 'C', name: '現金', color: '#8B4513'}
         ],
-        appointments: [], clients: [], offDays: []
+        appointments: [], clients: [], offDays: [], slotOffDays: {}
     };
 async function saveS() { 
     // 🚀 加入同步鎖，防止存檔與即時監聽互相打架導致吃單
@@ -916,11 +916,9 @@ async function saveS() {
             const currentSnap = await db.collection("Salons").doc(auth.id).get();
             if (currentSnap.exists) {
                 const cloudSnapData = currentSnap.data();
-                // 如果雲端最後更新時間大於本地這台裝置此時的 store 時間，說明別台裝置剛寫入新資料
                 if (cloudSnapData.lastUpdate > store.lastUpdate) {
                     console.warn("🚨 偵測到雲端有其他裝置剛寫入的新資料！主動執行合併，防止吃單。");
                     const localAptsMap = new Map(store.appointments.map(a => [a.id, a]));
-                    // 撈出雲端有、但本地沒有的預約單，自動塞進去，保證卡片不消失
                     (cloudSnapData.appointments || []).forEach(a => {
                         if (!localAptsMap.has(a.id)) {
                             store.appointments.push(a);
@@ -941,6 +939,7 @@ async function saveS() {
                 startH: store.startH,
                 endH: store.endH,
                 offDays: store.offDays,
+                slotOffDays: store.slotOffDays || {}, // 🚀 已修復：補上劃掉時段同步
                 offColor: store.offColor,
                 payTagsDef: store.payTagsDef
             });
@@ -1280,9 +1279,15 @@ async function popBooking(n="", p="", sId=null, editId=null) {
                 if (!isPro && store.clients.length >= 2 && !store.clients.find(c => c.n === res.n)) {
                     console.log("試用版顧客上限，跳過名冊更新");
                 } else {
-                    const exist = store.clients.find(c => c.n === res.n);
-                    if(exist) { exist.p = res.p; exist.sex = res.sex; exist.lastSty = res.styId; }
-                    else { store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm:'', bd:'', note:'' }); }
+                   const exist = store.clients.find(c => c.n === res.n);
+if(exist) { 
+    exist.p = res.p || exist.p; 
+    // 🎯 防護核心：如果已有資料，優先保留舊的性別，除非本次特別更動
+    exist.sex = res.sex || exist.sex; 
+    exist.lastSty = res.styId; 
+} else { 
+    store.clients.push({ n: res.n, p: res.p, sex: res.sex, lastSty: res.styId, bm:'', bd:'', note:'' }); 
+}
                 }
             }
         }
@@ -1548,40 +1553,70 @@ function searchStored(el, boxId) {
     }
 }
 
-function pickSug(n, p, s, boxId) {
-    // 1. 強制隱藏所有建議清單
+// --- 🚀 修正：搜尋列表中將性別資料 (m.sex) 傳遞給點擊事件 ---
+function searchStored(el, boxId) {
+    const val = el.value.trim(); 
+    const box = document.getElementById(boxId);
+    if(!val) { box.style.display='none'; return; }
+
+    const ms = store.clients.filter(c => (c.n||"").includes(val) || (c.p||"").includes(val));
+
+    if(ms.length) { 
+        box.style.display='block'; 
+        box.innerHTML = ms.map(m => {
+            const sty = store.stylists.find(s => String(s.id) === String(m.lastSty));
+            const styTag = sty 
+                ? `<span style="font-size:0.85rem; color:${sty.color}; background:rgba(0,0,0,0.04); padding:3px 10px; border-radius:12px; margin-left:8px; font-weight:900;">👤 ${sty.name}</span>` 
+                : `<span style="font-size:0.85rem; color:#aaa; margin-left:8px;">(未指定)</span>`;
+
+            return `
+                <div class="suggest-item" style="padding:15px 20px; border-bottom:1px solid #f2f2f7; font-weight:800; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" 
+                     onclick="pickSug('${m.n}', '${m.p}', '${m.lastSty}', '${boxId}', '${m.sex || 'F'}')">
+                    <div>
+                        <span style="color:#1d1d1f; font-size:1.2rem;">${m.n}</span>
+                        <span style="color:#888; font-size:0.95rem; margin-left:6px;">(${m.p || '無電話'})</span>
+                    </div>
+                    ${styTag}
+                </div>`;
+        }).join(''); 
+    } else {
+        box.style.display='none';
+    }
+}
+
+// --- 🚀 修正：選擇顧客時自動帶入性別並觸發 UI 切換 ---
+function pickSug(n, p, s, boxId, sex = 'F') {
     const boxes = ['pop-box', 'pop-box-p', 'sw-box', 'cli-search-box'];
     boxes.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
 
-    // 2. 精準診斷：根據觸發來源決定去向
-    
-    // 如果是從「顧客頁面」的搜尋框過來的 (假設該 boxId 叫 'cli-search-box')
     if (boxId === 'cli-search-box') {
         Swal.close(); 
-        cliKw = n; // 設定搜尋關鍵字為該人名
-        showP('pg-cli', 1); // 切換到顧客頁面
-        renderCli(); // 渲染列表
-        popCliHistory(n); // 直接彈出該顧客的歷史紀錄（這才是你要的！）
-        return; // 結束執行，防止它往下跑去跳預約
+        cliKw = n;
+        showP('pg-cli', 1);
+        renderCli();
+        popCliHistory(n);
+        return;
     }
 
-    // 如果是在「預約視窗」裡點選填入
     if (boxId === 'pop-box' || boxId === 'pop-box-p') {
         const popN = document.getElementById('pop-n');
         const popP = document.getElementById('pop-p');
         if (popN) popN.value = n;
         if (popP) popP.value = p;
-        // 這裡不關視窗，也不跳預約，因為視窗本來就是開著的
+        
+        // 🎯 核心連動：點擊舊顧客時，自動切換彈窗內的性別按鈕
+        if (typeof setSexPop === 'function') {
+            setSexPop(sex);
+        }
         return;
     }
 
-    // 最後的保底：如果是首頁大搜尋框
     if (boxId === 'sw-box') {
         Swal.close();
-        popBooking(n, p, s); // 只有這裡才准跳預約視窗
+        popBooking(n, p, s);
     }
 }
 
@@ -3000,7 +3035,7 @@ async function pullFromCloud() {
                     {id: 'J', name: '街口', color: '#ED1C24'},
                     {id: 'C', name: '現金', color: '#8B4513'}
                 ],
-                appointments: [], clients: [], offDays: [],
+               appointments: [], clients: [], offDays: [], slotOffDays: {},
                 lastUpdate: Date.now()
             };
             await db.collection("Salons").doc(auth.id).set(cloudData, { merge: true });
