@@ -1059,23 +1059,159 @@ function handleStatsMonthChange(newVal) {
 }
 
 
-    function initMonth() {
-        const grid = document.getElementById('cal-grid'); grid.innerHTML = '';
-        const pick = document.getElementById('m-picker').value ? new Date(document.getElementById('m-picker').value + "-01") : new Date();
-        const year = pick.getFullYear(), month = pick.getMonth(), today = new Date().toLocaleDateString('sv');
-        const days = new Date(year, month + 1, 0).getDate();
-        let sDay = new Date(year, month, 1).getDay(); sDay = sDay === 0 ? 6 : sDay - 1;
-        for(let i=0; i<sDay; i++) grid.appendChild(document.createElement('div'));
-        for(let d=1; d<=days; d++) {
-            const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const el = document.createElement('div'); el.className = 'cal-day';
-            if(ds === today) el.classList.add('today-highlight');
-            if(store.offDays.includes(ds)) el.style.background = store.offColor;
-            const dots = [...new Set(store.appointments.filter(a => a.date === ds).map(a => store.stylists.find(st => st.id == a.styId)?.color || '#ddd'))].map(c => `<div style="width:12px;height:12px;border-radius:50%;background:${c};display:inline-block;margin:3px;"></div>`).join('');
-            el.innerHTML = `<div>${d}</div><div style="margin-top:10px;">${dots}</div>`;
-            el.onclick = () => { curD = new Date(ds); showP('pg-day'); }; grid.appendChild(el);
-        }
+    // ==========================================================================
+// 🚀 Aether V318: 互動式日曆與長按備忘錄引擎 (Long-Press Gesture Engine)
+// ==========================================================================
+function initMonth() {
+    const grid = document.getElementById('cal-grid'); 
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const pick = document.getElementById('m-picker').value ? new Date(document.getElementById('m-picker').value + "-01") : new Date();
+    const year = pick.getFullYear(), month = pick.getMonth(), today = new Date().toLocaleDateString('sv');
+    const days = new Date(year, month + 1, 0).getDate();
+    let sDay = new Date(year, month, 1).getDay(); 
+    sDay = sDay === 0 ? 6 : sDay - 1; // 星期一開始
+
+    if (!store.dayNotes) store.dayNotes = {}; // 防呆初始化
+
+    // 補齊前置空白格
+    for (let i = 0; i < sDay; i++) {
+        grid.appendChild(document.createElement('div'));
     }
+
+    // 渲染日期格
+    for (let d = 1; d <= days; d++) {
+        const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const el = document.createElement('div'); 
+        el.className = 'cal-day';
+
+        // 樣式套用
+        if (ds === today) el.classList.add('today-highlight');
+        if (store.offDays && store.offDays.includes(ds)) el.style.background = store.offColor;
+
+        // 預約設計師圓點
+        const dots = [...new Set(
+            store.appointments
+                .filter(a => a.date === ds)
+                .map(a => store.stylists.find(st => String(st.id) === String(a.styId))?.color || '#ddd')
+        )].map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;margin:2px;"></div>`).join('');
+
+        // 💎 Aether 流體黑金毛玻璃備忘標籤
+        const noteText = store.dayNotes[ds] || '';
+        const noteHtml = noteText ? `
+            <div style="
+                font-size: 0.75rem; 
+                font-weight: 900; 
+                color: #1d1d1f; 
+                background: rgba(212, 175, 55, 0.15); 
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                padding: 4px 8px; 
+                border-radius: 12px; 
+                margin-top: 6px; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+                white-space: nowrap; 
+                border: 0.5px solid rgba(212, 175, 55, 0.4);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            ">
+                <span style="color:var(--gold); font-size:0.65rem;">●</span> ${noteText}
+            </div>` : '';
+
+        el.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>${d}</span>
+            </div>
+            <div style="margin-top:4px;">${dots}</div>
+            ${noteHtml}
+        `;
+
+        // ==========================================================================
+        // ⚡ 長按 500ms 觸發備忘輸入（支援觸控 Touch 與滑鼠 Click）
+        // ==========================================================================
+        let pressTimer = null;
+        let isLongPress = false;
+
+        const startPress = (e) => {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                // 觸發物理微震動（支援的手機裝置）
+                if (window.navigator.vibrate) window.navigator.vibrate(25);
+                popDayNoteEdit(ds);
+            }, 500); // 按住 0.5 秒觸發
+        };
+
+        const cancelPress = () => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+        };
+
+        const handleRelease = (e) => {
+            cancelPress();
+            // 如果不是長按，則執行正常的「單擊進入當日預約跑道」
+            if (!isLongPress) {
+                curD = new Date(ds); 
+                showP('pg-day');
+            }
+        };
+
+        // 事件綁定 (行動端與桌面端兼容)
+        el.addEventListener('touchstart', startPress, { passive: true });
+        el.addEventListener('touchend', handleRelease);
+        el.addEventListener('touchmove', cancelPress, { passive: true }); // 滑動時自動取消
+
+        el.addEventListener('mousedown', startPress);
+        el.addEventListener('mouseup', handleRelease);
+        el.addEventListener('mouseleave', cancelPress);
+
+        grid.appendChild(el);
+    }
+}
+
+// ==========================================================================
+// 🚀 當日備忘錄 SweetAlert2 視窗 (相容雲端同步)
+// ==========================================================================
+async function popDayNoteEdit(ds) {
+    if (!store.dayNotes) store.dayNotes = {};
+    const currentNote = store.dayNotes[ds] || "";
+
+    const { value: newNote } = await Swal.fire({
+        title: `📝 日期備忘 (${ds})`,
+        input: 'textarea',
+        inputValue: currentNote,
+        inputPlaceholder: '請輸入當日事項或備註...',
+        showCancelButton: true,
+        confirmButtonText: '儲存備忘',
+        cancelButtonText: '刪除備忘',
+        showDenyButton: true,
+        denyButtonText: '取消',
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonColor: '#ff3b30',
+        denyButtonColor: '#e5e5ea',
+        reverseButtons: true,
+        didOpen: () => {
+            const input = Swal.getInput();
+            if (input) input.focus();
+        }
+    });
+
+    if (newNote !== undefined) {
+        if (newNote.trim() === "") {
+            delete store.dayNotes[ds];
+        } else {
+            store.dayNotes[ds] = newNote.trim();
+        }
+        await saveS();    // 同步到雲端 Firebase
+        initMonth();     // 重新繪製日曆
+    }
+}
     function goToday() { curD = new Date(); renderDay(curD.toLocaleDateString('sv')); showP('pg-day'); }
     function shiftDay(v) { curD.setDate(curD.getDate() + v); renderDay(curD.toLocaleDateString('sv')); }
     window.addEventListener('click', e => {
