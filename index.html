@@ -882,18 +882,18 @@ function initRealtimeSync() {
     let cliKw = "";
     
     // 優先從本機抓取，若無則初始化
-    let store = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {
-        startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
-        stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
-        tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
-        // --- 這是新增的自定義標籤籃子 ---
-        payTagsDef: [
-            {id: 'L', name: 'Line', color: '#06C755'},
-            {id: 'J', name: '街口', color: '#ED1C24'},
-            {id: 'C', name: '現金', color: '#8B4513'}
-        ],
-        appointments: [], clients: [], offDays: [], slotOffDays: {}
-    };
+   let store = JSON.parse(localStorage.getItem('SALON_LOCK_V318')) || {
+    startH: "11:00", endH: "19:00", offColor: "#e5e5ea",
+    stylists: [{id: 1, name: 'Tonny', color: '#1d1d1f'}, {id: 2, name: 'Apple', color: '#D4AF37'}],      
+    tags: [{id: 1, name: '剪髮'}, {id: 2, name: '洗髮'}], 
+    payTagsDef: [
+        {id: 'L', name: 'Line', color: '#06C755'},
+        {id: 'J', name: '街口', color: '#ED1C24'},
+        {id: 'C', name: '現金', color: '#8B4513'}
+    ],
+    appointments: [], clients: [], offDays: [], slotOffDays: {},
+    dayNotes: {} // 🚀 新增：日期備忘記事庫
+};
 async function saveS() { 
     // 🚀 加入同步鎖，防止存檔與即時監聽互相打架導致吃單
     if (window.IS_LOCKED_VACUUM === true || window.isSyncing === true) {
@@ -929,20 +929,21 @@ async function saveS() {
             }
 
             // 執行同步更新
-            await db.collection("Salons").doc(auth.id).update({
-                appointments: store.appointments,
-                clients: store.clients,
-                stylists: store.stylists,
-                tags: store.tags,
-                storeName: store.storeName,
-                lastUpdate: store.lastUpdate,
-                startH: store.startH,
-                endH: store.endH,
-                offDays: store.offDays,
-                slotOffDays: store.slotOffDays || {}, // 🚀 已修復：補上劃掉時段同步
-                offColor: store.offColor,
-                payTagsDef: store.payTagsDef
-            });
+           await db.collection("Salons").doc(auth.id).update({
+    appointments: store.appointments,
+    clients: store.clients,
+    stylists: store.stylists,
+    tags: store.tags,
+    storeName: store.storeName,
+    lastUpdate: store.lastUpdate,
+    startH: store.startH,
+    endH: store.endH,
+    offDays: store.offDays,
+    slotOffDays: store.slotOffDays || {},
+    dayNotes: store.dayNotes || {}, // 🚀 新增：同步日期備忘
+    offColor: store.offColor,
+    payTagsDef: store.payTagsDef
+});
 
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
             console.log("✅ 雲端同步成功", auth.id);
@@ -1059,23 +1060,41 @@ function handleStatsMonthChange(newVal) {
 }
 
 
-    function initMonth() {
-        const grid = document.getElementById('cal-grid'); grid.innerHTML = '';
-        const pick = document.getElementById('m-picker').value ? new Date(document.getElementById('m-picker').value + "-01") : new Date();
-        const year = pick.getFullYear(), month = pick.getMonth(), today = new Date().toLocaleDateString('sv');
-        const days = new Date(year, month + 1, 0).getDate();
-        let sDay = new Date(year, month, 1).getDay(); sDay = sDay === 0 ? 6 : sDay - 1;
-        for(let i=0; i<sDay; i++) grid.appendChild(document.createElement('div'));
-        for(let d=1; d<=days; d++) {
-            const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const el = document.createElement('div'); el.className = 'cal-day';
-            if(ds === today) el.classList.add('today-highlight');
-            if(store.offDays.includes(ds)) el.style.background = store.offColor;
-            const dots = [...new Set(store.appointments.filter(a => a.date === ds).map(a => store.stylists.find(st => st.id == a.styId)?.color || '#ddd'))].map(c => `<div style="width:12px;height:12px;border-radius:50%;background:${c};display:inline-block;margin:3px;"></div>`).join('');
-            el.innerHTML = `<div>${d}</div><div style="margin-top:10px;">${dots}</div>`;
-            el.onclick = () => { curD = new Date(ds); showP('pg-day'); }; grid.appendChild(el);
-        }
+   function initMonth() {
+    const grid = document.getElementById('cal-grid'); grid.innerHTML = '';
+    const pick = document.getElementById('m-picker').value ? new Date(document.getElementById('m-picker').value + "-01") : new Date();
+    const year = pick.getFullYear(), month = pick.getMonth(), today = new Date().toLocaleDateString('sv');
+    const days = new Date(year, month + 1, 0).getDate();
+    let sDay = new Date(year, month, 1).getDay(); sDay = sDay === 0 ? 6 : sDay - 1;
+    if (!store.dayNotes) store.dayNotes = {}; // 防呆初始化
+
+    for(let i=0; i<sDay; i++) grid.appendChild(document.createElement('div'));
+    for(let d=1; d<=days; d++) {
+        const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const el = document.createElement('div'); el.className = 'cal-day';
+        if(ds === today) el.classList.add('today-highlight');
+        if(store.offDays.includes(ds)) el.style.background = store.offColor;
+        
+        const dots = [...new Set(store.appointments.filter(a => a.date === ds).map(a => store.stylists.find(st => st.id == a.styId)?.color || '#ddd'))].map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;margin:2px;"></div>`).join('');
+        
+        // 🚀 抓取記事文字與樣式
+        const noteText = store.dayNotes[ds] || '';
+        const noteHtml = noteText ? `<div style="font-size:0.75rem; font-weight:800; color:#1d1d1f; background:rgba(212,175,55,0.18); padding:3px 6px; border-radius:8px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:0.5px solid var(--gold);">${noteText}</div>` : '';
+
+        el.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span>${d}</span></div><div style="margin-top:4px;">${dots}</div>${noteHtml}`;
+        
+        // 單擊進入當天跑道
+        el.onclick = () => { curD = new Date(ds); showP('pg-day'); }; 
+        
+        // 🚀 雙擊跳出備忘輸入框
+        el.ondblclick = (e) => {
+            e.stopPropagation(); // 防止觸發單擊
+            popDayNoteEdit(ds);
+        };
+
+        grid.appendChild(el);
     }
+}
     function goToday() { curD = new Date(); renderDay(curD.toLocaleDateString('sv')); showP('pg-day'); }
     function shiftDay(v) { curD.setDate(curD.getDate() + v); renderDay(curD.toLocaleDateString('sv')); }
     window.addEventListener('click', e => {
@@ -1742,6 +1761,35 @@ function renderSet() {
                 if (action === 'offday') popOffDayDrawer(); // 🚀 完美通電點擊
             };
         }
+
+        // 🚀 雙擊編輯日期備忘功能
+async function popDayNoteEdit(ds) {
+    if (!store.dayNotes) store.dayNotes = {};
+    const currentNote = store.dayNotes[ds] || '';
+
+    const { value: text } = await Swal.fire({
+        title: `📅 ${ds} 日期備忘`,
+        input: 'text',
+        inputValue: currentNote,
+        inputPlaceholder: '輸入記事（例：公休、進貨、校外研習...）',
+        showCancelButton: true,
+        confirmButtonText: '儲存記事',
+        cancelButtonText: '清空/取消',
+        confirmButtonColor: '#1d1d1f',
+        cancelButtonColor: '#e5e5ea',
+        reverseButtons: true
+    });
+
+    if (text !== undefined) {
+        if (text.trim() === '') {
+            delete store.dayNotes[ds]; // 清空則移除
+        } else {
+            store.dayNotes[ds] = text.trim();
+        }
+        await saveS();
+        initMonth(); // 刷新日曆視圖
+    }
+}
 
         // 綁定登出/重新激活按鈕
         const reBtn = document.getElementById('btn-reauth-real');
