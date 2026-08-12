@@ -1060,7 +1060,9 @@ function handleStatsMonthChange(newVal) {
 }
 
 
-  // 🚀 全域防衝撞計時器
+  // ==========================================================================
+// 🚀 全域防衝撞計時器與跨平台雙擊日曆引擎
+// ==========================================================================
 let dayClickTimer = null;
 
 function initMonth() {
@@ -1069,7 +1071,7 @@ function initMonth() {
     const year = pick.getFullYear(), month = pick.getMonth(), today = new Date().toLocaleDateString('sv');
     const days = new Date(year, month + 1, 0).getDate();
     let sDay = new Date(year, month, 1).getDay(); sDay = sDay === 0 ? 6 : sDay - 1;
-    if (!store.dayNotes) store.dayNotes = {}; // 防呆初始化
+    if (!store.dayNotes) store.dayNotes = {};
 
     for(let i=0; i<sDay; i++) grid.appendChild(document.createElement('div'));
     for(let d=1; d<=days; d++) {
@@ -1080,27 +1082,55 @@ function initMonth() {
         
         const dots = [...new Set(store.appointments.filter(a => a.date === ds).map(a => store.stylists.find(st => st.id == a.styId)?.color || '#ddd'))].map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;margin:2px;"></div>`).join('');
         
-        // 抓取記事文字與樣式
         const noteText = store.dayNotes[ds] || '';
-        const noteHtml = noteText ? `<div style="font-size:0.75rem; font-weight:800; color:#1d1d1f; background:rgba(212,175,55,0.18); padding:3px 6px; border-radius:8px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border:0.5px solid var(--gold);">${noteText}</div>` : '';
+        const noteHtml = noteText ? `
+            <div style="
+                font-size: 0.72rem; 
+                font-weight: 900; 
+                color: #1d1d1f; 
+                background: rgba(212, 175, 55, 0.15); 
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                padding: 3px 8px; 
+                border-radius: 10px; 
+                margin-top: 6px; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+                white-space: nowrap; 
+                border: 0.5px solid rgba(212, 175, 55, 0.5);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            ">
+                <span style="color:var(--gold); font-size:0.65rem;">●</span> ${noteText}
+            </div>` : '';
 
         el.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span>${d}</span></div><div style="margin-top:4px;">${dots}</div>${noteHtml}`;
         
-        // 🚀 【單擊】：延遲 250ms 執行跳轉，若期間觸發雙擊則取消跳轉
-        el.onclick = () => {
-            clearTimeout(dayClickTimer);
-            dayClickTimer = setTimeout(() => {
-                curD = new Date(ds); 
-                showP('pg-day');
-            }, 250);
-        }; 
-        
-        // 🚀 【雙擊】：立刻取消單擊跳轉，並跳出備忘輸入框
-        el.ondblclick = (e) => {
-            e.stopPropagation();
-            clearTimeout(dayClickTimer); // 🎯 關鍵：阻斷單擊切換頁面！
-            popDayNoteEdit(ds);
+        let lastTouchTime = 0;
+
+        const handleDoubleTap = (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTouchTime;
+            
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                clearTimeout(dayClickTimer);
+                popDayNoteEdit(ds);
+            } else {
+                clearTimeout(dayClickTimer);
+                dayClickTimer = setTimeout(() => {
+                    curD = new Date(ds); 
+                    showP('pg-day');
+                }, 280);
+            }
+            lastTouchTime = currentTime;
         };
+
+        el.addEventListener('touchend', handleDoubleTap);
+        el.addEventListener('click', handleDoubleTap);
 
         grid.appendChild(el);
     }
