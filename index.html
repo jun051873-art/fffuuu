@@ -1186,13 +1186,29 @@ function initMonth() {
                 休
             </span>` : '';
 
-        // 預約設計師圓點
-        const dots = [...new Set(
-            store.appointments
-                .filter(a => a.date === ds)
-                .map(a => store.stylists.find(st => String(st.id) === String(a.styId))?.color || '#ddd')
-        )].map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;margin:2px;"></div>`).join('');
-
+        // 🚀 預約設計師膠囊標籤（顯示代表色與名字最後一個字）
+const dots = store.appointments
+    .filter(a => a.date === ds)
+    .map(a => store.stylists.find(st => String(st.id) === String(a.styId)))
+    .filter((sty, index, self) => sty && self.findIndex(s => s.id === sty.id) === index) // 去除重複設計師
+    .map(sty => {
+        const lastChar = sty.name ? sty.name.slice(-1) : ''; // 抓取名字最後一個字
+        return `<div style="
+            width: 18px; 
+            height: 18px; 
+            border-radius: 50%; 
+            background: ${sty.color}; 
+            color: #ffffff; 
+            font-size: 0.65rem; 
+            font-weight: 900; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 2px 2px 2px 0; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            line-height: 1;
+        ">${lastChar}</div>`;
+    }).join('');
         // 💎 Aether 流體自選色毛玻璃備忘標籤
 if (!store.dayNoteColors) store.dayNoteColors = {}; // 防呆初始化
 const noteText = store.dayNotes[ds] || '';
