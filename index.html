@@ -637,6 +637,26 @@ html, body {
     letter-spacing: 2px;
 }
 
+/* 🚀 備忘選擇器質感外框 */
+#swal-note-color {
+    -webkit-appearance: none;
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#swal-note-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#swal-note-color::-webkit-color-swatch {
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
   </style>
 </head>
 <body>
@@ -1165,30 +1185,33 @@ function initMonth() {
                 .map(a => store.stylists.find(st => String(st.id) === String(a.styId))?.color || '#ddd')
         )].map(c => `<div style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block;margin:2px;"></div>`).join('');
 
-        // 💎 Aether 流體黑金毛玻璃備忘標籤
-        const noteText = store.dayNotes[ds] || '';
-        const noteHtml = noteText ? `
-            <div style="
-                font-size: 0.75rem; 
-                font-weight: 900; 
-                color: #1d1d1f; 
-                background: rgba(212, 175, 55, 0.15); 
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                padding: 4px 8px; 
-                border-radius: 12px; 
-                margin-top: 6px; 
-                overflow: hidden; 
-                text-overflow: ellipsis; 
-                white-space: nowrap; 
-                border: 0.5px solid rgba(212, 175, 55, 0.4);
-                box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-                display: flex;
-                align-items: center;
-                gap: 5px;
-            ">
-                <span style="color:var(--gold); font-size:0.65rem;">●</span> ${noteText}
-            </div>` : '';
+        // 💎 Aether 流體自選色毛玻璃備忘標籤
+if (!store.dayNoteColors) store.dayNoteColors = {}; // 防呆初始化
+const noteText = store.dayNotes[ds] || '';
+const noteColor = store.dayNoteColors[ds] || '#D4AF37'; // 若沒選色則預設金色
+
+const noteHtml = noteText ? `
+    <div style="
+        font-size: 0.75rem; 
+        font-weight: 900; 
+        color: #1d1d1f; 
+        background: ${noteColor}25; /* 加上 25 自動轉為 15% 透明度毛玻璃 */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 4px 8px; 
+        border-radius: 12px; 
+        margin-top: 6px; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        white-space: nowrap; 
+        border: 1px solid ${noteColor}66; /* 40% 透明度邊框 */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    ">
+        <span style="color:${noteColor}; font-size:0.65rem;">●</span> ${noteText}
+    </div>` : '';
 
         // 🚀 【修改點 2】：將 offBadge 嵌入右上角區塊
         el.innerHTML = `
@@ -1200,19 +1223,42 @@ function initMonth() {
             ${noteHtml}
         `;
         // ==========================================================================
-        // ⚡ 長按 500ms 觸發備忘輸入（支援觸控 Touch 與滑鼠 Click）
+        // ⚡ 防誤觸滑動 + 長按 500ms 備忘錄處理邏輯
         // ==========================================================================
         let pressTimer = null;
         let isLongPress = false;
+        let isScrolling = false;
+        let startX = 0, startY = 0;
 
         const startPress = (e) => {
             isLongPress = false;
+            isScrolling = false;
+            
+            // 記錄手指按下的初始位置
+            const touch = e.touches ? e.touches[0] : e;
+            startX = touch.clientX;
+            startY = touch.clientY;
+
             pressTimer = setTimeout(() => {
-                isLongPress = true;
-                // 觸發物理微震動（支援的手機裝置）
-                if (window.navigator.vibrate) window.navigator.vibrate(25);
-                popDayNoteEdit(ds);
-            }, 500); // 按住 0.5 秒觸發
+                if (!isScrolling) {
+                    isLongPress = true;
+                    if (window.navigator.vibrate) window.navigator.vibrate(25);
+                    popDayNoteEdit(ds);
+                }
+            }, 500);
+        };
+
+        const handleMove = (e) => {
+            if (!e.touches) return;
+            const touch = e.touches[0];
+            const diffX = Math.abs(touch.clientX - startX);
+            const diffY = Math.abs(touch.clientY - startY);
+
+            // 位移超過 10px 認定為滑動，立刻取消長按與點擊行為
+            if (diffX > 10 || diffY > 10) {
+                isScrolling = true;
+                cancelPress();
+            }
         };
 
         const cancelPress = () => {
@@ -1224,8 +1270,8 @@ function initMonth() {
 
         const handleRelease = (e) => {
             cancelPress();
-            // 如果不是長按，則執行正常的「單擊進入當日預約跑道」
-            if (!isLongPress) {
+            // 只有在「不是長按」且「沒有滑動」的情況下，才進入當日預約頁面
+            if (!isLongPress && !isScrolling) {
                 curD = new Date(ds); 
                 showP('pg-day');
             }
@@ -1233,13 +1279,12 @@ function initMonth() {
 
         // 事件綁定 (行動端與桌面端兼容)
         el.addEventListener('touchstart', startPress, { passive: true });
+        el.addEventListener('touchmove', handleMove, { passive: true });
         el.addEventListener('touchend', handleRelease);
-        el.addEventListener('touchmove', cancelPress, { passive: true }); // 滑動時自動取消
 
         el.addEventListener('mousedown', startPress);
         el.addEventListener('mouseup', handleRelease);
         el.addEventListener('mouseleave', cancelPress);
-
         grid.appendChild(el);
     }
 }
@@ -1249,13 +1294,23 @@ function initMonth() {
 // ==========================================================================
 async function popDayNoteEdit(ds) {
     if (!store.dayNotes) store.dayNotes = {};
+    if (!store.dayNoteColors) store.dayNoteColors = {};
+    
     const currentNote = store.dayNotes[ds] || "";
+    const currentColor = store.dayNoteColors[ds] || "#D4AF37";
 
-    const { value: newNote } = await Swal.fire({
+    const { value: formValues } = await Swal.fire({
         title: `📝 日期備忘 (${ds})`,
-        input: 'textarea',
-        inputValue: currentNote,
-        inputPlaceholder: '請輸入當日事項或備註...',
+        html: `
+            <textarea id="swal-note-text" class="swal2-textarea" style="width:100%; height:100px; margin:10px 0; border-radius:20px; font-size:1.1rem; padding:15px;" placeholder="請輸入當日事項或備註...">${currentNote}</textarea>
+            
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:15px; padding:10px 15px; background:rgba(0,0,0,0.03); border-radius:20px;">
+                <span style="font-weight:900; font-size:1rem; color:#1d1d1f;">選擇標籤顏色：</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="color" id="swal-note-color" value="${currentColor}" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
+                </div>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: '儲存備忘',
         cancelButtonText: '刪除備忘',
@@ -1266,16 +1321,25 @@ async function popDayNoteEdit(ds) {
         denyButtonColor: '#e5e5ea',
         reverseButtons: true,
         didOpen: () => {
-            const input = Swal.getInput();
+            const input = document.getElementById('swal-note-text');
             if (input) input.focus();
+        },
+        preConfirm: () => {
+            return {
+                note: document.getElementById('swal-note-text').value,
+                color: document.getElementById('swal-note-color').value
+            }
         }
     });
 
-    if (newNote !== undefined) {
-        if (newNote.trim() === "") {
+    if (formValues) {
+        const trimmedNote = formValues.note.trim();
+        if (trimmedNote === "") {
             delete store.dayNotes[ds];
+            delete store.dayNoteColors[ds];
         } else {
-            store.dayNotes[ds] = newNote.trim();
+            store.dayNotes[ds] = trimmedNote;
+            store.dayNoteColors[ds] = formValues.color;
         }
         await saveS();    // 同步到雲端 Firebase
         initMonth();     // 重新繪製日曆
