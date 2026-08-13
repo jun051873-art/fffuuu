@@ -13,6 +13,9 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+     
+     <!-- 引入極輕量農曆計算庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
 
     <style>
 
@@ -1186,7 +1189,32 @@ function initMonth() {
                 休
             </span>` : '';
 
-        // 🚀 預約設計師膠囊標籤（顯示代表色與名字最後一個字）
+      // 🚀 1. 自動計算農曆與拜拜提醒 (初一、初二、十五、十六)
+const dateObj = new Date(year, month, d);
+const lunar = Lunar.fromDate(dateObj);
+const lunarDay = lunar.getDayInChinese();
+const targetDays = ['初一', '初二', '十五', '十六'];
+let lunarTagHtml = '';
+
+if (targetDays.includes(lunarDay)) {
+    const isPrimary = (lunarDay === '初一' || lunarDay === '十五');
+    const badgeBg = isPrimary ? '#fff0f0' : '#f0f4ff';
+    const badgeColor = isPrimary ? '#e53e3e' : '#3182ce';
+
+    lunarTagHtml = `<span style="
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: ${badgeColor};
+        background: ${badgeBg};
+        padding: 1px 5px;
+        border-radius: 6px;
+        margin-left: 4px;
+        display: inline-block;
+        letter-spacing: -0.5px;
+    ">${lunarDay}</span>`;
+}
+
+// 🚀 2. 預約設計師膠囊標籤（顯示代表色與名字最後一個字）
 const dots = store.appointments
     .filter(a => a.date === ds)
     .map(a => store.stylists.find(st => String(st.id) === String(a.styId)))
@@ -1237,15 +1265,15 @@ const noteHtml = noteText ? `
         <span style="color:${noteColor}; font-size:0.65rem;">●</span> ${noteText}
     </div>` : '';
 
-        // 🚀 【修改點 2】：將 offBadge 嵌入右上角區塊
-        el.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>${d}</span>
-                ${offBadge}
-            </div>
-            <div style="margin-top:4px;">${dots}</div>
-            ${noteHtml}
-        `;
+        // 🚀 【修改點 2】：將 offBadge 與 lunarTagHtml 嵌入右上角區塊
+el.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div><span>${d}</span>${lunarTagHtml}</div>
+        ${offBadge}
+    </div>
+    <div style="margin-top:4px;">${dots}</div>
+    ${noteHtml}
+`;
         // ==========================================================================
         // ⚡ 防誤觸滑動 + 長按 500ms 備忘錄處理邏輯
         // ==========================================================================
