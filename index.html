@@ -1342,7 +1342,7 @@ el.innerHTML = `
 }
 
 // ==========================================================================
-// 🚀 當日備忘錄 SweetAlert2 視窗 (相容雲端同步)
+// 🚀 當日備忘錄 SweetAlert2 視窗 (相容雲端同步與刪除修復版)
 // ==========================================================================
 async function popDayNoteEdit(ds) {
     if (!store.dayNotes) store.dayNotes = {};
@@ -1351,7 +1351,7 @@ async function popDayNoteEdit(ds) {
     const currentNote = store.dayNotes[ds] || "";
     const currentColor = store.dayNoteColors[ds] || "#D4AF37";
 
-    const { value: formValues } = await Swal.fire({
+    const result = await Swal.fire({
         title: `📝 日期備忘 (${ds})`,
         html: `
             <textarea id="swal-note-text" class="swal2-textarea" style="width:100%; height:100px; margin:10px 0; border-radius:20px; font-size:1.1rem; padding:15px;" placeholder="請輸入當日事項或備註...">${currentNote}</textarea>
@@ -1384,17 +1384,31 @@ async function popDayNoteEdit(ds) {
         }
     });
 
-    if (formValues) {
-        const trimmedNote = formValues.note.trim();
+    // 1. 點擊「儲存備忘」
+    if (result.isConfirmed && result.value) {
+        const trimmedNote = result.value.note.trim();
         if (trimmedNote === "") {
             delete store.dayNotes[ds];
             delete store.dayNoteColors[ds];
         } else {
             store.dayNotes[ds] = trimmedNote;
-            store.dayNoteColors[ds] = formValues.color;
+            store.dayNoteColors[ds] = result.value.color;
         }
         await saveS();    // 同步到雲端 Firebase
-        initMonth();     // 重新繪製日曆
+        initMonth();      // 重新繪製日曆
+    } 
+    // 2. 點擊「刪除備忘」
+    else if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+        delete store.dayNotes[ds];
+        delete store.dayNoteColors[ds];
+        await saveS();    // 同步到雲端 Firebase
+        initMonth();      // 重新繪製日曆
+        
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 1000,
+            background: '#fff', color: '#1d1d1f'
+        });
+        Toast.fire({ icon: 'success', title: '備忘錄已清除' });
     }
 }
     function goToday() { curD = new Date(); renderDay(curD.toLocaleDateString('sv')); showP('pg-day'); }
