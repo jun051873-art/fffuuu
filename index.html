@@ -990,11 +990,16 @@ async function saveS() {
                             store.appointments.push(a);
                         }
                     });
+
+                    // 🛠️ 補強：合併雲端與本地的備忘錄資料
+                    store.dayNotes = { ...(cloudSnapData.dayNotes || {}), ...(store.dayNotes || {}) };
+                    store.dayNoteColors = { ...(cloudSnapData.dayNoteColors || {}), ...(store.dayNoteColors || {}) };
+
                     store.lastUpdate = Date.now();
                 }
             }
 
-            // 執行同步更新
+            // 執行同步更新（修正：補上 dayNotes 與 dayNoteColors 雲端同步）
             await db.collection("Salons").doc(auth.id).update({
                 appointments: store.appointments,
                 clients: store.clients,
@@ -1005,9 +1010,12 @@ async function saveS() {
                 startH: store.startH,
                 endH: store.endH,
                 offDays: store.offDays,
-                slotOffDays: store.slotOffDays || {}, // 🚀 已修復：補上劃掉時段同步
+                slotOffDays: store.slotOffDays || {},
                 offColor: store.offColor,
-                payTagsDef: store.payTagsDef
+                payTagsDef: store.payTagsDef,
+                // 🚀【關鍵修正】：新增備忘錄與顏色標籤的雲端同步欄位
+                dayNotes: store.dayNotes || {},
+                dayNoteColors: store.dayNoteColors || {}
             });
 
             localStorage.setItem('SALON_LOCK_V318', JSON.stringify(store)); 
