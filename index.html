@@ -1919,7 +1919,7 @@ function searchStored(el, boxId) {
     }
 }
 
-// --- 🚀 修正：選擇顧客時自動帶入性別並觸發 UI 切換 ---
+// --- 🚀 修正：選擇顧客時自動帶入性別與預設設計師，並觸發 UI 切換 ---
 function pickSug(n, p, s, boxId, sex = 'F') {
     const boxes = ['pop-box', 'pop-box-p', 'sw-box', 'cli-search-box'];
     boxes.forEach(id => {
@@ -1939,9 +1939,16 @@ function pickSug(n, p, s, boxId, sex = 'F') {
     if (boxId === 'pop-box' || boxId === 'pop-box-p') {
         const popN = document.getElementById('pop-n');
         const popP = document.getElementById('pop-p');
+        const popS = document.getElementById('pop-s'); // 🚀 取得設計師下拉選單元素
+
         if (popN) popN.value = n;
         if (popP) popP.value = p;
         
+        // 🚀 核心修正：如果顧客資料庫中有註記設計師 (s)，自動將下拉選單切換至該設計師
+        if (popS && s && s !== 'undefined' && s !== 'null') {
+            popS.value = s;
+        }
+
         // 🎯 核心連動：點擊舊顧客時，自動切換彈窗內的性別按鈕
         if (typeof setSexPop === 'function') {
             setSexPop(sex);
@@ -1954,7 +1961,6 @@ function pickSug(n, p, s, boxId, sex = 'F') {
         popBooking(n, p, s);
     }
 }
-
 // ==========================================================================
 // --- 【V318 設定頁面：極簡穩定版（排休色彩與風格完美對齊版）】 ---
 // ==========================================================================
